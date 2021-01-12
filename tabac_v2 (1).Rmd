@@ -1,0 +1,1110 @@
+---
+title: "Tobacco TILs - response to treatment"
+author: "Vanille SIMON, Anne-Sophie HAMY-PETIT, Fabien REYAL"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    fig_caption: yes
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: no
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+editor_options:
+  chunk_output_type: console
+chunk_output_type: console
+---
+
+```{r setup1, include=FALSE,cache=FALSE}
+knitr::opts_chunk$set(echo = FALSE,cache=TRUE,verbose=FALSE,message=FALSE,warning=FALSE,include=FALSE,
+                      base.dir=path <- '/Users/ahamypet/RT2Lab/tabac',
+                      autodep = TRUE,
+                      cache.path='tabac_cache/html/1-')
+invisible(dev.off())
+
+if(!file.exists('Fig_out/')){
+                            dir.create('Fig_out/')
+              }
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE,cache=TRUE,message=FALSE,warning=FALSE,include=FALSE, prompt=TRUE, tidy=TRUE, fig.width=8)
+```
+
+```{r}
+getwd()
+# setwd("/Users/ahamypet/RT2Lab/tabac")
+source("/Users/ahamypet/RT2Lab/R/Packages R/sources biostat/biostat/R/fonctions_biostat_R.r")
+library(survival)
+library(ggplot2)
+library(cowplot)
+library(tidyverse)
+library(tableone)
+library(ggpubr) 
+library(dplyr)
+library(kableExtra)
+
+options(max.print = 9999)
+options(stringsAsFactors=FALSE)
+```
+
+```{r}
+# See preprocessing of variables in former script tabac_v1
+load("/Users/ahamypet/RT2Lab/NEOREP/general/data/processed/neorep_2019.RData")
+head(neorep_2019)
+table(neorep_2019$tabac_3_classes,exclude=NULL)
+# variables specif tabac
+neorep_2019$quantite_tabac_num
+neorep_2019$actif_at_diag
+neorep_2019$tabac_3_classes
+neorep_2019$tabac_PA
+neorep_2019$tabac_2_classes_ever_as_no
+neorep_2019$tabac_2_classes_ever_as_yes
+```
+
+```{r}
+table(neorep_2019$tabac_3_classes,exclude=NULL) 
+Dat.label <- 	neorep_2019 %>% group_by(tabac_3_classes) %>% 
+	  	dplyr::summarise(count=n()) %>%  
+		  mutate(ypos = cumsum(count) - 0.5*count) %>% 
+		  mutate(percent_full = count/sum(count)) %>% 
+		  mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>% 
+		  mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+		  ungroup() ; head(Dat.label)
+
+#   tabac_3_classes count  ypos percent_full percent_format ypos_percent
+#   <chr>           <int> <dbl>        <dbl> <chr>                 <dbl>
+# 1 NA                243  122.        0.203 20%                   0.101
+# 2 current           179  332.        0.149 15%                   0.277
+# 3 ever              154  499         0.128 13%                   0.416
+# 4 never             623  888.        0.520 52%                   0.740
+```
+
+```{r}
+neo_tabac             <- neorep_2019 %>% filter(!is.na(tabac_3_classes) ) %>% as.data.frame()
+rownames(neo_tabac)   <- neo_tabac$numdos7
+nrow(neo_tabac)
+neo_tabac$all <- "All"
+
+						subtype_list				<- list("whole population"		= rownames(neo_tabac[])  											,
+															"Luminal"				= rownames(neo_tabac[which(neo_tabac[ ,"subtype"]==0),])  		,
+															"TNBC"					= rownames(neo_tabac[which(neo_tabac[ ,"subtype"]==1),])  		,
+															"HER2"					= rownames(neo_tabac[which(neo_tabac[ ,"subtype"]==2),]) 			) 							
+						path						<- c(	"all",
+															"luminal"			,
+															"tnbc"				,
+															"her2"				)
+															
+						file_end					<- c(	"WP",
+															"Luminal",
+															"TNBC",
+															"HER2") 
+```
+
+# Baseline patients’ and tumors’ characteristics
+
+```{r is tobacco information missing at random }
+
+```
+
+```{r, include=FALSE}
+	median(neo_tabac$age)
+	range(neo_tabac$age)
+	median(neo_tabac$bmi,na.rm = TRUE)
+	range(neo_tabac$bmi,na.rm = TRUE)
+```
+
+```{r repartition tabac}
+    Dat.label <-  neo_tabac  %>% group_by(tabac_3_classes)  %>% 
+                  dplyr::summarise(count=n()) %>%
+                  mutate(ypos = cumsum(count) - 0.5*count) %>%
+                  mutate(percent_full = count/sum(count)*100) %>%
+                  mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>%
+                  mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+                  ungroup() 
+    Dat.label
+      #   tabac_3_classes count  ypos percent_full percent_format ypos_percent
+      #   <chr>           <int> <dbl>        <dbl> <chr>                 <dbl>
+      # 1 current           179  89.5         18.7 19%                    9.36
+      # 2 ever              154 256           16.1 16%                   26.8 
+      # 3 never             623 644.          65.2 65%                   67.4 
+```
+
+Out of 1199 women included in the cohort, data regarding smoking status were missing in 243 patients (19 percent), leaving 956 patients for the current analyses. Among them, 179 were current smokers at BC diagnosis (18.7%), 154 were former smokers (16.1%), and 623 were never smokers (65.2%). Patients’ main characteristics by smoking status are summarized in Table 1. Median age was `r 	median(neo_tabac$age)` years old (range `r 	range(neo_tabac$age)`). Patient's repartition by subtype was as follows: luminal (n=410, 42.9%), TNBC (n=305, 31.9%), HER2-positive (n=241; 25.2%). Current and ever smokers were statistically younger (46.4 versus 48.8 y.o., p<0.001) and thinner (BMI 24 versus 25, p=0.01) than never smokers. Conversely, no tumor characteristics was statistically different according to smoking status. 
+
+```{r}
+    Dat.label <-  neo_tabac %>% group_by(subtype.f)  %>% 
+              dplyr::summarise(count=n()) %>%
+              mutate(ypos = cumsum(count) - 0.5*count) %>%
+              mutate(percent_full = count/sum(count)*100) %>%
+              mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>%
+              mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+              ungroup() 
+    head(Dat.label)
+#       subtype.f count  ypos percent_full percent_format ypos_percent
+#   <fct>     <int> <dbl>        <dbl> <chr>                 <dbl>
+# 1 luminal     410  205          42.9 43%                    21.4
+# 2 TNBC        305  562.         31.9 32%                    58.8
+# 3 HER2        241  836.         25.2 25%                    87.4
+```
+
+```{r Patients characteristics,include=FALSE}
+        var_selected		<-  c("age",	"menop.f","bmi","bmi.c2.f",
+                                      "tclin","tuicc2.f", "N.f",
+                                      "Index_mitotique","grade.c.f","ki67.c.f",
+                                      "typana_medul",
+                											"subtype.f","roec.f","proc.f","her2.f",
+                											"perc_stromal_lymphocytes","perc_TIL",
+                											"typneo.f")
+        names_var_selected	<-  c("Age",	"Menopausal status","BMI (continuous)","BMI class", 
+                                        "Tumor size (mm)","Clinical tumor stage","Clinical nodal status",
+                                        "Mitotic index","Tumor Grade","ki67",
+        													      "Histology",
+              													"BC subtype","ER status","PR status","HER2 status",
+        													      "Pre-NAC str TILs","Pre-NAC  IT TILs",
+              													"NAC regimen")
+    		matching_name_file    <- data.frame(variable = var_selected, 
+    		                                    name_variable = names_var_selected)
+    		mydataset             <- neo_tabac
+        Table1                <- CreateTableOne(var_selected, data=mydataset)
+        table1_preformat      <- print(Table1, quote=TRUE, noSpaces=TRUE,showAllLevels = TRUE,
+		                               nonnormal = c("perc_stromal_lymphocytes","perc_TIL") )
+        source('~/RT2Lab/R/R functions/format_tableone_v2.R', chdir = TRUE)
+        Table1_WP             <- Table1_format
+        Table1_WP
+				
+		# And by smoking status
+		Table1                <- CreateTableOne(var_selected , "tabac_3_classes",mydataset) 
+		table1_preformat      <- print(Table1, quote=TRUE, noSpaces=TRUE,showAllLevels = TRUE, pDigits=3, contDigits=1,
+		                               nonnormal = c("perc_stromal_lymphocytes","perc_TIL") )
+		source('~/RT2Lab/R/R functions/format_tableone_v2.R', chdir = TRUE)
+		Table1_by_tabac <- Table1_format 
+		
+		# Compil both tables 
+		Table1_WP_and_by_tabac <- full_join(Table1_by_tabac,Table1_WP, by = c("names_variable_clean","level"))
+		
+		vector_missing_data
+# [1] "Menopausal status, n=4; Tumor stage, n=1; Tumor size, n=1; Clinical nodal status, n=1; Mitotic index, n=338; Tumor Grade, n=28; ki67, n=565; Histology, n=10; PR status, n=23; Pre-NAC str TILs, n=324; Pre-NAC  IT TILs, n=324"
+```
+
+```{r Table1_WP_and_by_tabac,include=TRUE}
+knitr::kable(Table1_WP_and_by_tabac) %>% kable_styling(bootstrap_options = "striped", full_width = F) %>%
+  footnote(general = c(vector_missing_data,MyGenericFootnote))
+write.csv2(Table1_WP_and_by_tabac, file="results/Table1_WP_and_by_tabac.csv")
+```
+
+```{r binning / quantity, include=FALSE}
+# Among smokers, qty and TILs?
+neo_tabac %>% filter(quantite_tabac_num>0) %>% select(quantite_tabac_num) %>% ggplot() + geom_histogram(aes(quantite_tabac_num),stat="count")
+head(neo_tabac)
+
+neo_tabac %>% filter(!is.na(tabac_PA)) %>% group_by(tabac_PA) %>% summarize(count=n())  %>% 
+  		  mutate(percent_full = count/sum(count)) %>% 
+		  mutate(percent_format = paste0(round(count/sum(count)*100), '%'))  
+
+neo_tabac %>% filter(quantite_tabac_num>0) %>% select(quantite_tabac_num) %>% summarise(median=median(quantite_tabac_num))
+neo_tabac %>% filter(quantite_tabac_num>0) %>% select(quantite_tabac_num) %>% summarise(min=min(quantite_tabac_num))
+neo_tabac %>% filter(quantite_tabac_num>0) %>% select(quantite_tabac_num) %>% summarise(max=max(quantite_tabac_num))
+```
+
+
+
+
+```{r Pre-NAC TILs}
+with_preNAC_TILS <- neo_tabac %>% filter(!is.na(perc_stromal_lymphocytes)) %>% nrow() # 632
+# Prepare matrix
+neo_tabac_no_NA <- neo_tabac %>% filter(!is.na(perc_stromal_lymphocytes)) 
+```
+
+```{r}
+# In the whole population
+    Dat.label <-  neo_tabac_no_NA  %>% group_by(tabac_3_classes)  %>% 
+                  dplyr::summarise(count=n()) %>%
+                  mutate(ypos = cumsum(count) - 0.5*count) %>%
+                  mutate(percent_full = count/sum(count)*100) %>%
+                  mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>%
+                  mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+                  ungroup() 
+    Dat.label
+    #       tabac_3_classes count  ypos percent_full percent_format ypos_percent
+    #   <chr>           <int> <dbl>        <dbl> <chr>                 <dbl>
+    # 1 current           115  57.5         18.2 18%                    9.10
+    # 2 ever              107 168.          16.9 17%                   26.7 
+    # 3 never             410 427           64.9 65%                   67.6 
+
+    # All effectives > 30 => assumption normality
+    mod <- lm(perc_stromal_lymphocytes ~ tabac_3_classes , data = neo_tabac_no_NA)   # p-value = 0.056
+    anova(mod) # 0.056
+    
+    # Test normality
+    shapiro.test(neo_tabac_no_NA$perc_stromal_lymphocytes) # p-value = 10-16
+    qplot(neo_tabac_no_NA$perc_stromal_lymphocytes)  
+    # So there exists a deviation to normality => validation of the use of a non parametric test
+    # => Wilcoxon
+
+    # kruskal.test(perc_stromal_lymphocytes ~ tabac_3_classes , data = neo_tabac_no_NA)   # Error message
+    kruskal.test(neo_tabac_no_NA$perc_stromal_lymphocytes, as.factor(neo_tabac_no_NA$tabac_3_classes)) #  p=0.102
+
+    # => This explains previous discrepancies;
+    # table 1 does not perform shapiro, and takes as default anova;
+    # So we correct it using a list of non normal variable in table1
+    
+    #### IT TILs
+    mod <- lm(perc_TIL ~ tabac_3_classes , data = neo_tabac_no_NA) ; anova(mod) # 0.41
+    
+    # Test normality
+    shapiro.test(neo_tabac_no_NA$perc_TIL) # p-value = 10-16
+    qplot(neo_tabac_no_NA$perc_TIL)  
+    # So there exists a deviation to normality => validation of the use of a non parametric test
+    kruskal.test(neo_tabac_no_NA$perc_TIL, as.factor(neo_tabac_no_NA$tabac_3_classes)) #  p=0.26
+
+# By subtype
+    Dat.label <-  neo_tabac_no_NA  %>% group_by(subtype.f, tabac_3_classes)  %>% 
+                  dplyr::summarise(count=n()) %>%
+                  mutate(ypos = cumsum(count) - 0.5*count) %>%
+                  mutate(percent_full = count/sum(count)*100) %>%
+                  mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>%
+                  mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+                  ungroup() 
+    Dat.label
+#       subtype.f tabac_3_classes count  ypos percent_full percent_format ypos_percent
+#   <fct>     <chr>           <int> <dbl>        <dbl> <chr>                 <dbl>
+# 1 luminal   current            38  19           18.0 18%                    9.00
+# 2 luminal   ever               39  57.5         18.5 18%                   27.3 
+# 3 luminal   never             134 144           63.5 64%                   68.2 
+# 4 TNBC      current            45  22.5         17.3 17%                    8.65
+# 5 TNBC      ever               42  66           16.2 16%                   25.4 
+# 6 TNBC      never             173 174.          66.5 67%                   66.7 
+# 7 HER2      current            32  16           19.9 20%                    9.94
+# 8 HER2      ever               26  45           16.1 16%                   28.0 
+# 9 HER2      never             103 110.          64.0 64%                   68.0 
+```
+
+Pre-NAC TILS were available for `r 	with_preNAC_TILS` out of `r	nrow(neo_tabac)`  patients.Neither pre-NAC str nor IT TIL levels were significantly different according to smoking status (p=0.102). This was true in the whole population and after stratification by BC subtype (Figure1).
+
+```{r Figure1 Boxplot pre-NAC str IT TILs}
+# str TILs
+# WP
+p_str_TILs 	<-	ggplot(neo_tabac_no_NA, aes(x= tabac_3_classes , y=perc_stromal_lymphocytes , fill=tabac_3_classes)) +
+                  geom_boxplot(aes(x= tabac_3_classes , y=perc_stromal_lymphocytes , fill=tabac_3_classes),outlier.shape=NA)	+
+                  theme_bw()+
+                  theme(axis.ticks.x = element_blank() , legend.position="none",
+                  plot.title = element_text(face="plain"))+
+                  facet_grid(~all)+
+                  xlab("")+ylab("Pre-NAC str TIL levels (%)")  +
+                  stat_compare_means( label = "p.format",label.x.npc="center")
+                  # stat_compare_means( label = "p.format",label.x.npc="center")
+p_str_TILs
+
+# Facet by subtype 
+
+p_str_TILs_subtype 	<-	ggplot(neo_tabac_no_NA,aes(x= tabac_3_classes , y=perc_stromal_lymphocytes , fill=tabac_3_classes)) +
+      geom_boxplot(aes(x= tabac_3_classes , y=perc_stromal_lymphocytes , fill=tabac_3_classes),outlier.shape=NA)	+
+      theme_bw()+
+      theme(axis.ticks.x = element_blank() , legend.position="none",
+      plot.title = element_text(face="plain"))+
+      facet_grid(~subtype.f)+
+      labs(title = "Pre-NAC str TILs levels by smoking status at BC diagnosis",
+      subtitle = "Population with str TILs levels available (n=632)",
+      x = "", 
+      y = "Pre-NAC str TIL levels (%)")  +
+        # stat_compare_means( label = "p.format",label.x.npc="center")
+      stat_compare_means( label = "p.format",label.x.npc="center")
+p_str_TILs_subtype
+
+# IT TILS
+## WP
+p_IT_TILs 	<-	ggplot(neo_tabac_no_NA, aes(x= tabac_3_classes , y=perc_TIL , fill=tabac_3_classes)) +
+                geom_boxplot(aes(x= tabac_3_classes , y=perc_TIL , fill=tabac_3_classes),outlier.shape=NA)	+
+                theme_bw()+
+                theme(axis.ticks.x = element_blank() , legend.position="none",
+                plot.title = element_text(face="plain"))+
+                facet_grid(~all)+
+                xlab("")+ylab("Pre-NAC IT TIL levels (%)")  +
+                stat_compare_means( label = "p.format",label.x.npc="center")
+p_IT_TILs
+
+# Facet by subtype 
+p_IT_TILs_subtype 	<-	ggplot(neo_tabac_no_NA,aes(x= tabac_3_classes , y=perc_TIL , fill=tabac_3_classes)) +
+                        geom_boxplot(aes(x= tabac_3_classes , y=perc_TIL , fill=tabac_3_classes),outlier.shape=NA)	+
+                        theme_bw()+
+                        theme(axis.ticks.x = element_blank() , legend.position="none",
+                        plot.title = element_text(face="plain"))+
+                        facet_grid(~subtype.f)+
+                        labs(title = "Pre-NAC IT TILs levels by smoking status at BC diagnosis",
+                        subtitle = "Population with IT TILs levels available (n=632)",
+                        x = "", 
+                        y = "Pre-NAC IT TIL levels (%)")  +
+                        stat_compare_means( label = "p.format",label.x.npc="center")
+p_IT_TILs_subtype
+```
+
+```{r, include = TRUE, fig.height= 6.5, fig.width=9}
+compil_pre_NAC_TILs_IT_str <- plot_grid(p_str_TILs, p_str_TILs_subtype,
+                                        p_IT_TILs, p_IT_TILs_subtype,
+                                        rel_widths = c(1.3,3,1.3,3),
+                                         ncol = 2, nrow = 2, labels= "AUTO",
+                                        align="hv")
+compil_pre_NAC_TILs_IT_str
+save_plot("doc/Figure1_compil_pre_NAC_IT_str_TILs.pdf",compil_pre_NAC_TILs_IT_str, base_height=6, base_width=8)
+save(compil_pre_NAC_TILs_IT_str, file="RT2_clean.RData")
+```
+
+
+```{r}
+neo_fumeuses <- neo_tabac %>% filter(!is.na(tabac_PA),
+                                     !is.na(perc_stromal_lymphocytes),
+                                     tabac_3_classes=="current")
+nrow(neo_fumeuses)
+
+neo_fumeuses_IT <- neo_tabac %>% filter(!is.na(tabac_PA),
+                                     !is.na(perc_TIL),
+                                     tabac_3_classes=="current")
+nrow(neo_fumeuses_IT)
+
+p_qte_tabac_str_TILS <-	ggplot(neo_fumeuses, aes(x= tabac_PA , y=perc_stromal_lymphocytes , fill=tabac_PA)) +
+                geom_boxplot(aes(x= tabac_PA , y=perc_stromal_lymphocytes , fill=tabac_PA),outlier.shape=NA)	+
+                theme_bw()+
+                facet_grid(~all)+
+                theme(axis.ticks.x = element_blank() , legend.position="none",
+                plot.title = element_text(face="plain"))+
+                ggtitle("All") +xlab("")+ylab("Pre-NAC str TIL levels (%)") +
+                stat_compare_means( label = "p.format",label.x.npc="center") 
+p_qte_tabac_str_TILS
+
+table(neo_tabac$tabac_PA,exclude=NULL)
+
+p_qte_tabac_str_TILS_subtype 	<-	ggplot(neo_fumeuses, aes(x= tabac_PA , y=perc_stromal_lymphocytes , fill=tabac_PA)) +
+                      geom_boxplot(aes(x= tabac_PA , y=perc_stromal_lymphocytes , fill=tabac_PA),outlier.shape=NA)	+
+                      theme_bw()+
+                      theme(axis.ticks.x = element_blank() , legend.position="none",
+                      plot.title = element_text(face="plain"))+
+                      facet_grid(~subtype.f)+
+                      labs(title = "Pre-NAC str TILs levels by smoking intensity",
+                      subtitle = "Population of smokers with str TILs levels available (n=106)",
+                      x = "", y = "Pre-NAC str TIL levels (%)")  +
+                      stat_compare_means( label = "p.format",label.x.npc="center") 
+p_qte_tabac_str_TILS_subtype
+
+    # Test normality
+    shapiro.test(neo_fumeuses$perc_TIL) # p-value = 10-16
+    qplot(neo_fumeuses$perc_TIL)  
+    # So there exists a deviation to normality => validation of the use of a non parametric test
+    kruskal.test(neo_fumeuses$perc_TIL, as.factor(neo_fumeuses$tabac_PA)) #  p=0.15
+
+    # IT
+    p_qte_tabac_IT_TILS <-	ggplot(neo_fumeuses, aes(x= tabac_PA , y=perc_TIL , fill=tabac_PA)) +
+                geom_boxplot(aes(x= tabac_PA , y=perc_stromal_lymphocytes , fill=tabac_PA),outlier.shape=NA)	+
+                theme_bw()+
+                facet_grid(~all)+
+                theme(axis.ticks.x = element_blank() , legend.position="none",
+                plot.title = element_text(face="plain"))+
+                ggtitle("All") +xlab("")+ylab("Pre-NAC IT TIL levels (%)") +
+                stat_compare_means( label = "p.format",label.x.npc="center") 
+    p_qte_tabac_IT_TILS
+
+
+p_qte_tabac_IT_TILS_subtype 	<-	ggplot(neo_fumeuses, aes(x= tabac_PA , y=perc_TIL , fill=tabac_PA)) +
+                  geom_boxplot(aes(x= tabac_PA , y=perc_stromal_lymphocytes , fill=tabac_PA),outlier.shape=NA)	+
+                      theme_bw()+
+                      theme(axis.ticks.x = element_blank() , legend.position="none",
+                      plot.title = element_text(face="plain"))+
+                      facet_grid(~subtype.f)+
+                      labs(title = "Pre-NAC IT TILs levels by smoking intensity",
+                      subtitle = "Population of smokers with IT TILs levels available (n=106)",
+                      x = "", y = "Pre-NAC IT TIL levels (%)")  +
+                      stat_compare_means( label = "p.format",label.x.npc="center") 
+p_qte_tabac_str_TILS_subtype
+```
+
+
+```{r, include = TRUE, fig.height= 5, fig.width=9}
+compil_pre_NAC_TILs_qte_tabac <- plot_grid(p_qte_tabac_str_TILS, p_qte_tabac_str_TILS_subtype,
+                                          p_qte_tabac_IT_TILS, p_qte_tabac_IT_TILS_subtype,
+                                        rel_widths = c(1.3,3,1.3,3),
+                                         ncol = 2, nrow = 2, labels= "AUTO",
+                                        align="hv")
+save_plot("doc/SuppFigure1_compil_pre_NAC_TILs_qte_tabac.pdf",compil_pre_NAC_TILs_qte_tabac, base_height=6, base_width=8)
+```
+
+```{r Interaction with BC subtype, include=FALSE}
+mod1 <-  lm(perc_stromal_lymphocytes ~ tabac_3_classes+subtype.f , data=neo_tabac) ; summary(mod1)
+mod2 <-  lm(perc_stromal_lymphocytes ~ tabac_3_classes+subtype.f+tabac_3_classes*subtype.f , data=neo_tabac) ; summary(mod2)
+anova(mod1,mod2, test="Chisq")  # p=0.16
+```
+
+# Response to treatment and post-NAC immune infiltration
+
+```{r}
+    Dat.label <-  neo_tabac %>%
+              group_by( RCH5.f ) %>%
+              dplyr::summarise(count=n()) %>%
+              mutate(ypos = cumsum(count) - 0.5*count) %>%
+              mutate(percent_full = count/sum(count)*100) %>%
+              mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>%
+              mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+              ungroup() 
+    Dat.label
+```
+
+
+```{r}
+    Dat.label <-  neo_tabac %>%
+              group_by( subtype.f, RCH5.f ) %>%
+              dplyr::summarise(count=n()) %>%
+              mutate(ypos = cumsum(count) - 0.5*count) %>%
+              mutate(percent_full = count/sum(count)*100) %>%
+              mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>%
+              mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+              ungroup() 
+    Dat.label
+```
+After NAC, the pathological complete response rate was 26% (247/956) and was different by BC subtype (luminal: 7% (28/410); TNBC : 39.7% (121/305), HER2-positive : 40.7% (98/241), p<0.001). pCR rates were not significantly different in current, ever or never smokers (20.7%, 29.2% and 26.5% respectively, p = 0.17, Figure 2A). Similar results were found after stratification by pathological subtype (luminal: p = 0.63; TNBC: p = 0.27; HER2-positive: p = 0.22, figure 2B) (Table 2). 
+
+
+```{r plot pCR rates Figure2 , include=FALSE}
+# Plot pCR
+# all
+    Dat.label <-  neo_tabac %>%
+              group_by( all, tabac_3_classes,RCH5.f ) %>%
+              dplyr::summarise(count=n()) %>%
+              mutate(ypos = cumsum(count) - 0.5*count) %>%
+              mutate(percent_full = count/sum(count)*100) %>%
+              mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>%
+              mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+              ungroup() 
+    head(Dat.label)
+              
+p_tabac_3_classes_all <- ggplot(Dat.label[Dat.label$RCH5.f=="pCR",] ) +
+                geom_bar(aes(all, y=percent_full, fill=tabac_3_classes  ),
+                         stat="identity",  width=0.8, position=position_dodge()) +
+                geom_text(aes(x=c(0.72,1,1.28), y=percent_full, label=percent_format  ), vjust = -1, size = 4) +
+                ylim(c(0,60))+ theme_bw()+
+                facet_grid(~all, scales = "free")+
+                theme(  axis.ticks.x = element_blank() , legend.position = "none")   + #
+                ylab("% pathological complete response (pCR)") + xlab ("") # +  scale_fill_manual(name = "tobacco use")
+p_tabac_3_classes_all
+
+Dat.label <-  neo_tabac %>%
+  						  group_by( subtype.f, tabac_3_classes,RCH5.f ) %>%
+  						  dplyr::summarise(count=n()) %>%
+  						  mutate(ypos = cumsum(count) - 0.5*count) %>%
+  						  mutate(percent_full = count/sum(count)*100) %>%
+  						  mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>%
+  						  mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+  						  ungroup() 
+  						head(Dat.label)
+  						
+p_tabac_3_classes_subtype <- ggplot(Dat.label[Dat.label$RCH5.f=="pCR",]) +
+              						geom_bar(aes(subtype.f, y=percent_full, fill=tabac_3_classes  ),
+              						stat="identity",  width=0.8, position=position_dodge()) +  
+                          geom_text(aes(x=rep(c(0.72,1,1.28),3), 
+                          # geom_text(aes(x=c(c(0.72,1,1.28),1+c(0.72,1,1.28),2+c(0.72,1,1.28)), 
+                          y=percent_full, label=percent_format  ), vjust = -1, size = 4) +
+                         ylim(c(0,60))+ theme_bw()+
+                         facet_grid(~subtype.f, scales = "free")+
+              					 theme(  axis.ticks.x = element_blank() ,legend.position = "top")   +
+                         guides(fill=guide_legend(title="smoking status at BC diagnosis")) +      
+                        labs(title = "PCR rates by smoking status at BC diagnosis",
+                               # subtitle = " ",
+                                x = "", 
+                                y = "% pathological complete response (pCR)") 
+p_tabac_3_classes_subtype
+
+pleg                      <- get_legend(p_tabac_3_classes_subtype)
+p_tabac_3_classes_subtype <- p_tabac_3_classes_subtype + theme(legend.position="none")
+
+pintermediaire   <- plot_grid(p_tabac_3_classes_all,p_tabac_3_classes_subtype, ncol = 2,
+                                   nrow=1,align="hv",
+                                   labels = "AUTO",
+                                   rel_widths =  c(2.4,6))
+p_tabac_all_subtype  <- plot_grid(pintermediaire, pleg, 
+                                  rel_heights =  c(20,1),
+                                  nrow = 2) +		  theme(plot.margin = unit(c(0,0, +0.5, 0), "cm"))    
+save_plot(p_tabac_all_subtype,file="doc/Figure2_pCR_rates_by_tobacco_status.pdf",base_height=4.5,base_width=7.5)
+```
+
+```{r Figure2, fig.height=4,fig.width=7.5, include=TRUE}
+p_tabac_all_subtype
+```
+
+```{r Table 2 post-NAC characteristics, include=FALSE}
+	  var_selected       <- c("RCH5.f","ggenv.c.f",
+	                          "RCB_class","embols_sein","perc_stromal_lymphocyte2","perc_TIL2")
+		names_var_selected <- c("pCR status","Post-NAC Nodal involvment",
+		                        "RCB class","Post-NAC LVI","Post-NAC str TILs","Post-NAC IT TILS")
+		matching_name_file    <- data.frame(variable = var_selected, 
+                                        name_variable = names_var_selected)
+		mydataset             <- neo_tabac
+		
+		Table1                <- CreateTableOne(var_selected , "tabac_3_classes",mydataset )
+    table1_preformat      <- print(Table1, quote=TRUE, noSpaces=TRUE,showAllLevels = TRUE,
+                               nonnormal = c("perc_stromal_lymphocyte2","perc_TIL2") )
+    source('~/RT2Lab/R/R functions/format_tableone_v2.R', chdir = TRUE)
+    Table2_by_tabac_WP             <- Table1_format
+
+		# luminal
+    mydataset             <- neo_tabac[neo_tabac$subtype.f=="luminal",]
+		Table1           <- CreateTableOne( var_selected, "tabac_3_classes", mydataset)
+		table1_preformat <- print(Table1, quote=TRUE, noSpaces=TRUE,showAllLevels = TRUE,
+		                           nonnormal = c("perc_stromal_lymphocyte2","perc_TIL2") )
+    source('~/RT2Lab/R/R functions/format_tableone_v2.R', chdir = TRUE)
+    Table2_by_tabac_lum             <- Table1_format
+		
+		# TNBC
+    mydataset             <- neo_tabac[neo_tabac$subtype.f=="TNBC",]
+		Table1            <- CreateTableOne( var_selected, "tabac_3_classes", mydataset)
+		table1_preformat  <- print(Table1, quote=TRUE, noSpaces=TRUE,showAllLevels = TRUE,
+		                           nonnormal = c("perc_stromal_lymphocyte2","perc_TIL2") )
+    source('~/RT2Lab/R/R functions/format_tableone_v2.R', chdir = TRUE)
+    Table2_by_tabac_TNBC             <- Table1_format
+    
+		# HER2
+    mydataset             <- neo_tabac[neo_tabac$subtype.f=="HER2",]
+		Table1            <- CreateTableOne( var_selected, "tabac_3_classes", mydataset)
+		table1_preformat  <- print(Table1, quote=TRUE, noSpaces=TRUE,showAllLevels = TRUE,
+		                           nonnormal = c("perc_stromal_lymphocyte2","perc_TIL2") )
+    source('~/RT2Lab/R/R functions/format_tableone_v2.R', chdir = TRUE)
+    Table2_by_tabac_HER2             <- Table1_format
+```
+
+```{r Table2}
+# Compil both tables 
+Table2_WP_and_by_tabac <- full_join(Table2_by_tabac_WP,Table2_by_tabac_lum,by = c("names_variable_clean","level")) %>%
+                          full_join(.,Table2_by_tabac_TNBC,by = c("names_variable_clean","level")) %>%
+                          full_join(.,Table2_by_tabac_HER2,by = c("names_variable_clean","level"))
+
+ colnames(Table2_WP_and_by_tabac) <-  colnames(Table2_WP_and_by_tabac)  %>%
+       gsub (".y.y"," (HER2)",.) %>% gsub (".x.x"," (TNBC)",.) %>%
+       gsub (".y"," (luminal)",.) %>% gsub (".x"," (All)",.)
+```
+
+```{r, include=TRUE}
+knitr::kable(Table2_WP_and_by_tabac) %>%  kable_styling(bootstrap_options = "striped", full_width = F) %>%
+                      footnote(general = c(vector_missing_data,MyGenericFootnote))
+write.csv2(Table2_WP_and_by_tabac, file="results/Table2_WP_and_by_tabac.csv")
+```
+
+Similarly, no difference was seen regarding response to treatment when using the RCB index (Supplemental Figure 2).
+
+```{r SuppFigure2 Plot RCB}
+# https://www.datanovia.com/en/blog/ggplot-colors-best-tricks-you-will-love/
+cbp1 <- c("#999999", "#E69F00", "#56B4E9", "#009E73",
+          "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+library(viridis)
+library(RColorBrewer)
+library(ggsci)
+
+# Prepare matrix
+neo_tabac_no_NA <- neo_tabac %>% filter(!is.na(RCB_class)) 
+
+# All
+  						Dat.label <-  neo_tabac_no_NA %>%
+  						  group_by( all, tabac_3_classes,RCB_class ) %>%
+  						  dplyr::summarise(count=n()) %>%
+  						  mutate(ypos = cumsum(count) - 0.5*count) %>%
+  						  mutate(percent_full = count/sum(count)*100) %>%
+  						  mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>%
+  						  mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+  						  ungroup() 
+  						head(Dat.label)
+
+p_RCB_tabac_all <- ggplot(Dat.label, aes(tabac_3_classes, y=percent_full*100, 
+                                  fill=RCB_class )) +
+                theme_bw()+
+          		  geom_bar(stat="identity",  width=0.8) + guides(colour=FALSE)+
+                theme(  axis.ticks.x = element_blank() ,
+                        axis.ticks.y = element_blank() ,axis.text.y = element_blank(),
+                        legend.position = "none")   +
+                guides(fill=guide_legend(title="RCB class")) +      
+                scale_fill_brewer(palette = "YlOrRd")+
+                facet_grid(~ all) +
+                labs(
+                      x = "", 
+                      y = "%  cases") 
+p_RCB_tabac_all
+
+# Subtypes
+  						Dat.label <-  neo_tabac_no_NA %>%
+  						  group_by( subtype.f, tabac_3_classes,RCB_class ) %>%
+  						  dplyr::summarise(count=n()) %>%
+  						  mutate(ypos = cumsum(count) - 0.5*count) %>%
+  						  mutate(percent_full = count/sum(count)*100) %>%
+  						  mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>%
+  						  mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+  						  ungroup() 
+  						head(Dat.label)
+
+p_RCB_tabac_subtype <- ggplot(Dat.label, aes(tabac_3_classes, y=percent_full*100, 
+                                  fill=RCB_class )) +
+                theme_bw()+
+          		  geom_bar(stat="identity",  width=0.8) + guides(colour=FALSE)+
+                theme(  axis.ticks.x = element_blank() ,
+                        axis.ticks.y = element_blank() ,axis.text.y = element_blank(),
+                        legend.position = "top")   +
+                guides(fill=guide_legend(title="RCB class")) +      
+                scale_fill_brewer(palette = "YlOrRd")+
+                facet_grid(~ subtype.f) +
+                labs(title = "RCB class by smoking status at BC diagnosis",
+                     # subtitle = " ",
+                      x = "", 
+                      y = "%  cases") 
+p_RCB_tabac_subtype
+
+# compil
+pleg                      <- get_legend(p_RCB_tabac_subtype)
+p_RCB_tabac_subtype       <- p_RCB_tabac_subtype + theme(legend.position="none")
+
+pintermediaire   <- plot_grid(p_RCB_tabac_all,p_RCB_tabac_subtype, ncol = 2,
+                                   nrow=1,align="hv",
+                                   labels = "AUTO",
+                                   rel_widths =  c(2.4,6))
+p_tabac_RCB_all_subtype  <- plot_grid(pintermediaire, pleg, 
+                                  rel_heights =  c(20,1),
+                                  nrow = 2) +		  theme(plot.margin = unit(c(0,0, +0.5, 0), "cm"))    
+save_plot(p_tabac_RCB_all_subtype,file="doc/SuppFigure2_RCB_by_tobacco_status.pdf",base_height=4.5,base_width=7.5)
+```
+
+```{r SuppFigure2, fig.height=4.5,fig.width=7, include=TRUE}
+p_tabac_RCB_all_subtype
+```
+
+```{r post-NAC TILs}
+with_postNAC_TILS    <- neo_tabac %>% filter(!is.na(perc_stromal_lymphocyte2)) %>% nrow() # 632
+with_postNAC_ITTILS  <- neo_tabac %>% filter(!is.na(perc_TIL2)) %>% nrow() # 429
+```
+
+Post-NAC str and IT TILS were available for `r 	with_postNAC_TILS` and `r 	with_postNAC_ITTILS` patients respectively .
+
+```{r Figure3 Box plot post-NAC str TILs ,fig.width=8, fig.height=5}
+# Prepare matrix
+neo_tabac_no_NA <- neo_tabac %>% filter(!is.na(perc_stromal_lymphocyte2)) 
+
+# str TILs
+# WP
+p_str_TILs2 	<-	ggplot(neo_tabac_no_NA, aes(x= tabac_3_classes , y=perc_stromal_lymphocyte2 , fill=tabac_3_classes)) +
+        geom_boxplot(aes(x= tabac_3_classes , y=perc_stromal_lymphocyte2 , fill=tabac_3_classes),outlier.shape=NA)	+
+    theme_bw()+
+    theme(axis.ticks.x = element_blank() , legend.position="none",
+          plot.title = element_text(face="plain"))+
+            facet_grid(~all)+
+      xlab("")+ylab("Post-NAC str TIL levels (%)")  +
+    stat_compare_means( label = "p.format",label.x.npc="center")
+p_str_TILs2
+
+# Facet by subtype 
+p_str_TILs_subtype2 	<-	ggplot(neo_tabac_no_NA,aes(x= tabac_3_classes , y=perc_stromal_lymphocyte2 , fill=tabac_3_classes)) +
+      geom_boxplot(aes(x= tabac_3_classes , y=perc_stromal_lymphocyte2 , fill=tabac_3_classes),outlier.shape=NA)	+
+      theme_bw()+
+    theme(axis.ticks.x = element_blank() , legend.position="none",
+          plot.title = element_text(face="plain"))+
+          facet_grid(~subtype.f)+
+      labs(title = "Post-NAC str TILs levels by smoking status at BC diagnosis",
+          subtitle = paste0("Population with post-NAC str TILs available (n=",with_postNAC_TILS,")"),
+         # subtitle = "Population with str TILs levels available (n=632)",
+          x = "", 
+          y = "post-NAC str TIL levels (%)")  +
+      stat_compare_means( label = "p.format",label.x.npc="center")
+p_str_TILs_subtype2
+
+# IT TILS
+## WP
+p_IT_TILs2 	<-	ggplot(neo_tabac_no_NA, aes(x= tabac_3_classes , y=perc_TIL2 , fill=tabac_3_classes)) +
+        geom_boxplot(aes(x= tabac_3_classes , y=perc_TIL2 , fill=tabac_3_classes),outlier.shape=NA)	+
+    theme_bw()+
+    theme(axis.ticks.x = element_blank() , legend.position="none",
+          plot.title = element_text(face="plain"))+
+            facet_grid(~all)+
+      xlab("")+ylab("Post-NAC IT TIL levels (%)")  +
+    stat_compare_means( label = "p.format",label.x.npc="center")
+p_IT_TILs2
+
+# Facet by subtype 
+
+p_IT_TILs_subtype2 	<-	ggplot(neo_tabac_no_NA,aes(x= tabac_3_classes , y=perc_TIL2 , fill=tabac_3_classes)) +
+      geom_boxplot(aes(x= tabac_3_classes , y=perc_TIL2 , fill=tabac_3_classes),outlier.shape=NA)	+
+      theme_bw()+
+    theme(axis.ticks.x = element_blank() , legend.position="none",
+          plot.title = element_text(face="plain"))+
+          facet_grid(~subtype.f)+
+      labs(title = "Post-NAC IT TILs levels by smoking status at BC diagnosis",
+         subtitle = paste0("Population with IT TILs available (n=",with_postNAC_ITTILS,")"),
+          x = "", 
+          y = "Post-NAC IT TIL levels (%)")  +
+      stat_compare_means( label = "p.format",label.x.npc="center")
+p_IT_TILs_subtype2
+```
+
+Post-NAC stromal immune infiltration was not significantly different between current, ever and never smokers in whole population (Median : 10%, 7% and 10% respectively, p = 0.108). Similar results were found for post-NAC intratumoral immune infiltration (5%, 5% and 5% respectively, p = 0.254). The results were unaffected after stratification by pathological BC subtype (Figure3). 
+
+```{r Figure3, include = TRUE, fig.height= 6.5, fig.width=9}
+compil_post_NAC_TILs_IT_str2 <- plot_grid(p_str_TILs2, p_str_TILs_subtype2,
+                                        p_IT_TILs2, p_IT_TILs_subtype2,
+                                        rel_widths = c(1.3,3,1.3,3),
+                                         ncol = 2, nrow = 2, labels= c("AUTO"),
+                                        align="hv")
+compil_post_NAC_TILs_IT_str2
+save_plot("doc/Figure3_compil_post_NAC_IT_str_TILs2.pdf",compil_post_NAC_TILs_IT_str2, base_height=6, base_width=8)
+```
+
+# Survival analyses
+
+```{r calcul suivi median}
+								del    			 <- c("delay_RFS2.m")
+								ev     			 <- c("status_RFS")
+				 				suivi 		   <- survfit( Surv(delay_RFS2.m, 1-status_RFS)~1, data=neo_tabac)
+	# tu obtiens le range pour l' evt = 0 et celui pour l'evt=1, comme tu t'intéresses au suivi, donc aux gens qui n'ont pas eu l'évt, tu prends les valeurs du range pour evt=0
+							range_suivi <-		tapply(neo_tabac$delay_RFS2.m, neo_tabac$status_RFS, range)
+							suivi_med    <- unname(round(summary(suivi)$table["median"],1))
+				 			survie 		   <- survfit( Surv(delay_RFS2.m, status_RFS)~1, data=neo_tabac)
+```
+
+With a median follow-up of `r suivi_med ` months, (range[  `r paste0(round (range_suivi[[1]],1),collapse="-") `months]),  `r length(which(neo_tabac$status_RFS==1))`  patients experienced relapse, and `r length(which(neo_tabac$vital_status==1))` deceased. Tobacco smoking was not significantly associated with RFS, neither in the whole population, nor after stratification by BC subtype (Figure 4). 
+
+```{r summary survie}
+      # Extract survival
+      # tobacco
+  			survie_status_RFS 		        <- survfit(Surv(delay_RFS2.m,status_RFS)~ tabac_3_classes, data=neo_tabac)
+				summary_survie_status_RFS 		<- summary(survie_status_RFS,time=c(36,60,96)) 
+				summary_survie_status_RFS_60 <- summary(survie_status_RFS,time=c(60)) 
+				summary_survie_status_RFS_96 <- summary(survie_status_RFS,time=c(96)) 
+```
+
+```{r, include=FALSE}
+# Survival rates were as follows: 
+summary_survie_status_RFS
+```
+
+```{r Survival curves status_RFS , fig.width=9,fig.height=12,autodep=FALSE,include=FALSE}
+					list_g <- list()
+
+					for (m in 1 : length(subtype_list	)  ) {
+					  # m=1
+					  print(m)
+					  subtype							<- subtype_list[[m]]										# samples names_ of subtype ex: MB-0046
+					  subtype_name				<- names(subtype_list[m])
+					  del    			        <- c("delay_RFS2.m")
+					  ev     			        <- c("status_RFS")
+					  dataf  			        <- neo_tabac[neo_tabac$numdos7 %in% subtype,]
+					  quali 			        <-  "tabac_3_classes"
+					  nomquali 		        <- "Tobacco status"
+					  soustitre		        <- paste0("  (",subtype_name, ", n=",nrow(dataf) ,")" )
+					  # titre_var_surv2    <- paste0(subtype_name, ", n=",nrow(dataf) )
+					  titre_var_surv2    <- subtype_name
+					  color_plot_ASHP     <- "couleur"
+					  loc_legend          <-  c(0.25, 0.18)
+					  x_lim               <- c(0,145)
+					  pval_coord          <- c(60,0.15)
+					  pval_size           <- 4
+					  breaks_ASHP         <- 25
+					  plot_median_dfs    <- c("none")
+					  source('~/RT2Lab/R/R functions/KM_survival_survminer_legend_down_no_name_ggplot.R')
+					  print("coucou")
+
+					  if(m %in% c(1,2) ) {
+					    p$plot <- p$plot + ylab("Relapse-free survival ")
+					  }
+
+					  if(! m %in% c(1,2) ) {
+					    p$plot <- p$plot + ylab(" ")
+					  }
+
+					# p_plot_grid <- cowplot::plot_grid(p$plot, p$table, ncol=1, rel_heights = c(0.8, 0.2), align ="hv")
+					# list_g[[m]] <- p_plot_grid
+					  list_g[[m]] <- p
+					}
+					assign(paste0("list_g","_","status_RFS_tabac"),list_g )
+					save(list_g_status_RFS_tabac, file="data/processed/list_g_status_RFS_tabac.RData")
+					
+					res <-  arrange_ggsurvplots(list_g, print = TRUE,
+					                            labels = "AUTO",
+					                            ncol = 2, nrow = 2)
+				pdf("doc/Figure4_status_RFS_tabac_4plots.pdf",height=12.5,width=10.5)
+				print(res)
+				dev.off()
+```
+
+```{r Survivalcurves status_RFS, fig.width=9,fig.height=12,autodep=FALSE,include=TRUE}
+				res
+```
+
+
+Similar results were observed for overall survival, where tobacco smoking at diagnosis had no impact at all on mortality in the whole population. After stratification on BC subtype, patients with luminal BC who were current smokers had a worse overall survival when compared with ever or never smokers (Pinteraction smoking status /BC subtype =0.11), but this association was no longer significant after multivariate analysis (Supplemental Table 1). 
+
+```{r Survival curves status_OS , fig.width=9,fig.height=12,autodep=FALSE,include=FALSE}
+					list_g <- list()
+
+					for (m in 1 : length(subtype_list	)  ) {
+					  # m=1
+					  print(m)
+					  subtype							<- subtype_list[[m]]										# samples names_ of subtype ex: MB-0046
+					  subtype_name				<- names(subtype_list[m])
+					  del    			 <-c("delay_os2.m")
+						ev     			 <-c("vital_status")
+					  dataf  			        <- neo_tabac[neo_tabac$numdos7 %in% subtype,]
+					  quali 			        <-  "tabac_3_classes"
+					  nomquali 		        <- "Tobacco status"
+					  soustitre		        <- paste0("  (",subtype_name, ", n=",nrow(dataf) ,")" )
+					  # titre_var_surv2    <- paste0(subtype_name, ", n=",nrow(dataf) )
+					  titre_var_surv2    <- subtype_name
+					  color_plot_ASHP     <- "couleur"
+					  loc_legend          <-  c(0.25, 0.18)
+					  x_lim               <- c(0,145)
+					  pval_coord          <- c(60,0.15)
+					  pval_size           <- 4
+					  breaks_ASHP         <- 25
+					  plot_median_dfs    <- c("none")
+					  source('~/RT2Lab/R/R functions/KM_survival_survminer_legend_down_no_name_ggplot.R')
+					  print("coucou")
+
+					  if(m %in% c(1,2) ) {
+					    p$plot <- p$plot + ylab("Overall survival ")
+					  }
+
+					  if(! m %in% c(1,2) ) {
+					    p$plot <- p$plot + ylab(" ")
+					  }
+
+					# p_plot_grid <- cowplot::plot_grid(p$plot, p$table, ncol=1, rel_heights = c(0.8, 0.2), align ="hv")
+					# list_g[[m]] <- p_plot_grid
+					  list_g[[m]] <- p
+					}
+					assign(paste0("list_g","_","status_OS_tabac"),list_g )
+					save(list_g_status_OS_tabac, file="data/processed/list_g_status_OS_tabac.RData")
+
+					res <-  arrange_ggsurvplots(list_g, print = TRUE,
+					                            labels = "AUTO",
+					                            ncol = 2, nrow = 2)
+				pdf("doc/Figure5_status_OS_tabac_4plots.pdf",height=12.5,width=10.5)
+				# pdf("results/status_OS_tabac_4plots.pdf",height=12.5,width=10.5)
+				print(res)
+				dev.off()
+```
+
+```{r Survivalcurves status_OS , fig.width=9,fig.height=12,autodep=FALSE,include=TRUE}
+				res
+```
+
+```{r interaction test on survival}
+cox1 <- coxph(Surv(delay_os2.m,vital_status)~ tabac_3_classes + subtype.f		, data=neo_tabac, method="breslow")
+summary(cox1)	
+cox2 <- coxph(Surv(delay_os2.m,vital_status)~ tabac_3_classes + subtype.f +
+                tabac_3_classes * subtype.f,data=neo_tabac, method="breslow"); summary(cox2)	
+anova(cox1,cox2) # p=0.1128
+```
+
+```{r Univariate and multivariate OS,include=FALSE}
+		del    			 <-c("delay_os2.m")
+		ev     			 <-c("vital_status")
+		population								                <- neo_tabac
+		list_variable_univariate_etader			      <- list()
+		list_vector_variable_univariate_etader		<- list()
+		
+		        var_selected		<-  c("age",	"menop.f","bmi","bmi.c2.f",
+                                      "tclin","tuicc2.f", "N.f",
+                                      "Index_mitotique","grade.c.f","ki67.c.f",
+                                      "typana_medul",
+                											"subtype.f","roec.f","proc.f","her2.f",
+                											"perc_stromal_lymphocytes","perc_TIL",
+                											"typneo.f","tabac_3_classes","RCH5.f",
+                											"embols_sein","perc_stromal_lymphocyte2","perc_TIL2")
+        names_var_selected	<-  c("Age",	"Menopausal status","BMI (continuous)","BMI class", 
+                                        "Tumor size (mm)","Clinical tumor stage","Clinical nodal status",
+                                        "Mitotic index","Tumor Grade","ki67",
+        													      "Histology",
+              													"BC subtype","ER status","PR status","HER2 status",
+        													      "Pre-NAC str TILs","Pre-NAC  IT TILs",
+              													"NAC regimen","tobacco","pathological complete response",
+        													      "Post-NAC LVI","Post-NAC str TILs","Post-NAC IT TILS")
+		
+		variables_to_test 		      <- var_selected 
+		names_variables_to_test 		<- names_var_selected
+
+for (m in 1 : length(subtype_list	)  ) {
+										# m=2
+										subtype							  <- subtype_list[[m]]								
+										subtype_name					<- names(subtype_list[m])
+										print(subtype_name)				# her2
+										# print(subtype_name)
+										tmp_path					 	  <- path[m]
+										tmp_file_end					<- file_end[m]
+					          dataf  			        <- neo_tabac[neo_tabac$numdos7 %in% subtype,]
+									quali 			<-  variables_to_test
+									nomquali 		<- names_variables_to_test
+						# if(m==4){
+						# 				quali			<- c(quali,"trastu.f")
+						# 				nomquali 		<- c(nomquali,"trastuzumab")
+						# 			}
+
+ 												soustitre		<- subtype_name
+												titre_var_surv  <- "OS"
+getwd()
+	source('~/RT2Lab/R/R functions/cox_univariate_adapted_loop_CL_v10.r')
+	write.csv2(tabf,file=paste0("results/OS_univariate_analysis_tabac_",tmp_file_end,".csv"))
+	save(variables_to_keep_in_the_multivariate_analysis, file=	paste0("data/processed/variables_to_keep_in_the_multivariate_analysis_etader_tabac_",tmp_file_end,".RData")	)
+	save(vector_variables_to_keep_in_the_multivariate_analysis, file=	paste0("data/processed/vector_variables_to_keep_in_the_multivariate_analysis_etader_tabac_",tmp_file_end,".RData")	)
+	list_variable_univariate_etader[[m]]			<- variables_to_keep_in_the_multivariate_analysis
+	list_vector_variable_univariate_etader[[m]]		<- vector_variables_to_keep_in_the_multivariate_analysis
+										}
+
+names(list_variable_univariate_etader)				<- names(subtype_list)
+names(list_vector_variable_univariate_etader)		<- names(subtype_list)
+# $`whole population`
+#  [1] "bmi"                      "tclin"                    "tuicc2.f"                 "N.f"                     
+#  [5] "subtype.f"                "roec.f"                   "proc.f"                   "her2.f"                  
+#  [9] "perc_stromal_lymphocytes" "perc_TIL"                 "RCH5.f"                  
+# 
+# $Luminal
+# [1] "menop.f"         "bmi"             "tclin"           "N.f"             "Index_mitotique" "perc_TIL"        "tabac_3_classes"
+# 
+# $TNBC
+# [1] "age"                      "bmi"                      "tclin"                    "tuicc2.f"                
+# [5] "Index_mitotique"          "perc_stromal_lymphocytes" "perc_TIL"                 "RCH5.f"                  
+# 
+# $HER2
+# [1] "bmi"             "tclin"           "tuicc2.f"        "Index_mitotique" "ki67.c.f"        "tabac_3_classes" "RCH5.f"         
+# 
+```
+
+```{r multivariate OS, echo=FALSE}
+
+for (m in 1 : length(subtype_list	)  ) {
+										# m=2
+        						subtype							<- subtype_list[[m]]									
+										subtype_name					<- names(subtype_list[m])
+										# print(subtype_name)				# her2
+										 print(subtype_name)
+										tmp_path						<- path[m]
+										tmp_file_end					<- file_end[m]
+# 
+					         dataf  			        <- neo_tabac[neo_tabac$numdos7 %in% subtype,]
+									quali 			<-  variables_to_test
+									nomquali 		<- names_variables_to_test
+load(file=	paste0("data/processed/variables_to_keep_in_the_multivariate_analysis_etader_tabac_",tmp_file_end,".RData")	)
+load(file=	paste0("data/processed/vector_variables_to_keep_in_the_multivariate_analysis_etader_tabac_",tmp_file_end,".RData")	)
+
+# tmp_var			<- variables_to_keep_in_the_multivariate_analysis
+# [1] "menop.f"         "bmi"             "tclin"           "N.f"             "Index_mitotique" "perc_TIL"        "tabac_3_classes"
+
+tmp_var			<- setdiff(variables_to_keep_in_the_multivariate_analysis,c("Index_mitotique",
+                                                                      "perc_TIL"))
+# 												# Remove ki 67 and  because too missing data
+												# gg and RCH because redundant with RCB
+missing_data  <- sapply(dataf[,c(tmp_var,c("delay_os2.m","vital_status"))][,], function(x) sum(is.na(x)))
+missing_data  <- missing_data[missing_data!=0] %>% as.data.frame()
+print(missing_data)
+
+combined_mat2 <- na.omit(dataf[,c(tmp_var,c("delay_os2.m","vital_status"))])
+												print(dim(dataf))
+												print(dim(combined_mat2))
+
+cox_final <- cox.step.RdV(combined_mat2, delai = "delay_os2.m", etat =  "vital_status", 
+                          cov=tmp_var, force = NULL, dans = NULL)
+												# Writing multivariate in the loop
+												# cox_final$modele.fin
+}
+# Etape 1 : la variable N.f entre dans le modèle
+# Etape 2 : aucune variable n'entre dans le mod?le ni ne sort du mod?le
+# > cox_final
+# 404 sujets utilis?s avec 79 ?v?nements
+# 
+# Aucune cov forc?e
+# Aucune cov d?j? dans le mod?le
+# Cov test?es : menop.f, bmi, tclin, N.f, tabac_3_classes 
+# 
+# -----------------------------------------------------------------------
+# Mod?le final
+# 	Il y a eu 11 mod?le(s) test?(s)
+# 
+#                  coef exp(coef)  se(coef)       z          p    p2 type
+# N.fN1-N2-N3 0.4595112    1.5833 0.2367955 1.94054 0.05231407 0.052  (T)
+
+
+# 						if(m==1){
+# tmp_var		<- c("RCB_class","subtype.f","embols_sein_imputed","tuicc2.f")
+# cox 			<- coxph(Surv(delay_os2.m, vital_status)~1+RCB_class+subtype.f+embols_sein_imputed+tuicc2.f, data=combined_mat2, method="breslow")
+# 						}
+					  
+						# if(m==2){
+						# tmp_var			<- c( "menop.f"  )
+						# cox 			<- coxph(Surv(delay_os2.m, vital_status)~1+menop.f, data=combined_mat2, method="breslow")
+						# }
+					  
+# 						if(m==3){
+# # combined_mat2$tuicc2.f  <- relevel (combined_mat2$tuicc2.f, ref="T2")
+# 
+# 										tmp_var			<- c("RCB_class","tuicc2.f","embols_sein_imputed")
+# 										cox 			<- coxph(Surv(delay_os2.m, vital_status)~1+
+# 								RCB_class+embols_sein_imputed+tuicc2.f, data=combined_mat2, method="breslow")
+# 										source('~/RT2Lab/R/R functions/Cox_table_loop_multivariate_corrected_ASHP_5.r', chdir = TRUE)
+# 										# coef T3 versus T2 : 0.006067
+# 										
+# 									}
+# 
+# 						if(m==4){
+#         		tmp_var			<- c("embols_sein_imputed","bmi.c.f")
+#         		cox 			<- coxph(Surv(delay_os2.m, vital_status)~1+embols_sein_imputed+bmi.c.f, data=combined_mat2, method="breslow")
+#         						}
+# 			source('~/RT2Lab/R/R functions/Cox_table_loop_multivariate_corrected_ASHP_5.r', chdir = TRUE)
+# 			write.csv2(tmp_tab,file=paste0("results/",tmp_path,"/multivariate_OS_RCB_",tmp_file_end,".csv"))
+# }
+
+# [1] "whole population"
+#                            .
+# tclin                      1
+# tuicc2.f                   1
+# N.f                        1
+# proc.f                    23
+# perc_stromal_lymphocytes 324
+# [1] 956 974
+# [1] 607  11
+# Etape 1 : la variable subtype.f entre dans le modèle
+# Etape 2 : la variable tclin entre dans le modèle
+# Etape 3 : la variable perc_stromal_lymphocytes entre dans le modèle
+# Etape 4 : aucune variable n'entre dans le mod?le ni ne sort du mod?le
+# [1] "Luminal"
+#         .
+# menop.f 4
+# tclin   1
+# N.f     1
+# [1] 410 974
+# [1] 404   7
+# Etape 1 : la variable N.f entre dans le modèle
+# Etape 2 : aucune variable n'entre dans le mod?le ni ne sort du mod?le
+# [1] "TNBC"
+#                           .
+# perc_stromal_lymphocytes 45
+# [1] 305 974
+# [1] 260   7
+# Etape 1 : la variable perc_stromal_lymphocytes entre dans le modèle
+# Etape 2 : aucune variable n'entre dans le mod?le ni ne sort du mod?le
+# [1] "HER2"
+#            .
+# tuicc2.f   1
+# ki67.c.f 151
+# [1] 241 974
+# [1] 89  7
+# Etape 1 : aucune variable n'entre dans le mod?le ni ne sort du mod?le
+
+```
+
+```{r}
+cox1 <- coxph(Surv(delay_os2.m,vital_status)~ age , data=neo_tabac, method="breslow")
+summary(cox1)
+
+cox1 <- coxph(Surv(delay_os2.m,vital_status)~ perc_stromal_lymphocytes , data=neo_tabac, method="breslow")
+summary(cox1)
+
+cox1 <- coxph(Surv(delay_os2.m,vital_status)~ perc_TIL , data=neo_tabac, method="breslow")
+summary(cox1)
+
+cox1 <- coxph(Surv(delay_os2.m,vital_status)~ perc_stromal_lymphocyte2 , data=neo_tabac, method="breslow")
+summary(cox1)
+
+```
+
