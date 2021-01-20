@@ -9,7 +9,7 @@ data_dir = 'data/'
 
 ## tÃ©lÃ©chargement de la base de donnÃ©es 
 
-data = read.csv2("C:/Users/Julie/Documents/GitHub/oncofertilite_Julie/Institut Curie/07_oncofertilite_consore_preprocessed_labels.csv")
+data = X07_oncofertilite_consore_preprocessed_labels
 
 summary(data)
 
@@ -102,13 +102,13 @@ round(prop.table(table(data$pf_discussion,data$age_cl_10_1))*100,1)
 #Yes     5.3     24.7      3.0
 
 mosaicplot(age_cl_10_1 ~ pf_discussion, data = data, shade = TRUE, main = "Age Vs Fp discussion", xlab= "Age Categories", ylab= "Having the discussion")
-# lecture de ce graphique : chaque rectangle représente une case du tableau. sa largeur correspond aux 
+# lecture de ce graphique : chaque rectangle repr?sente une case du tableau. sa largeur correspond aux 
 # pourcentages en colonnes (il y a peu de femmes patientes entre 0-30 ans et beaucoup de femmes entre 30-40 ans)
-# la hauteur d'une case représente le pourcentage en ligne  : Plus de la  majorité femmes patientes entre 0-30 ans ont eu une disscussion
-# sur les procédures de fertilité . On voit que ce n'est clairement pas le cas des femmes patientes netre 40-50 ans. 
-# Interprétation des couleurs : cela correspond au résidu du test du Chi 2: les cases en rouge sont sous-représentées
-# Les cases en bleues sont sur-représentée. Donc les femmes entre 40-50 ans qui ont la discussion sont sous-représentées. 
-# Les femmes entre 0-30 ans qui n'ont pas la discussion sont sous-représentée aussi. 
+# la hauteur d'une case repr?sente le pourcentage en ligne  : Plus de la  majorit? femmes patientes entre 0-30 ans ont eu une disscussion
+# sur les proc?dures de fertilit? . On voit que ce n'est clairement pas le cas des femmes patientes netre 40-50 ans. 
+# Interpr?tation des couleurs : cela correspond au r?sidu du test du Chi 2: les cases en rouge sont sous-repr?sent?es
+# Les cases en bleues sont sur-repr?sent?e. Donc les femmes entre 40-50 ans qui ont la discussion sont sous-repr?sent?es. 
+# Les femmes entre 0-30 ans qui n'ont pas la discussion sont sous-repr?sent?e aussi. 
 
 # customisation de nos barplot 
 library(RColorBrewer)
@@ -152,7 +152,7 @@ table
 #Yes 17.0  7.3         8.6
 
 # Make a stacked barplot--> it will be in %!
-barplot(table, col=coul , border="white", main = "Discussion sur la fertilité en fonction du nombre d'enfant", xlab="Nombre d'enfant avant le diagnostique de BC", 
+barplot(table, col=coul , border="white", main = "Discussion sur la fertilit? en fonction du nombre d'enfant", xlab="Nombre d'enfant avant le diagnostique de BC", 
         ylab="% patientes ayant eu la discussion",legend.text = TRUE, 
         args.legend = list(x = "topright", bty = "n"))
 
@@ -183,7 +183,7 @@ table1
 #Yes  1.7  2.3  3.8  5.1  8.0  7.1  5.0
 
 # Make a stacked barplot--> it will be in %!
-barplot(table1, col=coul , border="white", main = "Discussion sur la fertilité en fonction du nombre d'enfant", xlab="année de diagnostique de BC", 
+barplot(table1, col=coul , border="white", main = "Discussion sur la fertilit? en fonction du nombre d'enfant", xlab="ann?e de diagnostique de BC", 
         ylab="% patientes ayant eu la discussion", legend.text = TRUE, 
         args.legend = list(x = "topright", bty = "n"))
 
@@ -203,7 +203,7 @@ tablefp
 #No  Yes 
 #80.7 19.3 
 
-#Nombre de femmes qui ont recours à ces procédures de fertilité
+#Nombre de femmes qui ont recours ? ces proc?dures de fertilit?
 
 tablefp1 <- table(data_v1$fertil_preserv)
 tablefp1
@@ -211,7 +211,7 @@ tablefp1
 #No  Yes 
 #1095  262 
 
-#Il y a très peu de femmes qui utilisent les procédures de fertilité. Seulement 262 femmes sur l'échantillon (soit environ 19%)
+#Il y a tr?s peu de femmes qui utilisent les proc?dures de fertilit?. Seulement 262 femmes sur l'?chantillon (soit environ 19%)
 
 ggplot(data_v1) +
   aes(x = fertil_preserv) +
@@ -238,7 +238,7 @@ mosaicplot(nb_child_3cl ~ fertil_preserv, data = data_v1, shade = TRUE, main = "
 
 tablereason <- round(prop.table(table(data_v1$reason_no_pf_2))*100,1)
 tablereason
-# % raisons pour lesquelles les femmes refusent ces procédures 
+# % raisons pour lesquelles les femmes refusent ces proc?dures 
 #Medical condition     Not discussed   Patient refusal 
 #       7.7              76.1              16.1 
 
@@ -256,7 +256,7 @@ ggplot(data_v1) +
   geom_text(stat='count', aes(label=..count..), vjust=-1, size=3)
 
 
-# On a vu qu'il y avait 1085 femmes qui refusent ces procédures. Néanmoins pour la majorité des cas, cette raison n'est pas partagée par le médecin. 
+# On a vu qu'il y avait 1085 femmes qui refusent ces proc?dures. N?anmoins pour la majorit? des cas, cette raison n'est pas partag?e par le m?decin. 
 
 
 #Medical condition     Not discussed   Patient refusal 
@@ -275,7 +275,7 @@ boxplot_reason_no_pf1 	<-ggplot(data_v1, aes(x= reason_no_pf_2 , y=nb_child , fi
 
 boxplot_reason_no_pf1 
 
-# en fonction de l'âge 
+# en fonction de l'?ge 
 
 boxplot_reason_no_pf2 	<-ggplot(data, aes(x= reason_no_pf_2 , y=age , fill=reason_no_pf_2)) +
   geom_boxplot(aes(x= reason_no_pf_2 , y=age , fill=reason_no_pf_2),outlier.shape=NA)	+
@@ -338,33 +338,33 @@ qplot(data = data_v1, y = growth, x = Year, geom = "line") +
 
 
 
-################################   Analyse descriptive des données biologiques   ################################
+################################   Analyse descriptive des donn?es biologiques   ################################
 
-# amh // cat d'âge
+# amh // cat d'?ge
 
 boxplot_amh_age 	<-ggplot(data_v1, aes(x= age_young_cl , y=amh , fill=age_young_cl)) +
   geom_boxplot(aes(x= age_young_cl , y=amh , fill=age_young_cl),outlier.shape=NA)	+
   theme_bw()+
   theme(axis.ticks.x = element_blank() , legend.position="none",
         plot.title = element_text(face="plain"))+
-  xlab("Tranche d'âge")+ylab("Amh de la patiente au diag")  
+  xlab("Tranche d'?ge")+ylab("Amh de la patiente au diag")  
 
 boxplot_amh_age
 
 
 
-#cfa // cat âge
+#cfa // cat ?ge
 
 boxplot_cfa_age 	<-ggplot(data_v1, aes(x= age_young_cl , y=cfa , fill=age_young_cl)) +
   geom_boxplot(aes(x= age_young_cl , y=cfa , fill=age_young_cl),outlier.shape=NA)	+
   theme_bw()+
   theme(axis.ticks.x = element_blank() , legend.position="none",
         plot.title = element_text(face="plain"))+
-  xlab("Tranche d'âge")+ylab("Cfa de la patiente au diag")  
+  xlab("Tranche d'?ge")+ylab("Cfa de la patiente au diag")  
 
 boxplot_cfa_age
 
-# Number of cfa selon l'âge . On différencie les femmes qui ont fait une procédure de preservation
+# Number of cfa selon l'?ge . On diff?rencie les femmes qui ont fait une proc?dure de preservation
 
 p <- ggplot(data = data, aes(y = cfa, x = age))+ geom_point() +
   facet_grid(. ~fertil_preserv)+ geom_smooth(method = "loess", se = FALSE, size = 1, color = "black") + aes(color = age < 30) +
@@ -373,7 +373,7 @@ p <- ggplot(data = data, aes(y = cfa, x = age))+ geom_point() +
 
 p
 
-#cfa en fonction de l'âge et histo 2 cl : en fonction de l'histology (aka type de cancer)
+#cfa en fonction de l'?ge et histo 2 cl : en fonction de l'histology (aka type de cancer)
 
 m <- ggplot(data = data, aes(y = cfa, x = age))+ geom_point() +
   facet_grid(. ~histo_2cl)+ geom_smooth(method = "loess", se = FALSE, size = 1, color = "black") + aes(color = age < 30) +
@@ -393,7 +393,7 @@ table(data_v1$neo_ct)
 # No  Yes 
 # 54.9 45.1 
 
-# Quasi 55% des femmes ne font pas de traitement néo-adjuvant ? ; vérifier l'interprétation. 
+# Quasi 55% des femmes ne font pas de traitement n?o-adjuvant ? ; v?rifier l'interpr?tation. 
 
 table <- round(prop.table(table(data_v1$primary_ttt))*100,1)
 table
@@ -409,7 +409,7 @@ table
 # No  Yes 
 # 0.1 99.9 
 
-# 1356 patientes ont eu recours à des breast surgeries. 1 personne n'y a pas eu recours. 
+# 1356 patientes ont eu recours ? des breast surgeries. 1 personne n'y a pas eu recours. 
 install.packages("ggplot2")
 library(ggplot2)
 
@@ -440,7 +440,7 @@ summary(data_v1$amh)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
 #   0.150   1.680   3.205   3.870   4.978  20.000    1149 
 
-# Le niveau d'hormone médian est de 3,2 avec une moyenne de 3,8. 
+# Le niveau d'hormone m?dian est de 3,2 avec une moyenne de 3,8. 
 
 
 
@@ -538,9 +538,9 @@ table
 # Alive  Dead 
 # 95.7   4.3
 
-# 96 % des patientes de l'étude sont encore en vie !! 
+# 96 % des patientes de l'?tude sont encore en vie !! 
 
-# quel type de chimio a été recue 
+# quel type de chimio a ?t? recue 
 table(data_v1$ct_setting_5cl)
 
 # Adjuvant Chemotherapy    without surgery                 NAC 
@@ -583,7 +583,7 @@ dot
 
 # nombre de ganglions chez la population de femmes 
 
-# PCR : le plus important. la réponse au traitement
+# PCR : le plus important. la r?ponse au traitement
 ggplot(data_v1) +
   aes(x = pcr) +
   geom_point(stat = "count") +
@@ -604,9 +604,9 @@ table(data_v1$pcr)
 # No Yes 
 # 380 230 
 
-# Difficile de tirer des conclusions à partir de cette variable. 
+# Difficile de tirer des conclusions ? partir de cette variable. 
 
-# on a énormément de NA sur cette question. c'est assez étrange étant donné l'importance de cette variable. 
+# on a ?norm?ment de NA sur cette question. c'est assez ?trange ?tant donn? l'importance de cette variable. 
 
 # nmbre de ganglions pnuic
 
@@ -624,7 +624,7 @@ table
 # [1-3]       [4-9]        0       10 and more 
 # 35.7         8.4        53.6         2.3 
 
-# en majorité, on a environ 54 % des patientes qui ont 0 ganglion attaqué.
+# en majorit?, on a environ 54 % des patientes qui ont 0 ganglion attaqu?.
 
 ###########################################################################################################################
 ##########################################################################################################################
@@ -660,7 +660,7 @@ table
 # 1333   24 
 
 
-### On a  24 femmes qui ont congelés des embryons. 0 NA. 1333 qui n'ont pas utilisé d'embryon. 
+### On a  24 femmes qui ont congel?s des embryons. 0 NA. 1333 qui n'ont pas utilis? d'embryon. 
 
 
 ################## Reuse frozen material
@@ -673,44 +673,44 @@ table(data_v1$reuse_frozen_material)
 # No Yes 
 # 225  23 
 
-# 23 femmes ont réutilisé le matériel congelé et 225 femmes ne l'ont pas réutilisé. Pour 11109 femmes on ne saait pas
+# 23 femmes ont r?utilis? le mat?riel congel? et 225 femmes ne l'ont pas r?utilis?. Pour 11109 femmes on ne saait pas
 
 
 sum(is.na(data_v1$reuse_frozen_oocytes))
 # On a 1334 NA
 
 table(data_v1$reuse_frozen_oocytes)
-# 19 femmes ont réutilisé les ovocytes et 4 ne l'ont pas réutilisé. On avait 222 femmes qui avaient congelés leurs ovocytes 
-# ca fait 8,56 % de femmes qui réutilisent les ovocytes (19/222). On a 199 femmes pour lesquelles on ne peut pas répondre
+# 19 femmes ont r?utilis? les ovocytes et 4 ne l'ont pas r?utilis?. On avait 222 femmes qui avaient congel?s leurs ovocytes 
+# ca fait 8,56 % de femmes qui r?utilisent les ovocytes (19/222). On a 199 femmes pour lesquelles on ne peut pas r?pondre
 
 
 table(data_v1$reuse_frozen_cortex)
-# Là je suis plus embêté : Une femme a réutilisé son cortex. 21 femmes n'ont pas réutilisé le cortex. On a 1135 na.
+# L? je suis plus emb?t? : Une femme a r?utilis? son cortex. 21 femmes n'ont pas r?utilis? le cortex. On a 1135 na.
 # je n'ai pas la variable_cortex
 sum(is.na(data_v1$reuse_frozen_cortex))
 
 
 table(data_v1$reuse_frozen_embryo)
-# 6 femmes ont réutilisé leurs embryos. 15 femmes ne l'ont pas fait. On avait 24 femmes qui ont congelé leurs embryons. 
+# 6 femmes ont r?utilis? leurs embryos. 15 femmes ne l'ont pas fait. On avait 24 femmes qui ont congel? leurs embryons. 
 # On a 3 valeurs manquantes. 
 
 table(data_v1$pregnancy_post_reuse_frozen_cortex)
-# Aucune femme n'a eu une grossesse du faait d'avoir réutilisé son frozen cortex. On a a priori 21 femmes qui ont réutilisé leur cortex. 
-# ca fait environ 5 % de sfemmes qui réutilisent leur cortex ont un bébé après avoir utilisé cette méthode. 
+# Aucune femme n'a eu une grossesse du faait d'avoir r?utilis? son frozen cortex. On a a priori 21 femmes qui ont r?utilis? leur cortex. 
+# ca fait environ 5 % de sfemmes qui r?utilisent leur cortex ont un b?b? apr?s avoir utilis? cette m?thode. 
 
 
 
 table(data_v1$pregnancy_post_reuse_frozen_embryo_nbr)
 
-# 1 seule femme a eu une grossesse suite à la réutilisation de ses embryons congelés. On avait 6 femmes qui ont réutilisés leurs embryons. 
-# 24 femmes ont fait le choix de congeler leur embryon. (1/6)*100 caa fait environ 17 % de femmes qui ont réutilisé leur embryon qui ont une grosssesse par la suite. 
+# 1 seule femme a eu une grossesse suite ? la r?utilisation de ses embryons congel?s. On avait 6 femmes qui ont r?utilis?s leurs embryons. 
+# 24 femmes ont fait le choix de congeler leur embryon. (1/6)*100 caa fait environ 17 % de femmes qui ont r?utilis? leur embryon qui ont une grosssesse par la suite. 
 
 
 
 
 table(data_v1$pregnancy_post_reuse_frozen_oocytes_nbr)
-# on a une grossesse qui survient après l'utilisation d'ovocytes congelés. 19 femmes ont réutilisés leurs ovocytes. 
-# On avait 222 femmes qui ont congélé leurs ovocytes. )
+# on a une grossesse qui survient apr?s l'utilisation d'ovocytes congel?s. 19 femmes ont r?utilis?s leurs ovocytes. 
+# On avait 222 femmes qui ont cong?l? leurs ovocytes. )
   
   
 table(data_v1$pregnancy_post_k)
@@ -721,14 +721,14 @@ table(data_v1$spontan_art_preg_1)
 # ART with frozen material reuse   ART wo frozen material reuse                   egg donation                    spontaneous 
 # 3                              2                              8                             76 
 
-# On a 76 grossesses spontanées parmi les grossesses après cancer. 
+# On a 76 grossesses spontan?es parmi les grossesses apr?s cancer. 
 table <- round(prop.table(table(data_v1$spontan_art_preg_1))*100,1)
 table
 
 # ART with frozen material reuse   ART wo frozen material reuse                   egg donation                    spontaneous 
 # 3.4                            2.2                            9.0                           85.4 
 
-# ca fait 85.4 % de grossesse spontanées parmi les grossesses post cancers et seulement 3,4% à partr de réutilisation d ematériel congelé. 
+# ca fait 85.4 % de grossesse spontan?es parmi les grossesses post cancers et seulement 3,4% ? partr de r?utilisation d emat?riel congel?. 
 
 
 ggplot(data_v1) +
@@ -747,7 +747,7 @@ table
 #                    3.7                            3.7                           18.5                           74.1 
 # 
 
-# sur les grosssesses menées à terme aprèss le cancer (sans miscarrage), on en a 74 % qui sont spontannées.
+# sur les grosssesses men?es ? terme apr?ss le cancer (sans miscarrage), on en a 74 % qui sont spontann?es.
 
 ggplot(data_v1) +
   aes(y = spontan_art_preg_2) +
@@ -782,7 +782,7 @@ ggplot(data_v1) +
 
 
 
-# parmi les grosssesses spontanées post-cancer, les résultats  sont que 83% de ces grosssesses sont menées à terme. 
+# parmi les grosssesses spontan?es post-cancer, les r?sultats  sont que 83% de ces grosssesses sont men?es ? terme. 
 
 ######################### juste pour s'amuser 
 
