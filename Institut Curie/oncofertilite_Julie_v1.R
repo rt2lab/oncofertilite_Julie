@@ -9,13 +9,12 @@ data_dir = 'data/'
 
 ## téléchargement de la base de données 
 
-data = X07_oncofertilite_consore_preprocessed_labels
 
-summary(data)
+data_v1 = read.csv2("/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/data_v1.csv")
 
-data_v1 = read.csv2("C:/Users/Julie/Documents/GitHub/oncofertilite_Julie/Institut Curie/data_v1.csv")
 
-summary(data)
+
+source(file.path("/Users/julieborghese/Documents/GitHub/databases/core/00_common/src/R_functions_Nadir/functions_RT2_Nadir.R"))
 
 
 #library 
@@ -29,9 +28,9 @@ library(ggplot2)
 
 # première description de la base de donnée 
 
-summary(data)
+summary(data_v1)
 
-str(data)
+str(data_v1)
 
 # on a 1357 observations et 274 variables 
 # on remarque dans un premier temps qu'il y a un nombre de Na très important
@@ -54,7 +53,7 @@ profiling_num(data_v1)
 
 # A priori on a 1357 observations donc 1357 patientes. 
 
-describe(data$age)
+describe(data_v1$age)
 # en moyenne, les femmes de l'échantillon ont 37,8 ans (38 ans); la médiane est à 38 ans. 
 # la plus jeune a un peu plus de 22 ans et la plus âgée a presque 44 ans. 
 
