@@ -53,11 +53,13 @@ res.mca <- MCA (data.active,ncp = 3, graph = FALSE)
 
 # projection des variables selon les axes de l'acm 
 
-#axe 1 et 2 
-plot(res.mca, axes = c(1, 2),choix = "ind", invisible = "ind")
-
 #axe 2 et 3 
 plot(res.mca, axes = c(2, 3),choix = "ind", invisible = "ind")
+
+
+############### à mettre dans le rendu 
+#axe 1 et 2 
+plot(res.mca, axes = c(1, 2),choix = "ind", invisible = "ind")
 
 # Axe 1 et 3
 plot(res.mca, axes = c(1, 3),choix = "ind", invisible = "ind")
@@ -65,6 +67,7 @@ plot(res.mca, axes = c(1, 3),choix = "ind", invisible = "ind")
 
 #distribution des individus sur les axes chosiis en fonction de variables 
 
+################# à mettre sur le mail et rendu 
 plotellipses(res.mca, axes = c(1, 2), means = FALSE)
 
 
@@ -89,7 +92,7 @@ eig.val
 # Dim.5 0.10981873        12.812185                    90.27160
 # Dim.6 0.08338627         9.728398                   100.00000
 
-# plot des valeurs propres pour visualiser la règle de décision dite du coude 
+# #################### A mettre dans le rendu : plot des valeurs propres pour visualiser la règle de décision dite du coude 
 
 fviz_screeplot (res.mca, addlabels = TRUE, ylim = c (0, 45))
 
@@ -208,7 +211,7 @@ fviz_cos2(res.mca, choice = "var", axes = 3:3)
 
 #brca_mut, neo_ct
 
-#################### graph joli : synthèse qualité de représentation et positionnement sur les axes 
+############################@  A mettre dans le rendu : graph joli : synthèse qualité de représentation et positionnement sur les axes 
 
 fviz_mca_var(res.mca, col.var = "cos2",
              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
@@ -225,7 +228,7 @@ fviz_mca_ind(res.mca, col.ind = "cos2",
              ggtheme = theme_minimal())
 
 
-# ####################  graph récapitulatif de la projection des variables sur axe 1 et 2 
+# ####################################  A mettre dans le rendu :   graph récapitulatif de la projection des variables sur axe 1 et 2 
 
 plot(res.mca, 
      invisible = "ind",
@@ -238,6 +241,28 @@ plot(res.mca,
 install.packages('explor')
 library(explor) 
 explor(res.mca)
+
+
+
+##################@ Plot ellispe 
+
+res <- explor::prepare_results(res.mca)
+explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
+                     ind_lab_min_contrib = 0, col_var = "pf_discussion", labels_size = 9, point_opacity = 0.5,
+                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = TRUE,
+                     labels_positions = NULL, xlim = c(-1.04, 1.35), ylim = c(-1.15, 1.25))
+
+
+
+##################### Plot variable 
+res <- explor::prepare_results(res.mca)
+explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
+                     var_lab_min_contrib = 0, col_var = "Variable", symbol_var = NULL, size_var = "Contrib",
+                     size_range = c(52.5, 700), labels_size = 12, point_size = 56, transitions = TRUE,
+                     labels_positions = NULL, labels_prepend_var = FALSE, xlim = c(-1.29, 1.87),
+                     ylim = c(-1.42, 1.74))
+
+####################@
 
 
 
