@@ -48,11 +48,10 @@ data.active <- data_v2 %>% select(pf_discussion, age_young_cl_40_bin, center_cur
 #On enlève les valeurs manquantes NA pour toutes les variables 
 # sinon ca perturbe trop les axes 
 
-
+#on crée l'ACM 
 res.mca <- MCA (data.active,ncp = 3, graph = FALSE)
 
-
-
+# projection des variables selon les axes de l'acm 
 
 #axe 1 et 2 
 plot(res.mca, axes = c(1, 2),choix = "ind", invisible = "ind")
@@ -64,6 +63,8 @@ plot(res.mca, axes = c(2, 3),choix = "ind", invisible = "ind")
 plot(res.mca, axes = c(1, 3),choix = "ind", invisible = "ind")
 
 
+#distribution des individus sur les axes chosiis en fonction de variables 
+
 plotellipses(res.mca, axes = c(1, 2), means = FALSE)
 
 
@@ -71,30 +72,15 @@ plotellipses(res.mca, axes = c(2, 3), means = FALSE)
 
 plotellipses(res.mca, axes = c(1, 3), means = FALSE)
 
-# 
-# print(res.mca)
-# **Results of the Multiple Correspondence Analysis (MCA)**
-#   The analysis was performed on 1357 individuals, described by 7 variables
-# *The results are available in the following objects:
-#   
-#   name              description                       
-# 1  "$eig"            "eigenvalues"                     
-# 2  "$var"            "results for the variables"       
-# 3  "$var$coord"      "coord. of the categories"        
-# 4  "$var$cos2"       "cos2 for the categories"         
-# 5  "$var$contrib"    "contributions of the categories" 
-# 6  "$var$v.test"     "v-test for the categories"       
-# 7  "$ind"            "results for the individuals"     
-# 8  "$ind$coord"      "coord. for the individuals"      
-# 9  "$ind$cos2"       "cos2 for the individuals"        
-# 10 "$ind$contrib"    "contributions of the individuals"
-# 11 "$call"           "intermediate results"            
-# 12 "$call$marge.col" "weights of columns"              
-# 13 "$call$marge.li"  "weights of rows"  
 
+#valeurs propres pour aider au choix des axes qu'on va utiliser 
 
 eig.val <- get_eigenvalue(res.mca)
-head(eig.val)
+eig.val
+# Il ya un vrai décrochage entre 1 et 2 donc je ne garderai que l'axe 1 et 2. 
+# a discuter pour le troisième. 
+# je pense qu'il est drivé par le brca_mut
+
 # eigenvalue variance.percent cumulative.variance.percent
 # Dim.1 0.21136748        24.659539                    24.65954
 # Dim.2 0.16985691        19.816640                    44.47618
@@ -103,9 +89,14 @@ head(eig.val)
 # Dim.5 0.10981873        12.812185                    90.27160
 # Dim.6 0.08338627         9.728398                   100.00000
 
+# plot des valeurs propres pour visualiser la règle de décision dite du coude 
+
 fviz_screeplot (res.mca, addlabels = TRUE, ylim = c (0, 45))
 
-# on garderait 3 dimensions a priori
+# on garderait 2-3 dimensions a priori
+
+####################### Coordonnées, qualité de réprésentation et controbutiona aux axes des variables 
+
 
 var <- get_mca_var(res.mca)
 var
@@ -118,33 +109,92 @@ var
 # 3 "$contrib" "contributions of categories"
 
 # Coordonnées
-head(var$coord)
+var$coord
+
+#                      Dim 1      Dim 2        Dim 3
+# pf_discussion_No   0.6935321 -0.3031002 -0.056601862
+# pf_discussion_Yes -0.8398944  0.3670662  0.068547060
+# [0 -40)           -0.4321631  0.1562855  0.001692577
+# 40+                1.4187995 -0.5130883 -0.005556763
+# Curie Paris       -0.1255357 -0.3642521  0.201843926
+# Curie St Cloud     0.2398053  0.6958149 -0.385573654
+# brca_screen_Yes    0.0000000  0.0000000  0.000000000
+# brca_mut_No        0.1102971  0.1573850 -0.392983950
+# brca_mut_Yes      -0.4262195 -0.6081807  1.518602264
+# neo_ct_No          0.4246005  0.4614313  0.621482787
+# neo_ct_Yes        -0.3719641 -0.4042291 -0.544439466
+# Grade I-II         0.3006457  0.9242007  0.213281568
+# Grade III         -0.1625664 -0.4997375 -0.115326459
+
+
+
+
 # Cos2: qualité de représentation
-head(var$cos2)
-# Contributions aux axes
-head(var$contrib)
+var$cos2
+
+# Dim 1      Dim 2          Dim 3
+# pf_discussion_No  0.58249367 0.11125783 0.003879891217
+# pf_discussion_Yes 0.58249367 0.11125783 0.003879891217
+# [0 -40)           0.61315276 0.08018826 0.000009405252
+# 40+               0.61315276 0.08018826 0.000009405252
+# Curie Paris       0.03010412 0.25345206 0.077825700164
+# Curie St Cloud    0.03010412 0.25345206 0.077825700164
+# brca_screen_Yes          NaN        NaN            NaN
+# brca_mut_No       0.04701078 0.09571854 0.596786315868
+# brca_mut_Yes      0.04701078 0.09571854 0.596786315868
+# neo_ct_No         0.15793614 0.18652395 0.338359757108
+# neo_ct_Yes        0.15793614 0.18652395 0.338359757108
+# Grade I-II        0.04887488 0.46185773 0.024597007962
+# Grade III         0.04887488 0.46185773 0.024597007962
 
 
-fviz_mca_var (res.mca, choice = "mca.cor",
-              repel = T, 
-              ggtheme = theme_minimal ())
+# Interprétation de la qualité de la représentation 
+
+# sur l'axe 1, les mieux représentés sont pf_discussion, l'âge
+#sur l'axe2 les mmieux représentés sont le Grade et le centre de traitement 
+# axe 3 : le mieux représentée : brca_mut et neo_ct 
+
+## Donc corrélation entre âge et pf_discussion 
+### Donc corrélation entre Grade et centre d etraitement 
+#### Corrélation entre neo_ct et brca_mut
 
 
-# brca_mut et brca_screen sont corrélés à l'axe 2 
-# neo_ct et center_curie corrélé à l'axe 1 
+#################################################################
+# #####################Contributions aux axes######################
+var$contrib
 
-# grade mal représneté sur l'axe 1 et 2 
+# 
+# Dim 1     Dim 2         Dim 3
+# pf_discussion_No  17.8056820  4.232071  0.1684928053
+# pf_discussion_Yes 21.5633746  5.125203  0.2040513519
+# [0 -40)            9.6757022  1.574634  0.0002108525
+# 40+               31.7655129  5.169552  0.0006922326
+# Curie Paris        0.6991308  7.324590  2.5677337491
+# Curie St Cloud     1.3355190 13.991844  4.9050298541
+# brca_screen_Yes    0.0000000  0.000000  0.0000000000
+# brca_mut_No        0.6531939  1.654991 11.7803444022
+# brca_mut_Yes       2.5241280  6.395359 45.5226165830
+# neo_ct_No          5.6899025  8.362052 17.3179477472
+# neo_ct_Yes         4.9845427  7.325434 15.1710947207
+# Grade I-II         2.1439994 25.211699  1.5329064317
+# Grade III          1.1593119 13.632570  0.8288792696
 
+
+######################## Interprétation ############################
+####################################################################
+
+# ax1 : max contribution ets pf_discussion, age 
+#axe 2 : max contribution  : Grade et le centre 
+# axe 3 : max contribution brca et neo_ct 
+
+###################### Plot corrélation axe et variables : même info mais plus visuel 
 library("corrplot")
 corrplot(var$cos2, is.corr=FALSE)
 
-
-# axe 1 : pf_discussion et âge
-# axe 2 : grade I et II
-#axe 3 brca_mut
+##################### Barplot qualité de représentation 
 
 # Cos2 des variable sur Dim.1 
-fviz_cos2(res.mca, choice = "var", axes = 1:1)
+fviz_cos2(res.mca, choice = "var", axes = 1)
 
 # pf discussion  et âge
 
@@ -157,6 +207,8 @@ fviz_cos2(res.mca, choice = "var", axes = 2:2)
 fviz_cos2(res.mca, choice = "var", axes = 3:3)
 
 #brca_mut, neo_ct
+
+#################### graph joli : synthèse qualité de représentation et positionnement sur les axes 
 
 fviz_mca_var(res.mca, col.var = "cos2",
              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
@@ -173,7 +225,7 @@ fviz_mca_ind(res.mca, col.ind = "cos2",
              ggtheme = theme_minimal())
 
 
-# graph récapitulatif de la projection des variables sur axe 1 et 2 
+# ####################  graph récapitulatif de la projection des variables sur axe 1 et 2 
 
 plot(res.mca, 
      invisible = "ind",
