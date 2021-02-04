@@ -1,0 +1,14 @@
+Variable name;level;Overall
+;n;1357
+Clinical Tumor Size ;;30.3 (21.7)
+Clinical Tumor size categories;<20mm;588 (43.7)
+;20-40 mm;468 (34.8)
+;40-60 mm;194 (14.4)
+;60-80mm;63 (4.7)
+;80-100mm;27 (2.0)
+;100-150mm;6 (0.4)
+Clinical N stage at diagnosis;N0;854 (63.4)
+;N1;482 (35.8)
+;N2;7 (0.5)
+;N3;3 (0.2)
+Distant Metastases at diagnosis;M0;1357 (100.0)

@@ -1,0 +1,689 @@
+---
+title: "pN_post_NAC"
+author: "Lucie Laot - Anne-Sophie Hamy-Petit - Fabien Reyal"
+date: "10/17/2020"
+output:
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+  html_document:
+    fig_caption: yes
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: no
+editor_options:
+  chunk_output_type: console
+chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE,cache=FALSE}
+knitr::opts_chunk$set(echo = FALSE,cache=FALSE,verbose=FALSE,message=FALSE,warning=FALSE,include=FALSE,
+                      base.dir=path <- '/Users/ahamypet/RT2Lab/pN_post_NAC/',
+                      autodep = TRUE,
+                      cache.path='pN_post_NAC_cache/html/1-')
+invisible(dev.off())
+
+if(!file.exists('Fig_out/')){
+                            dir.create('Fig_out/')
+              }
+
+knitr::opts_chunk$set(echo=FALSE,cache=TRUE,message=FALSE,warning=FALSE,include=FALSE, prompt=TRUE, tidy=TRUE, fig.width=8)
+
+# cf former script neorep_luminaux_v5
+
+getwd()
+# setwd("/Users/ahamypet/RT2Lab/pN_post_NAC")
+library(survival)
+library(ggplot2)
+library(cowplot)
+library(tidyverse)
+library(tableone)
+library(ggpubr) 
+library(dplyr)
+library(kableExtra)
+
+options(max.print = 9999)
+options(stringsAsFactors=FALSE)
+source('~/RT2Lab/databases/core/00_common/src/RT2Lab_colors.R', local = TRUE)
+
+library(readxl)
+extract_good_file_names = str_extract(list.files(path = file.path(Sys.getenv(),"RT2Lab","databases","core","00_common","docs")),
+                                      "datadict_RT2_v[:digit:]?[:digit:].xlsx") #Get all version names
+last_version_data_dict <- names(which.max(sapply(extract_good_file_names,function(x) as.integer(stringr::str_sub(x, 15,-6))))) 
+
+data_dict = read_excel(paste0("~/RT2Lab/databases/core/00_common/docs/", last_version_data_dict), 1)
+
+```
+
+
+```{r}
+load("/Users/ahamypet/RT2Lab/databases/core/02_neorep/data/02_neorep_preprocessed_labels.RData")
+my_population <- database_preprocessed_labels %>% filter(!is.na(nbggpos_postneo))
+head(my_population); nrow(my_population) # 1197
+my_population$nuicc
+
+my_population$pCR                       <- my_population$RCH5.f
+my_population$pCR <- relevel(my_population$pCR, ref = "pCR")
+my_population$status_rfs_diag           <- as.integer(as.character(my_population$status_rfs_diag))
+
+my_population$nbggpos_postneo_2 <- factor(ifelse(my_population$nbggpos_postneo <11,my_population$nbggpos_postneo,">10"), levels = c("0","1","2","3","4","5","6","7","8","9","10",">10")) 
+my_population$nbggpos_postneo_3 <- factor(ifelse(my_population$nbggpos_postneo <6,my_population$nbggpos_postneo,">5"), levels = c("0","1","2","3","4","5",">5")) 
+
+my_population %>% group_by(nbggpos_postneo_2) %>% count()
+
+subtype_list				<- list("whole population"		= my_population[,"numdos_curie"]  											,
+    															"Luminal"				= my_population[which(my_population[ ,"subtype"]=="Luminal"),"numdos_curie"],
+    															"TNBC"					= my_population[which(my_population[ ,"subtype"]=="TNBC")   ,"numdos_curie"],
+    															"HER2"					= my_population[which(my_population[ ,"subtype"]=="HER2+")  ,"numdos_curie"]	)
+		path						<- c(	"all","luminal"			,"tnbc"				,"her2"				)
+		file_end				<- c(	"WP","Luminal","TNBC","HER2") 
+		
+```
+
+# Baseline patients’ and tumors’ characteristics
+
+```{r ,include=FALSE}
+var_selected <- my_population %>% select(age,age_cl_3_cl,
+                         menop,bmi_4cl,smoking,#comedic,
+                         brca_1_2_mut,
+                         ctuicc_3cl,cnuicc_2cl,
+                         subtype,er_status,pr_status,her2_status,
+                         histo_2cl,ki67_cl,mitotic_index,tumor_cellularity,
+                         grade_2cl,
+                         lvi_biop,dcis_component,
+                         str_til_perc,it_til_perc,#pCR,
+                         neo_ct_regimen
+                         ) %>% colnames()
+
+    names_var_selected	<-  data_dict[match(var_selected,data_dict$var),"names_var"] %>% as.matrix() %>% as.character()
+    matching_name_file    <- data.frame(variable = var_selected, name_variable = names_var_selected)
+		mydataset             <- my_population
+		
+		# WP
+		Table1                <- CreateTableOne(var_selected ,,mydataset ) 
+    table1_preformat      <- print(Table1, quote=TRUE, noSpaces=TRUE,showAllLevels = TRUE, pDigits=3, contDigits=1)
+    source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/format_tableone_v2.R', local  = TRUE)
+    table_1_WP           <- Table1_format
+
+    Table1                <- CreateTableOne(var_selected ,"ypnuicc_2cl",mydataset ) 
+    table1_preformat      <- print(Table1, quote=TRUE, noSpaces=TRUE,showAllLevels = TRUE, pDigits=3, contDigits=1)
+    source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/format_tableone_v2.R', local  = TRUE)
+    table_node_neg_pos <- Table1_format
+    table_node_neg_pos <- table_node_neg_pos %>% select('Node negative','Node positive','p')
+    table1_compil      <- bind_cols(table_1_WP, table_node_neg_pos )
+      
+    write.csv2(table1_compil, file="/Users/ahamypet/RT2Lab/pN_post_NAC/results/table1_compil.csv")
+    save(table1_compil, file="/Users/ahamypet/RT2Lab/pN_post_NAC/data/processed/table1_compil.Rdata")
+    vector_missing_data
+```
+
+1197 patients were included in the cohort. Patients’ baseline characteristics are summarized in Table 1. Median age was 48 years old. Patient's repartition by subtype was as follows: luminal (n=526, 43.9%), TNBC (n=376, 31.4%), HER2-positive (n=295; 24.6%).  
+
+After NAC, 43% of the patients (515/1197) had a nodal involvment. Patients with bigger tumors, with clinical baseline nodal involvment, luminal BCs (versus TNBC or HER2+ ), low proliferative tumors (versus high proliferative), with lower immune infiltration (versus high TIL levels) were more likely to have a nodal involvement at NAC completion.
+
+```{r ,include=TRUE}
+knitr::kable(table1_compil, 
+             caption = "Patients and tumor characteristics by post-NAC nodal involvment") %>% kable_styling(bootstrap_options = "striped", full_width = F) %>%
+              kable_styling(bootstrap_options = "striped", full_width = F) %>%
+              footnote(general = vector_missing_data,MyGenericFootnote)
+```
+
+```{r}
+wilcox.test(my_population$ggprel)
+t.test(my_population$ggprel)
+
+my_population %>% #group_by(subtype) %>% 
+                  summarise(median_ggprel = median(ggprel, na.rm = T))
+
+my_population %>% #group_by(subtype) %>% 
+                  summarise(range = range(ggprel, na.rm = T))
+
+```
+
+The number of nodes ranged from 1 to 35 (median : 11) (Fig1B) and the number of lymph nodes involved varied from 0 to 21 (Fig1B). In case of nodal involvment, the median number of nodes involved was 2 (Fig1C), and the repartition was significantly different among BC subtypes.Overall, 57% of the patients were node negative (n=682), 28% had a mild nodal involvement (n=341), and 15% (n=174) had a high nodal involvement (Fig1D). This repartition was significantly different by BC subtype (p<0.001) (Fig1E).
+
+![](Figure1_p_compil_descript_pN.png)
+
+
+```{r}
+my_population$ypnuicc_2cl_bin <- as.integer(my_population$ypnuicc_2cl)-1
+
+var_selected <- my_population %>% select(#age,
+                                         age_cl_3_cl,
+                         menop,bmi_4cl,smoking,#comedic,
+                         brca_1_2_mut,
+                         ctuicc_3cl,cnuicc_2cl,
+                         subtype,er_status,pr_status,her2_status,
+                         histo_2cl,ki67_cl,mitotic_index,tumor_cellularity,
+                         grade_2cl,
+                         lvi_biop,dcis_component,
+                         str_til_perc_30,it_til_perc_by_5,#pCR,
+                         neo_ct_regimen
+                         ) %>% colnames()
+
+    names_var_selected	<-  data_dict[match(var_selected,data_dict$var),"names_var"] %>% as.matrix() %>% as.character()
+
+						  dataf  			        <-  my_population
+						  quali 			        <-  var_selected
+						  nomquali		        <- 	names_var_selected
+						  var_to_explain	    <- "ypnuicc_2cl"
+						  level_to_import	    <- "Node negative"
+my_population$ypnuicc_2cl
+						  source ("~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/Logistic_regression_loop_ASHP_12.R", local = TRUE)
+						  write.csv2(tmp_tab, file="/Users/ahamypet/RT2Lab/pN_post_NAC/results/pNR_univariate.csv")
+
+```
+
+
+```{r, eval=FALSE}
+
+# 	mod <-  glm(ypnuicc_2cl_bin ~ NULL ,data=my_population , family="binomial") ; summary(mod)								 																
+# 	add1(mod,~ tuicc_3cl+nuicc_2cl+subtype+histo_2cl+ki67_cl+mitotic_index+
+#                         grade_2cl+lvi_biop+dcis_component+str_til_perc_30+it_til_perc_by_5+neo_ct_regimen, test="Chisq") 
+# 	mod <-  glm(ypnuicc_2cl_bin ~ dcis_component ,data=my_population , family="binomial") ; summary(mod)								 																
+# 	add1(mod,~ tuicc_3cl+nuicc_2cl+subtype+histo_2cl+ki67_cl+mitotic_index+
+#                         grade_2cl+lvi_biop+dcis_component+str_til_perc_30+it_til_perc_by_5+neo_ct_regimen, test="Chisq") 
+# 	mod <-  glm(ypnuicc_2cl_bin ~ dcis_component +nuicc_2cl,data=my_population , family="binomial") ; summary(mod)								 														add1(mod,~ tuicc_3cl+nuicc_2cl+subtype+histo_2cl+ki67_cl+mitotic_index+
+#                         grade_2cl+lvi_biop+dcis_component+str_til_perc_30+it_til_perc_by_5+neo_ct_regimen, test="Chisq") 
+# 	mod <-  glm(ypnuicc_2cl_bin ~ dcis_component +nuicc_2cl+str_til_perc_30,data=my_population , family="binomial") ; summary(mod)								 														add1(mod,~ tuicc_3cl+nuicc_2cl+subtype+histo_2cl+ki67_cl+mitotic_index+
+#                         grade_2cl+lvi_biop+dcis_component+str_til_perc_30+it_til_perc_by_5+neo_ct_regimen, test="Chisq") 
+# 	mod <-  glm(ypnuicc_2cl_bin ~ dcis_component +nuicc_2cl+str_til_perc_30+lvi_biop,data=my_population , family="binomial") ; summary(mod)								 														add1(mod,~ tuicc_3cl+nuicc_2cl+subtype+histo_2cl+ki67_cl+mitotic_index+
+#                         grade_2cl+lvi_biop+dcis_component+str_til_perc_30+it_til_perc_by_5+neo_ct_regimen, test="Chisq") 
+# 	
+# 		mod <-  glm(ypnuicc_2cl_bin ~ tuicc_3cl+nuicc_2cl+subtype+histo_2cl+ki67_cl+mitotic_index+
+#                         grade_2cl+lvi_biop+dcis_component+str_til_perc_30+it_til_perc_by_5+neo_ct_regimen ,data=my_population , family="binomial") ;
+# 				mod <-  glm(ypnuicc_2cl_bin ~ tuicc_3cl+nuicc_2cl+subtype+histo_2cl+ki67_cl+mitotic_index+
+#                         grade_2cl+lvi_biop+dcis_component+str_til_perc_30+neo_ct_regimen ,data=my_population , family="binomial") 
+# 						mod <-  glm(ypnuicc_2cl_bin ~ nuicc_2cl+subtype+histo_2cl+ki67_cl+mitotic_index+
+#                         grade_2cl+lvi_biop+dcis_component+str_til_perc_30+neo_ct_regimen ,data=my_population , family="binomial") 
+# 						mod <-  glm(ypnuicc_2cl_bin ~ nuicc_2cl+subtype+histo_2cl+mitotic_index+
+#                         grade_2cl+lvi_biop+dcis_component+str_til_perc_30+neo_ct_regimen ,data=my_population , family="binomial") 
+# 						mod <-  glm(ypnuicc_2cl_bin ~ nuicc_2cl+subtype+histo_2cl+
+#                         grade_2cl+lvi_biop+dcis_component+str_til_perc_30 ,data=my_population , family="binomial") 
+# 						mod <-  glm(ypnuicc_2cl_bin ~ nuicc_2cl+subtype+
+#                         grade_2cl+lvi_biop+dcis_component+str_til_perc_30 ,data=my_population , family="binomial") 
+# 						mod <-  glm(ypnuicc_2cl_bin ~ nuicc_2cl+subtype+
+#                         grade_2cl+lvi_biop+dcis_component ,data=my_population , family="binomial") 
+# 						mod <-  glm(ypnuicc_2cl_bin ~ nuicc_2cl+subtype+
+#                         grade_2cl+lvi_biop ,data=my_population , family="binomial") 
+# 
+# 		drop1(mod, test="Chisq")
+
+```
+
+
+```{r}
+range(my_population[,"nbggpos_postneo"])
+my_population %>% filter(ypnuicc_2cl == "Node positive") %>% summarise(range())
+my_population %>% filter(ypnuicc_2cl == "Node positive") %>% summarise(median = median(nbggpos_postneo))
+my_population %>% filter(ypnuicc_2cl == "Node positive") %>% group_by(subtype) %>% summarise(median = median(nbggpos_postneo))
+
+my_population %>% group_by(subtype) %>% count()
+
+```
+
+
+
+# Association between post-NAC involvement and tumor characteristics
+
+Among post NAC characteristics, node positivity was associated with RCB index (Fig2A), with the presence of lymphovascular invasion (Fig2B), with tumor cellularity (Fig2C). Neither post-NAC mitotic index (Fig2D), stromal (Fig2E) nor IT TILs (Fig2F) were significantly associated with post-NAC nodal status.
+
+```{r Patients characteristics,include=FALSE}
+head(data_dict)
+# data_dict %>% filter(family_var == "tumor_char_neo") %>% select(var)
+var_selected <- my_population %>% select(pCR, lvi_postneo, 
+                                         RCB_index,RCB_class,
+                                         str_til_perc_postneo,it_til_perc_postneo,
+                                         mitotic_index_postneo,tumor_cellularity_postneo) %>% colnames()
+
+    names_var_selected	<-  data_dict[match(var_selected,data_dict$var),"names_var"] %>% as.matrix() %>% as.character()
+    matching_name_file    <- data.frame(variable = var_selected, name_variable = names_var_selected)
+		mydataset             <- my_population
+		
+		# WP
+		Table1                <- CreateTableOne(var_selected ,,mydataset ) 
+    table1_preformat      <- print(Table1, quote=TRUE, noSpaces=TRUE,showAllLevels = TRUE, pDigits=3, contDigits=1)
+    source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/format_tableone_v2.R', local  = TRUE)
+    table_1_WP           <- Table1_format
+
+    Table1                <- CreateTableOne(var_selected ,"ypnuicc_3cl",mydataset ) 
+    table1_preformat      <- print(Table1, quote=TRUE, noSpaces=TRUE,showAllLevels = TRUE, pDigits=3, contDigits=1)
+    source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/format_tableone_v2.R', local  = TRUE)
+    table_ypn <- Table1_format
+    write.csv2(table_ypn, file="/Users/ahamypet/RT2Lab/pN_post_NAC/results/table_ypn.csv")
+
+```
+
+```{r ,include=TRUE}
+knitr::kable(table_ypn, 
+             caption = "Tumor characteristics by post-NAC nodal involvment") %>% kable_styling(bootstrap_options = "striped", full_width = F) %>%
+              kable_styling(bootstrap_options = "striped", full_width = F) %>%
+              footnote(general = vector_missing_data,MyGenericFootnote)
+```
+
+![](Figure2_p_compil_nodes_post_nac.png)
+Similar patterns were observed within each BC subtype (Figs S1A-F), with the very exception of post-NAC tumor cellularity (all 3 BC subtypes), post-NAC mitotic index (luminal BC), and str TILs levels (HER2-positive BC) that were significantly higher with increasing number of nodes involved (Figure S1). 
+
+![](FigureS1_p_caract_subtype.png)
+
+# Survival analyses
+
+```{r calcul suivi median}
+# Manque rfs
+								del    			 <- c("delay_rfs_diag")
+								ev     			 <- c("status_rfs_diag")
+				 				suivi 		   <- survfit( Surv(delay_rfs_diag, 1 - status_rfs_diag)~1, data=my_population)
+	# tu obtiens le range pour l' evt = 0 et celui pour l'evt=1, comme tu t'intéresses au suivi, donc aux gens qui n'ont pas eu l'évt, tu prends les valeurs du range pour evt=0
+							range_suivi <-		tapply(my_population$delay_rfs_diag, my_population$status_rfs_diag, range)
+							suivi_med    <- unname(round(summary(suivi)$table["median"],1))
+				 			survie 		   <- survfit( Surv(delay_rfs_diag, status_rfs_diag)~1, data=my_population)
+```
+
+With a median follow-up of `r suivi_med ` months, (range[  `r paste0(round (range_suivi[[1]],1),collapse="-") `months]),  `r length(which(my_population$status_rfs_diag==1))`  patients experienced relapse, and `r length(which(my_population$status_vital==1))` deceased. Post-NAC nodal involvement was significantly associated with RFS in the whole population (p<0.001).
+
+```{r}
+# interaction when binned by positive versus negative
+		c0 <- coxph(Surv(delay_rfs_diag,status_rfs_diag) ~  ypnuicc_2cl+ ypnuicc_2cl*subtype + subtype , data=my_population, method="breslow")
+		c2 <- coxph(Surv(delay_rfs_diag,status_rfs_diag) ~ ypnuicc_2cl+subtype , data=my_population, method="breslow")
+  	anova(c0,c2)  # p=0.002
+
+# interaction when binned by 3 classes
+  	c0 <- coxph(Surv(delay_rfs_diag,status_rfs_diag) ~ ypnuicc_3cl + ypnuicc_3cl*subtype + subtype , data=my_population, method="breslow")
+		c2 <- coxph(Surv(delay_rfs_diag,status_rfs_diag) ~ ypnuicc_3cl + subtype , data=my_population, method="breslow")
+  	anova(c0,c2)  # p=0.004
+
+```
+
+
+After analyses by BC subtype, the association between nodal involvement binned by 3 classes and RFS was significant in all the BC subgroups, but this association was significantly different according to the BC subtype (Pinteraction = 0.004).
+
+
+
+
+```{r, include=FALSE}
+# Survival rates were as follows: 
+# summary_survie_status_RFS
+```
+
+```{r fig.width=9,fig.height=12,autodep=FALSE,include=FALSE}
+# Survival curves status_RFS , 
+  					list_g <- list()
+						del    			 <- c("delay_rfs_diag")
+						ev     			 <- c("status_rfs_diag")
+					  quali 			        <-  "ypnuicc_2cl"
+					  nomquali 		        <- "Nodal involvment"
+					  # titre_var_surv2    <- paste0(subtype_name, ", n=",nrow(dataf) )
+					  color_plot_ASHP     <- "couleur"
+					  custom_palette      <- unname(col_ypnuicc_3cl_cvd)
+					  loc_legend          <-  c(0.25, 0.18)
+					  x_lim               <- c(0,175)
+					  pval_coord          <- c(75,0.15)
+					  pval_size           <- 4
+					  breaks_ASHP         <- 25
+					  plot_median_dfs    <- c("none")
+
+					for (m in 1 : length(subtype_list	)  ) {
+					  # m=1
+					  print(m)
+					  subtype							<- subtype_list[[m]]										# samples names_ of subtype ex: MB-0046
+					  subtype_name				<- names(subtype_list[m])
+					  titre_var_surv2    <- subtype_name
+					  dataf  			        <- my_population[my_population$numdos_curie %in% subtype,]
+					  soustitre		        <- paste0("  (",subtype_name, ", n=",nrow(dataf) ,")" )
+					  source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/KM_survival_survminer_legend_down_no_name_custom_palette.R', local  = TRUE)
+					  
+# source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/KM_survival_survminer_legend_down_no_name_JAMA_with_HR_without_jco_colors.R', local  = TRUE)
+					  
+					  print("coucou")
+
+					  if(m %in% c(1,2) ) {
+					    p$plot <- p$plot + ylab("Relapse-free survival ")
+					  }
+
+					  if(! m %in% c(1,2) ) {
+					    p$plot <- p$plot + ylab(" ")
+					  }
+
+					# p_plot_grid <- cowplot::plot_grid(p$plot, p$table, ncol=1, rel_heights = c(0.8, 0.2), align ="hv")
+					# list_g[[m]] <- p_plot_grid
+					  list_g[[m]] <- p
+					}
+					assign(paste0("list_g","_","status_rfs_ypnuicc_2cl"),list_g )
+					save(list_g_status_rfs_ypnuicc_2cl, file="/Users/ahamypet/RT2Lab/pN_post_NAC/data/processed/list_g_status_rfs_ypnuicc_2cl.RData")
+
+					res <-  arrange_ggsurvplots(list_g, print = TRUE,
+					                            labels = c("E","F","G","H"),
+					                            # labels = "AUTO",
+					                            ncol = 4, nrow = 1)
+					p_rfs_ypnuicc_2cl <- res
+					
+				pdf("/Users/ahamypet/RT2Lab/pN_post_NAC/results/rfs_ypnuicc_2cl.pdf",height=7,width=23)
+				print(res)
+				dev.off()
+```
+
+
+```{r , fig.width=9,fig.height=12,autodep=FALSE,include=FALSE}
+				res
+```
+
+```{r fig.width=9,fig.height=12,autodep=FALSE,include=FALSE}
+# Survival curves status_RFS , 
+  					list_g <- list()
+						del    			 <- c("delay_rfs_diag")
+						ev     			 <- c("status_rfs_diag")
+					  quali 			        <-  "ypnuicc_3cl"
+					  nomquali 		        <- "Nodal involvment"
+					  # titre_var_surv2    <- paste0(subtype_name, ", n=",nrow(dataf) )
+					  color_plot_ASHP     <- "couleur"
+					  custom_palette      <- unname(col_ypnuicc_3cl_cvd)
+					  loc_legend          <-  c(0.25, 0.18)
+					  x_lim               <- c(0,175)
+					  pval_coord          <- c(75,0.15)
+					  pval_size           <- 4
+					  breaks_ASHP         <- 25
+					  plot_median_dfs    <- c("none")
+
+					for (m in 1 : length(subtype_list	)  ) {
+					  # m=1
+					  print(m)
+					  subtype							<- subtype_list[[m]]										# samples names_ of subtype ex: MB-0046
+					  subtype_name				<- names(subtype_list[m])
+					  titre_var_surv2    <- subtype_name
+					  dataf  			        <- my_population[my_population$numdos_curie %in% subtype,]
+					  soustitre		        <- paste0("  (",subtype_name, ", n=",nrow(dataf) ,")" )
+					  source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/KM_survival_survminer_legend_down_no_name_custom_palette.R', local  = TRUE)
+					  
+# source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/KM_survival_survminer_legend_down_no_name_JAMA_with_HR_without_jco_colors.R', local  = TRUE)
+					  
+					  print("coucou")
+
+
+            # if(m %in% c(1,2) ) {
+					  if(m %in% c(1,2,3,4) ) {
+					    p$plot <- p$plot + ylab("Relapse-free survival ")
+					  }
+
+					  # if(! m %in% c(1,2) ) {
+					  #   p$plot <- p$plot + ylab(" ")
+					  # }
+
+					# p_plot_grid <- cowplot::plot_grid(p$plot, p$table, ncol=1, rel_heights = c(0.8, 0.2), align ="hv")
+					# list_g[[m]] <- p_plot_grid
+					  list_g[[m]] <- p
+					}
+					assign(paste0("list_g","_","status_rfs_ypnuicc_3cl"),list_g )
+					save(list_g_status_rfs_ypnuicc_3cl, file="/Users/ahamypet/RT2Lab/pN_post_NAC/data/processed/list_g_status_rfs_ypnuicc_3cl.RData")
+
+					res <-  arrange_ggsurvplots(list_g, print = TRUE,
+					                            labels = "AUTO",
+					                            ncol = 4) 
+					                            # nrow = 2)
+				# pdf("/Users/ahamypet/RT2Lab/pN_post_NAC/results/rfs_ypnuicc_3cl.pdf",height=12.5,width=11.5)
+
+				pdf("/Users/ahamypet/RT2Lab/pN_post_NAC/results/rfs_ypnuicc_3cl.pdf",height=7,width=23)
+				print(res)
+				dev.off()
+```
+
+```{r , fig.width=23,fig.height=7,autodep=FALSE,include=FALSE}
+				res
+```
+
+
+<!-- ```{r fig.width=9,fig.height=12,autodep=FALSE,include=FALSE} -->
+<!-- # Survival curves status_RFS ,  -->
+<!--   					list_g <- list() -->
+<!-- 						del    			 <- c("delay_rfs_diag") -->
+<!-- 						ev     			 <- c("status_rfs_diag") -->
+<!-- 					  quali 			        <-  "nbggpos_postneo_3" -->
+<!-- 					  nomquali 		        <- "Nodal involvment" -->
+<!-- 					  # titre_var_surv2    <- paste0(subtype_name, ", n=",nrow(dataf) ) -->
+<!-- 					  color_plot_ASHP     <- "couleur" -->
+<!-- 					  # custom_palette      <- unname(col_ypnuicc_3cl_cvd) -->
+<!-- 					  loc_legend          <-  c(0.25, 0.18) -->
+<!-- 					  x_lim               <- c(0,175) -->
+<!-- 					  pval_coord          <- c(75,0.15) -->
+<!-- 					  pval_size           <- 4 -->
+<!-- 					  breaks_ASHP         <- 25 -->
+<!-- 					  plot_median_dfs    <- c("none") -->
+
+<!-- 					for (m in 1 : length(subtype_list	)  ) { -->
+<!-- 					  # m=1 -->
+<!-- 					  print(m) -->
+<!-- 					  subtype							<- subtype_list[[m]]										# samples names_ of subtype ex: MB-0046 -->
+<!-- 					  subtype_name				<- names(subtype_list[m]) -->
+<!-- 					  titre_var_surv2    <- subtype_name -->
+<!-- 					  dataf  			        <- my_population[my_population$numdos_curie %in% subtype,] -->
+<!-- 					  soustitre		        <- paste0("  (",subtype_name, ", n=",nrow(dataf) ,")" ) -->
+<!-- 					  source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/KM_survival_survminer_legend_down_no_name_JCO.R', local  = TRUE) -->
+
+<!-- # source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/KM_survival_survminer_legend_down_no_name_JAMA_with_HR_without_jco_colors.R', local  = TRUE) -->
+
+<!-- 					  print("coucou") -->
+
+
+<!--             # if(m %in% c(1,2) ) { -->
+<!-- 					  if(m %in% c(1,2,3,4) ) { -->
+<!-- 					    p$plot <- p$plot + ylab("Relapse-free survival ") -->
+<!-- 					  } -->
+
+<!-- 					  # if(! m %in% c(1,2) ) { -->
+<!-- 					  #   p$plot <- p$plot + ylab(" ") -->
+<!-- 					  # } -->
+
+<!-- 					# p_plot_grid <- cowplot::plot_grid(p$plot, p$table, ncol=1, rel_heights = c(0.8, 0.2), align ="hv") -->
+<!-- 					# list_g[[m]] <- p_plot_grid -->
+<!-- 					  list_g[[m]] <- p -->
+<!-- 					} -->
+<!-- 					assign(paste0("list_g","_","status_rfs_ypnuicc_6cl"),list_g ) -->
+<!-- 					save(list_g_status_rfs_ypnuicc_6cl, file="/Users/ahamypet/RT2Lab/pN_post_NAC/data/processed/list_g_status_rfs_ypnuicc_6cl.RData") -->
+
+<!-- 					res <-  arrange_ggsurvplots(list_g, print = TRUE, -->
+<!-- 					                            labels = "AUTO", -->
+<!-- 					                            ncol = 4)  -->
+<!-- 					                            # nrow = 2) -->
+<!-- 				# pdf("/Users/ahamypet/RT2Lab/pN_post_NAC/results/rfs_ypnuicc_3cl.pdf",height=12.5,width=11.5) -->
+
+<!-- 				pdf("/Users/ahamypet/RT2Lab/pN_post_NAC/results/rfs_ypnuicc_6cl.pdf",height=10,width=23) -->
+<!-- 				print(res) -->
+<!-- 				dev.off() -->
+<!-- ``` -->
+
+
+
+```{r}
+# Source another code
+```
+
+```{r}
+# Add the resulting figure
+```
+
+
+In the whole population, mild post-NAC nodal involvement (1 to 3) ; and high nodal involvement were associated with an impaired RFS (HR = 1.79, 95%CI [1.41 - 2.28] and HR=3.3, 95%CI [2.56 - 4.27]) (Fig3A).
+
+In luminal BCs, mild post-NAC nodal involvement was not associated with an impaired RFS when compared with ypN0 tumors (HR=1.24, 95%CI	[0.86 - 1.79]), whereas patients with a high nodal involvement were associated with an adverse prognosis (HR=2.8, 95%CI [1.93 - 4.06]).(Fig3B)
+
+
+In TNBCs, both mild (HR=3.23, 95%CI [2.07 - 5.05]) and high post-NAC nodal involvement (HR=4.67,	95%CI [2.94 - 7.42]) were associated with an impaired RFS when compared with ypN0 tumors. The difference between [1-3] and 4 and more was statistically significant(p<0.001)(Fig3C).
+
+In HER2-positive BCs, patients who had tumors with a mild nodal involvement were at a higher risk of relapse (HR=2.68, 95%CI	[1.63 - 4.41]) when compared with node negative tumors, but the prognosis was not significantly different from patients with 4 nodes involved or more (HR=2.67, 95%CI	[1.24 - 5.77])(Fig3D).
+
+![](Figure3_compil_curves_polynoms_nodes_and_survival_curves.png)
+There was a significant deviation to the linearity assumption of the association between RFS and post-NAC nodal involvement in the whole population and in the 3 BC subtypes.After statistical modelisation, the statistical models best fitted a second degree polynomial (whole population and luminal subgroup Fig 3E and 3F respectively), and a restricted cubic spline (TNBC and HER2-positive BCs, Fig 3G and 3H respectively).
+
+
+<!-- ```{r} -->
+<!-- source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/fonctions_biostat_R.r', local = TRUE) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- # looking for cutoff with function Seuil Yann de Rycke -->
+<!-- x  <-  Seuil(etat="status_rfs_diag", delai="delay_rfs_diag", groupe="nbggpos_postneo", tab = my_population) -->
+<!-- # x -->
+<!-- # plot(x) -->
+<!-- x  <-  Seuil(etat="status_rfs_diag", delai="delay_rfs_diag", groupe="nbggpos_postneo", tab = my_population %>% filter(subtype == "Luminal")) -->
+<!-- x  <-  Seuil(etat="status_rfs_diag", delai="delay_rfs_diag", groupe="nbggpos_postneo", tab = my_population %>% filter(subtype == "TNBC")) -->
+<!-- x  <-  Seuil(etat="status_rfs_diag", delai="delay_rfs_diag", groupe="nbggpos_postneo", tab = my_population %>% filter(subtype == "HER2+")) -->
+<!-- ``` -->
+
+
+Similar results were obtained for overall survival (Figs 4A-D). The interaction between BC subtype, post-NAC nodal involvement and survival was highly significant (p=0.005).
+
+```{r}
+# my_population$status_vital <- as.integer(my_population$status_vital)-1
+  					list_g <- list()
+						del    			 <- c("delay_os_diag")
+						ev     			 <- c("status_vital")
+					  quali 			        <-  "ypnuicc_3cl"
+					  nomquali 		        <- "Nodal involvment"
+					  # titre_var_surv2    <- paste0(subtype_name, ", n=",nrow(dataf) )
+					  color_plot_ASHP     <- "couleur"
+					  custom_palette      <- unname(col_ypnuicc_3cl_palettePaired)
+					  loc_legend          <-  c(0.25, 0.18)
+					  x_lim               <- c(0,175)
+					  pval_coord          <- c(75,0.15)
+					  pval_size           <- 4
+					  breaks_ASHP         <- 25
+					  plot_median_dfs    <- c("none")
+
+					for (m in 1 : length(subtype_list	)  ) {
+					  # m=1
+					  print(m)
+					  tmp_subtype							<- subtype_list[[m]]										# samples names_ of subtype ex: MB-0046
+					  subtype_name				<- names(subtype_list[m])
+					  titre_var_surv2    <- subtype_name
+					  dataf  			        <- my_population[my_population$numdos_curie %in% tmp_subtype,]
+					  soustitre		        <- paste0("  (",subtype_name, ", n=",nrow(dataf) ,")" )
+					  source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/KM_survival_survminer_legend_down_no_name_custom_palette.R', local  = TRUE)
+					  
+# source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/KM_survival_survminer_legend_down_no_name_JAMA_with_HR_without_jco_colors.R', local  = TRUE)
+					  
+					  print("coucou")
+
+
+            # if(m %in% c(1,2) ) {
+					  if(m %in% c(1,2,3,4) ) {
+					    p$plot <- p$plot + ylab("Overall survival ")
+					  }
+
+					  # if(! m %in% c(1,2) ) {
+					  #   p$plot <- p$plot + ylab(" ")
+					  # }
+
+					# p_plot_grid <- cowplot::plot_grid(p$plot, p$table, ncol=1, rel_heights = c(0.8, 0.2), align ="hv")
+					# list_g[[m]] <- p_plot_grid
+					  list_g[[m]] <- p
+					}
+					assign(paste0("list_g","_","status_os_ypnuicc_3cl"),list_g )
+					save(list_g_status_os_ypnuicc_3cl, file="/Users/ahamypet/RT2Lab/pN_post_NAC/data/processed/list_g_status_os_ypnuicc_3cl.RData")
+
+					res <-  arrange_ggsurvplots(list_g, print = TRUE,
+					                            labels = "AUTO",
+					                            ncol = 2, 
+					                            nrow = 2)
+				pdf("/Users/ahamypet/RT2Lab/pN_post_NAC/src/FigureS2_os_ypnuicc_3cl.pdf",height=12.5,width=11.5)
+				print(res)
+				dev.off()
+```
+
+```{r}
+  	c0 <- coxph(Surv(delay_os,status_vital) ~ ypnuicc_3cl + ypnuicc_3cl*subtype + subtype , data=my_population, method="breslow")
+		c2 <- coxph(Surv(delay_os,status_vital) ~ ypnuicc_3cl + subtype , data=my_population, method="breslow")
+  	anova(c0,c2)  # p=0.005
+
+```
+
+```{r , fig.width=12.5,fig.height=13.5,autodep=FALSE,include=TRUE}
+				res
+```
+
+
+```{r}
+my_population$cnuicc_2cl
+var_selected <- my_population %>% select(age_cl_3_cl,
+                         # menop,bmi_4cl,smoking,#comedic,
+                         # brca_1_2_mut,
+                         # ctuicc_3cl,cnuicc_2cl,
+                         # subtype,er_status,pr_status,her2_status,
+                         # histo_2cl,ki67_cl,mitotic_index,tumor_cellularity,
+                         # grade_2cl,
+                         # lvi_biop,dcis_component,
+                         # str_til_perc,it_til_perc,#pCR,
+                         # neo_ct_regimen, 
+                         # absinf,
+                         pCR, 
+                         # lvi_postneo,
+                         ypnuicc_2cl,
+                         # ypnuicc_3cl,
+                         # RCB_index,RCB_class, @ASHP beware, put again RCB +++ as soon as code runs
+                         str_til_perc_postneo,it_til_perc_postneo,
+                         mitotic_index_postneo,tumor_cellularity_postneo) %>% colnames()
+
+              names_var_selected	  <-  data_dict[match(var_selected,data_dict$var),"names_var"] %>% as.matrix() %>% as.character()
+              matching_name_file    <- data.frame(variable = var_selected, name_variable = names_var_selected)
+          		mydataset             <- my_population
+          		nrow(mydataset)
+```
+
+
+```{r}
+    # survival analyses : Univariate_status_RFS
+					for (m in 1 : length(subtype_list	)  ) {
+					  # m=1
+					  print(m)
+					  subtype							<- subtype_list[[m]]										# samples names_ of subtype ex: MB-0046
+					  subtype_name				<- names(subtype_list[m])
+					  titre_var_surv2    <- subtype_name
+					  dataf  			        <- my_population[my_population$numdos_curie %in% subtype,]
+					  soustitre		        <- paste0("  (",subtype_name, ", n=",nrow(dataf) ,")" )
+
+
+  	degre_signif_multivariate                   <- 0.15
+  	list_vector_variable_univariate_status_RFS	<- list()
+  	        # dataf        <- my_population
+  					del    			 <- c("delay_rfs_diag")
+						ev     			 <- c("status_rfs_diag")
+												quali 			 <-  var_selected
+												nomquali 		 <- names_var_selected
+												titre_var_surv  <- "status_RFS"
+												source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/cox_univariate_adapted_loop_CL_v11.r')
+write.csv2(tabf,file=paste0("/Users/ahamypet/RT2Lab/pN_post_NAC/results/status_RFS_univariate_analysis_ypnuicc3cl_",subtype_name,".csv"))
+}
+# save(variables_to_keep_in_the_multivariate_analysis, file =	paste0("data/processed/variables_to_keep_in_the_multivariate_analysis_status_RFS_RCB_",tmp_file_end,".RData")	)
+# save(vector_variables_to_keep_in_the_multivariate_analysis, file=	paste0("data/processed/vector_variables_to_keep_in_the_multivariate_analysis_status_RFS_RCB_",tmp_file_end,".RData")	)
+variables_to_keep_in_the_multivariate_analysis
+vector_variables_to_keep_in_the_multivariate_analysis
+```
+
+
+
+```{r, eval = FALSE}
+
+							quali 			<-  var_selected
+							nomquali 		<- names_var_selected
+					    tmp_var			  <- variables_to_keep_in_the_multivariate_analysis
+							missing_data  <- sapply(dataf[,tmp_var], function(x) sum(is.na(x)))
+              missing_data  <- missing_data[missing_data!=0] ; sort(missing_data)
+              # missing_data *100/1197 # Decide to remove variables with 30% or more missing data 
+              too_many_NA   <- c("RCB_class","lvi_postneo","pCR")
+              tmp_var			  <- setdiff(variables_to_keep_in_the_multivariate_analysis,too_many_NA)
+							combined_mat2 <- na.omit(dataf[,c(tmp_var,c("delay_rfs_diag","status_rfs_diag"))]) 
+							print(dim(combined_mat2)); print(dim(dataf))
+							cox_final <- cox.step.RdV(combined_mat2, 
+                          delai = "delay_rfs_diag", etat = "status_rfs_diag", cov=tmp_var, force = NULL, dans = NULL)
+							# Writing multivariate in the loop
+							
+tmp_var		<- c("ypnuicc_3cl","subtype","ctuicc_3cl")
+cox 			<- coxph(Surv(delay_rfs_diag, status_rfs_diag)~1+ypnuicc_3cl+subtype+ctuicc_3cl, data=combined_mat2, method="breslow")
+source('~/RT2Lab/databases/core/00_common/src/R_functions_ASHP/Cox_table_loop_multivariate_corrected_ASHP_5.r', local = TRUE)
+write.csv2(tmp_tab,file="/Users/ahamypet/RT2Lab/pN_post_NAC/results/multivariate_status_DRFS_ypnuicc3cl.csv")
+							
+```
+
