@@ -1,7 +1,10 @@
 ##############################################################################################################
 ##############################################################################################################
 #############################################################################################################
-################################  ACM : variables qualitatives#################################################
+################################     ACM : variables qualitatives   #################################################
+#################################################################################################################
+
+
 
 ################ Fertility discussion 
 
@@ -41,7 +44,7 @@ names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mea
 
 ################################## ACM FactomineR
 library(tidyr)
-data.active <- data_v2 %>% select(pf_discussion, age_young_cl_40_bin, center_curie, brca_screen, brca_mut, neo_ct,grade_2cl) %>% drop_na()
+data.active <- data_v2 %>% select(pf_discussion, age_young_cl, bmi_2cl,nb_child_3cl, center_curie, neo_ct,grade_2cl) %>% drop_na()
                         
 
 
@@ -266,6 +269,63 @@ explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
 
 
 
+############################# ACM3 
+
+
+
+res <- explor::prepare_results(res.mca)
+explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
+                     var_lab_min_contrib = 0, col_var = "Variable", symbol_var = NULL, size_var = NULL,
+                     size_range = c(10, 300), labels_size = 10, point_size = 56, transitions = TRUE,
+                     labels_positions = NULL, labels_prepend_var = FALSE)
+
+
+
+res <- explor::prepare_results(res.mca)
+explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
+                     var_lab_min_contrib = 0, col_var = "Variable", symbol_var = NULL, size_var = "Contrib",
+                     size_range = c(52.5, 700), labels_size = 10, point_size = 56, transitions = TRUE,
+                     labels_positions = NULL, labels_prepend_var = FALSE, xlim = c(-1.04, 1.68),
+                     ylim = c(-1.25, 1.47))
+
+
+res <- explor::prepare_results(res.mca)
+explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
+                     ind_lab_min_contrib = 0, col_var = "pf_discussion", labels_size = 9, point_opacity = 0.5,
+                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
+                     labels_positions = NULL, xlim = c(-1.44, 1.82), ylim = c(-1.47, 1.79))
+
+
+res <- explor::prepare_results(res.mca)
+explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
+                     ind_lab_min_contrib = 0, col_var = "age_young_cl", labels_size = 9, point_opacity = 0.5,
+                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
+                     labels_positions = NULL, xlim = c(-1.44, 1.82), ylim = c(-1.47, 1.79))
+
+
+
+res <- explor::prepare_results(res.mca)
+explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
+                     ind_lab_min_contrib = 0, col_var = "nb_child_3cl", labels_size = 9, point_opacity = 0.5,
+                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
+                     labels_positions = NULL, xlim = c(-1.44, 1.82), ylim = c(-1.47, 1.79))
+
+
+
+res <- explor::prepare_results(res.mca)
+explor::MCA_ind_plot(res, xax = 2, yax = 3, ind_sup = FALSE, lab_var = NULL,
+                     ind_lab_min_contrib = 0, col_var = "center_curie", labels_size = 9, point_opacity = 0.5,
+                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
+                     labels_positions = NULL, xlim = c(-1.44, 1.82), ylim = c(-1.47, 1.79))
+
+
+
+
+
+
+
+
+
 ###################################################@#########################################################
 #################################################################################################################
 ##################################################################################################################
@@ -473,12 +533,35 @@ plot(res.mca.2,
 
 ######################################## API sortie de graph 
 
-
+library(explor)
 explor(res.mca.2)
 
 
+res <- explor::prepare_results(res.mca.2)
+explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
+                     var_lab_min_contrib = 0, col_var = "Variable", symbol_var = NULL, size_var = "Contrib",
+                     size_range = c(52.5, 700), labels_size = 14, point_size = 56, transitions = TRUE,
+                     labels_positions = NULL, labels_prepend_var = FALSE, xlim = c(-1.63, 1.66),
+                     ylim = c(-1.62, 1.67))
 
 
+res <- explor::prepare_results(res.mca.2)
+explor::MCA_biplot(res, xax = 1, yax = 2, col_var = "Variable", ind_point_size = 32,
+                   ind_opacity = 0.5, ind_opacity_var = NULL, ind_labels = FALSE, var_point_size = 96,
+                   var_sup = FALSE, ind_sup = FALSE, labels_size = 12, bi_lab_min_contrib = 0,
+                   symbol_var = "Nature", transitions = TRUE, labels_positions = NULL, xlim = c(-1.51,1.65), ylim = c(-1.17, 1.98))
 
 
+res <- explor::prepare_results(res.mca.2)
+explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
+                     ind_lab_min_contrib = 0, col_var = "fertil_preserv", labels_size = 9, point_opacity = 0.5,
+                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = TRUE,
+                     labels_positions = NULL, xlim = c(-1.11, 1.14), ylim = c(-1.06, 1.19))
+
+
+res <- explor::prepare_results(res.mca.2)
+explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
+                     ind_lab_min_contrib = 0, col_var = "pf_discussion", labels_size = 9, point_opacity = 0.5,
+                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = TRUE,
+                     labels_positions = NULL, xlim = c(-1.11, 1.14), ylim = c(-1.06, 1.19))
 
