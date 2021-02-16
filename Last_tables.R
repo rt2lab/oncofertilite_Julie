@@ -200,14 +200,29 @@ write_csv2(tab12[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Jul
 
 
 
+ggplot(base_complet) +
+  geom_boxplot(aes(y = age, x = pf_discussion ,fill= pf_discussion), notch=F,show.legend=T)+
+  geom_jitter(aes(y = age, x = pf_discussion) , col = "black", alpha = 0.4)+ theme(axis.text.x = element_blank(),legend.position="top", legend.title=element_blank())+scale_y_continuous(limits=c(20, 45))+
+  labs(title="Age at BC diagnostis") + xlab("Fertility preservation discussion")+ ylab("Age")
 
 
 
 
+d2 <- base_complet %>%
+  group_by(bmi_4cl_ord,pf_discussion) %>%
+  summarise(count = n()) %>%
+  mutate(perc = (count/sum(count)))
+df$title <- "Underweight class distribution in our population (n=1233)"
+d2$perc <- round(d2$perc,2)
+d2$x <- paste0(paste0(as.character(d2$count),'(',sep = ''),paste(paste0(as.character(100*d2$perc),'%)',sep= '')))
+d2
 
 
-
-
+d=ggplot(data=d2, aes(fill=pf_discussion,y=100*perc,x=bmi_4cl_ord),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Rate of informations given by doctors")+
+  xlab(" ")+ ylab("  ")+theme_bw()+theme(legend.position="bottom")+scale_fill_manual(values=c( "#456268","#79a3b1","#d0e8f2","#91091e"))+ guides(fill=guide_legend(title="Info",reverse=T))+
+  geom_text(aes(x=bmi_4cl_ord,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+d
 
 
 
