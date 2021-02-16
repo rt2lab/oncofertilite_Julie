@@ -16,25 +16,30 @@ source(file.path("/Users/julieborghese/Documents/GitHub/databases/core/00_common
 
 base_doctor = d2_long_2_with_names_centers
 
-base_doctor$pf_discussion.2 = NA
-base_doctor$pf_discussion.2[base_doctor$pf_discussion=="oui"]<-"Yes"
-base_doctor$pf_discussion.2[base_doctor$pf_discussion=="non"]<-"No"
+# quand on avait la mauvaise base 
 
-table(base_doctor$pf_discussion.2)
-base_doctor$pf_discussion.2 <-as.factor(base_doctor$pf_discussion.2)
+# base_doctor$pf_discussion.2 = NA
+# base_doctor$pf_discussion.2[base_doctor$pf_discussion=="oui"]<-"Yes"
+# base_doctor$pf_discussion.2[base_doctor$pf_discussion=="non"]<-"No"
+# 
+# table(base_doctor$pf_discussion.2)
+# base_doctor$pf_discussion.2 <-as.factor(base_doctor$pf_discussion.2)
 
 
 # pf_discussion.2
 # No  Yes 
 # 1339  448 
 
+# a voir si on met la nouvelle variable pf_discussion en facteur. initialmeent, elle est en character
+
 ################################################## Table 1 docteur ##############################
 #################################################################################################
 
 
-var_selected<-c("pf_discussion.2", "specialty", "junior_senior","gender_bin")
 
-names_var_selected <-c("Fertility preservation discussion", "Specialty", "Age","Gender")
+var_selected<-c("pf_discussion", "specialty", "junior_senior","gender_bin", "center_anonym")
+
+names_var_selected <-c("Fertility preservation discussion", "Specialty", "Age","Gender", "Treatment center")
 
 
 table0<-preformatTable1(stratif = NA, stratif_order = NA, stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_doctor, missing = F, perc_by_column = F)
@@ -48,25 +53,24 @@ write_csv2(tab0[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Juli
 
 ################################################################ Table : Fertility preservation talk ligne
 
+a = base_doctor %>% subset(is.na(pf_discussion)) #
 
+var_selected<-c("specialty", "junior_senior","gender_bin", "center_anonym")
 
-var_selected<-c("pf_discussion.2")
+names_var_selected <-c("Specialty", "Age","Gender","Treatment center")
 
-names_var_selected <-c("Fertility preservation discussion")
-
-
-tab7<-preformatTable1(stratif = c("junior_senior"), stratif_order = c("junior", "senior"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_doctor, missing = F, perc_by_column = TRUE)
-
-
-tab7[[1]]
+tab7<-preformatTable1(stratif = "pf_discussion", stratif_order = c("Yes", "No"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_doctor, missing = F, perc_by_column = F)
+tab7[[1]]%>% kbl("latex", align = "llr", vline = "|", caption = "Specialty effect")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 
 
 ############################################################## Table : specialty
 
 
-var_selected<-c("pf_discussion.2", "junior_senior","gender_bin")
+a = base_doctor %>% subset(is.na(specialty))
 
-names_var_selected <-c("Fertility preservation discussion", "Age","Gender")
+var_selected<-c("pf_discussion", "junior_senior","gender_bin","center_anonym")
+
+names_var_selected <-c("Fertility preservation discussion", "Age","Gender", "Treatment center")
 
 
 tab9<-preformatTable1(stratif = "specialty", stratif_order = c("oncologist", "radiation oncologist", "surgeon"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_doctor, missing = F, perc_by_column = F)
@@ -78,9 +82,12 @@ write_csv2(tab9[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Juli
 
 ############################################################## Table Gender 
 
-var_selected<-c("pf_discussion.2", "junior_senior","specialty")
 
-names_var_selected <-c("Fertility preservation discussion", "Age","Specialty")
+a = base_doctor %>% subset(is.na(gender_bin))
+
+var_selected<-c("pf_discussion", "junior_senior","specialty", "center_anonym")
+
+names_var_selected <-c("Fertility preservation discussion", "Age","Specialty","Treatment center")
 
 
 tab10<-preformatTable1(stratif = "gender_bin", stratif_order = c("female", "male"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_doctor, missing = F, perc_by_column = F)
@@ -92,9 +99,12 @@ write_csv2(tab10[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Jul
 
 ############################################################# Table Age 
 
-var_selected<-c("pf_discussion.2", "gender_bin","specialty")
+a = base_doctor %>% subset(is.na(center_anonym))
 
-names_var_selected <-c("Fertility preservation discussion", "Gender","Specialty")
+
+var_selected<-c("pf_discussion.2", "gender_bin","specialty","center_anonym")
+
+names_var_selected <-c("Fertility preservation discussion", "Gender","Specialty","Treatment center")
 
 
 tab10<-preformatTable1(stratif = "junior_senior", stratif_order = c("junior", "senior"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_doctor, missing = F, perc_by_column = F)
@@ -102,6 +112,28 @@ tab10<-preformatTable1(stratif = "junior_senior", stratif_order = c("junior", "s
 
 tab10[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Age effect")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab10[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table1_doctor_age_csv.xlsx')
+
+
+###############################################################@  Table Center 
+
+
+var_selected<-c("pf_discussion", "gender_bin","specialty","junior_senior")
+
+names_var_selected <-c("Fertility preservation discussion", "Gender","Specialty","Age")
+
+
+tab11<-preformatTable1(stratif = "center_anonym", stratif_order = c("Center 1", "Center 2"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_doctor, missing = F, perc_by_column = F)
+
+
+tab11[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Treatment center effect")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+write_csv2(tab10[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table1_doctor_age_csv.xlsx')
+
+
+
+
+
+
+
 
 
 
@@ -113,7 +145,7 @@ library(dplyr)
 library("factoextra")
 
 library(tidyr)
-data.active <- base_doctor %>% select(pf_discussion.2, specialty, junior_senior, gender_bin) %>% drop_na()
+data.active <- base_doctor %>% select(pf_discussion, specialty, junior_senior, gender_bin,center_anonym) %>% drop_na()
 
 
 
@@ -136,12 +168,12 @@ eig.val <- get_eigenvalue(res.mca)
 eig.val
 
 # eigenvalue variance.percent cumulative.variance.percent
-# Dim.1  0.3183440         25.46752                    25.46752
-# Dim.2  0.2858605         22.86884                    48.33636
-# Dim.3  0.2351040         18.80832                    67.14468
-# Dim.4  0.2131723         17.05378                    84.19846
-# Dim.5  0.1975192         15.80154                   100.00000
-# 
+# Dim.1  0.2649284         22.07737                    22.07737
+# Dim.2  0.2392246         19.93538                    42.01275
+# Dim.3  0.2023629         16.86358                    58.87632
+# Dim.4  0.1900887         15.84072                    74.71705
+# Dim.5  0.1707165         14.22638                    88.94342
+# Dim.6  0.1326789         11.05658                   100.00000
 
 fviz_screeplot (res.mca, addlabels = TRUE, ylim = c (0, 45))
 
@@ -154,18 +186,18 @@ var
 # Coordonnées
 var$coord
 
-#                         Dim 1       Dim 2       Dim 3
-# No                   -0.4196591  0.10047503  0.23417603
-# Yes                   1.0936150 -0.26183395 -0.61025343
-# oncologist           -0.7119780 -0.42927753 -0.07973921
-# radiation oncologist -1.0370712  3.42218907  1.43461967
-# surgeon               0.6162078  0.03198069 -0.06108475
-# junior                0.5469048 -0.37235213  1.05716110
-# senior               -0.3380570  0.23016120 -0.65346065
-# female                0.4132587  0.65565123 -0.08821781
-# male                 -0.4020289 -0.63783463  0.08582058
-# 
-
+# Dim 1      Dim 2         Dim 3
+# No                    0.2177414 -0.2563612 -0.1639731619
+# Yes                  -0.6452884  0.7597401  0.4859432430
+# oncologist            0.2588091 -0.7660308 -0.0002043015
+# radiation oncologist  3.5326599  2.0950373 -0.0475680388
+# surgeon              -0.4429138  0.4476456  0.0034296959
+# junior               -0.4269167  0.1695997  0.8371004514
+# senior                0.2771923 -0.1101192 -0.5435201983
+# female               -0.1402966  0.5529823 -0.5285093592
+# male                  0.1637085 -0.6452607  0.6167039472
+# Center 1             -0.4810879 -0.2365723 -0.2813123453
+# Center 2              0.9187331  0.4517820  0.5372219035
 
 # axe 1 : 
 
@@ -174,48 +206,114 @@ var$coord
 # Cos2: qualité de représentation
 var$cos2
 
-#                         Dim 1       Dim 2       Dim 3
-# No                   0.4589455 0.026307775 0.142906726
-# Yes                  0.4589455 0.026307775 0.142906726
-# oncologist           0.3476197 0.126371028 0.004360287
-# radiation oncologist 0.0517573 0.563588933 0.099043966
-# surgeon              0.4590433 0.001236446 0.004510918
-# junior               0.1848850 0.085701011 0.690813183
-# senior               0.1848850 0.085701011 0.690813183
-# female               0.1661419 0.418197059 0.007570904
-# male                 0.1661419 0.418197059 0.007570904
+#                        Dim 1      Dim 2            Dim 3
+# No                   0.14050602 0.19476787 0.07968165006765
+# Yes                  0.14050602 0.19476787 0.07968165006765
+# oncologist           0.04841283 0.42412512 0.00000003016787
+# radiation oncologist 0.48428632 0.17032644 0.00008780697922
+# surgeon              0.23318631 0.23819537 0.00001398221287
+# junior               0.11833802 0.01867618 0.45498100333657
+# senior               0.11833802 0.01867618 0.45498100333655
+# female               0.02296773 0.35681774 0.32593380796117
+# male                 0.02296773 0.35681774 0.32593380796118
+# Center 1             0.44199139 0.10687911 0.15112715360566
+# Center 2             0.44199139 0.10687911 0.15112715360566
 
 
-
-#Axe 1 : pf_discussion et type de médecin 
-# Axe 2 : genre des médecin 
-# Axe 3 : Senior / Junior
+# dim 3 : junior senior et center 
+# dim 2 : male and female plus speciality
+# dim 1 : center ? 
 
 var$contrib
 
-#                          Dim 1       Dim 2      Dim 3
-# No                    9.995016  0.63804168  4.2141669
-# Yes                  26.046615  1.66271126 10.9819515
-# oncologist           16.193933  6.55598610  0.2750425
-# radiation oncologist  3.877954 47.02577812 10.0483716
-# surgeon              16.319845  0.04895307  0.2171521
-# junior                8.972887  4.63189810 45.3970675
-# senior                5.546391  2.86310492 28.0611889
-# female                6.613537 18.53864717  0.4080740
-# male                  6.433822 18.03487959  0.3969850
+#                          Dim 1      Dim 2           Dim 3
+# No                    2.6761575  4.1082497  1.986884727923
+# Yes                   7.9309360 12.1750178  5.888239250634
+# oncologist            2.1214562 20.5821317  0.000001730676
+# radiation oncologist 35.1940484 13.7079298  0.008353984793
+# surgeon               8.0430801  9.0986178  0.000631382980
+# junior                5.4166276  0.9467070 27.264375601806
+# senior                3.5169573  0.6146865 17.702461883636
+# female                0.8001767 13.7669258 14.866022585578
+# male                  0.9337056 16.0642708 17.346778533857
+# Center 1             11.4674592  3.0709236  5.133263040364
+# Center 2             21.8993954  5.8645396  9.802987277753
 
 
 library("corrplot")
 corrplot(var$cos2, is.corr=FALSE)
 
-# Dim 1 : yes/no et métier 
-#Dim 2 : Female, male 
-#Dim 3 : Age 
+# Dim 1 : effet centre et oncologiste 
+#Dim 2 : Female, male , oncologist et oui non
+#Dim 3 : junior senior
 
 fviz_mca_var(res.mca, col.var = "cos2",
              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
              repel = TRUE, 
              ggtheme = theme_minimal())
+
+###########################################@ biplot pf_discussion 
+
+fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme_minimal(), axes=c(1,2), title="MCA (axis 1 and 2)",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation discussion")
+
+
+fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme_minimal(), axes=c(2,3), title="MCA (axis 2 and 3)",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation discussion")
+
+
+
+#########################################@  biplot  gender
+
+
+fviz_mca_biplot(res.mca,col.ind = data.active$gender_bin, ggtheme = theme_minimal(), axes=c(2,3), title="MCA (axis 2 and 3)",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Gender")
+
+
+###################################@##  Biplot treatment center
+
+
+fviz_mca_biplot(res.mca,col.ind = data.active$center_anonym, ggtheme = theme_minimal(), axes=c(2,3), title="MCA (axis 2 and 3)",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Treatment center")
+
+
+
+fviz_mca_biplot(res.mca,col.ind = data.active$center_anonym, ggtheme = theme_minimal(), axes=c(1,2), title="MCA (axis 1 and 2)",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Treatment center")
+
+
+
+########################################@ Biplot age
+
+fviz_mca_biplot(res.mca,col.ind = data.active$junior_senior, ggtheme = theme_minimal(), axes=c(2,3), title="MCA (axis 2 and 3)",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Age")
+
+
+
+fviz_mca_biplot(res.mca,col.ind = data.active$junior_senior, ggtheme = theme_minimal(), axes=c(1,3), title="MCA (axis 1 and 3)",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Age")
+
+
+
+########################################### Biplot specialty 
+
+
+fviz_mca_biplot(res.mca,col.ind = data.active$specialty, ggtheme = theme_minimal(), axes=c(2,3), title="MCA (axis 2 and 3)",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Specialty")
+
+
+################################################################ il est très joli
+
+fviz_mca_biplot(res.mca,col.ind = data.active$specialty, ggtheme = theme_minimal(), axes=c(1,2), title="MCA (axis 1 and 2)",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Specialty")
+
+
+fviz_mca_biplot(res.mca,col.ind = data.active$specialty, ggtheme = theme_minimal(), axes=c(1,3), title="MCA (axis 1 and 3)",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Specialty")
+
+
+
+
 
 
 plot(res.mca, 
@@ -256,71 +354,12 @@ explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
 
 
 
-################################################ Projection individu 
-
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_ind_plot(res, xax = 2, yax = 3, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "junior_senior", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
-                     labels_positions = NULL, xlim = c(-1.89, 2.1), ylim = c(-1.37, 2.63)) 
-
-########################@ Ce graph ets un peu mieux pour age 
-res <- explor::prepare_results(res.mca)
-explor::MCA_ind_plot(res, xax = 1, yax = 3, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "junior_senior", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
-                     labels_positions = NULL, xlim = c(-1.89, 2.1), ylim = c(-1.37, 2.63))
-
-
-
-
-######################################## graph individu discussion 
-
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_ind_plot(res, xax = 1, yax = 3, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "pf_discussion.2", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
-                     labels_positions = NULL, xlim = c(-1.89, 2.1), ylim = c(-1.37, 2.63))
-
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "pf_discussion.2", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
-                     labels_positions = NULL, xlim = c(-1.89, 2.1), ylim = c(-1.37, 2.63))
-
-
-##################################################  Gender 
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "gender_bin", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
-                     labels_positions = NULL, xlim = c(-1.89, 2.1), ylim = c(-1.37, 2.63))
-
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "specialty", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
-                     labels_positions = NULL, xlim = c(-1.89, 2.1), ylim = c(-1.37, 2.63))
-
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_ind_plot(res, xax = 2, yax = 3, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "specialty", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
-                     labels_positions = NULL, xlim = c(-1.89, 2.1), ylim = c(-1.37, 2.63))
-
-
 #######################################################################################################################
 ###########################################################################################################################
 ###########################################################################################################################
 #########################################################################@ Regression logistique ##############################
 
-base_doctor$pf_discussion.2 <-as.factor(base_doctor$pf_discussion.2)
+base_doctor$pf_discussion.2 <-as.factor(base_doctor$pf_discussion)
 
 var_selected<-c("specialty", "junior_senior","gender_bin")
 

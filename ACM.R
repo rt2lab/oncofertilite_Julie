@@ -27,45 +27,41 @@ library("factoextra")
 ################################################## base de données pour l'acm
 
 
-data_v2 = database_preprocessed_labels
 
-data_v2$bmi_4cl_ord <- fct_relevel(data_v2$bmi_4cl,"<18.5", "18.5-24.9 ", "25-29.9",">=30")
+data_fertil_preserv = base_julie %>% filter(fertil_preserv=="Yes")
 
-data_v2$amh_num<-as.numeric(data_v2$amh)
-cfa_num <- as.numeric(data_v2$cfa)
-data_fertil_preserv = data_v2 %>% filter(fertil_preserv=="Yes")
+base_julie$nb_child_3cl<- as.character(base_julie$nb_child_3cl)
 
-var_selected<-c("age_young_cl","age", "nb_child_3cl", "bmi_4cl_ord","bmi", "center_curie","brca_screen", "brca_mut", "inflammatory_bc","tclin" ,"cnuicc_4cl","grade_3cl", "histo_3cl", "neo_ct", "ct_setting_5cl", "pf_discussion")
+base_julie$nb_child_2cl  <- NA
+base_julie$nb_child_2cl[base_julie$nb_child_3cl == "More than 1"] <- "Has children"
+base_julie$nb_child_2cl[base_julie$nb_child_3cl == "1"] <- "Has children"
+base_julie$nb_child_2cl[base_julie$nb_child_3cl=="0"] <- "No children"
+table(base_julie$nb_child_2cl)
 
-names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mean)", "Treatment center","Genetic analysis", "Hereditary predisposition", "Inflammatory BC", "Clinical Tumor size (mm)", "Clinical N stage (TNM)", "SBR grade", "Histological type", "Neoajuvant chemotherapy", "Chemotherapy setting", "Fertility preservation discussion")
+
+
+base_julie$age_young_2cl <- cut(base_julie$age, c(22, 37,44))
+table(base_julie$age_young_2cl)
+
+
+
 
 
 
 
 ################################## ACM FactomineR
 library(tidyr)
-data.active <- data_v2 %>% select(pf_discussion, age_young_cl, bmi_2cl,nb_child_3cl, center_curie, neo_ct,grade_2cl) %>% drop_na()
+data.active <- base_julie %>% select(pf_discussion,age_young_2cl,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
                         
-
-
-#On enlève les valeurs manquantes NA pour toutes les variables 
-# sinon ca perturbe trop les axes 
 
 #on crée l'ACM 
 res.mca <- MCA (data.active,ncp = 3, graph = FALSE)
 
-# projection des variables selon les axes de l'acm 
 
-#axe 2 et 3 
-plot(res.mca, axes = c(2, 3),choix = "ind", invisible = "ind")
-
-
-############### à mettre dans le rendu 
+############################################################## à mettre dans le rendu 
 #axe 1 et 2 
 plot(res.mca, axes = c(1, 2),choix = "ind", invisible = "ind")
 
-# Axe 1 et 3
-plot(res.mca, axes = c(1, 3),choix = "ind", invisible = "ind")
 
 
 #distribution des individus sur les axes chosiis en fonction de variables 
@@ -74,32 +70,26 @@ plot(res.mca, axes = c(1, 3),choix = "ind", invisible = "ind")
 plotellipses(res.mca, axes = c(1, 2), means = FALSE)
 
 
-plotellipses(res.mca, axes = c(2, 3), means = FALSE)
-
-plotellipses(res.mca, axes = c(1, 3), means = FALSE)
-
-
 #valeurs propres pour aider au choix des axes qu'on va utiliser 
 
 eig.val <- get_eigenvalue(res.mca)
 eig.val
-# Il ya un vrai décrochage entre 1 et 2 donc je ne garderai que l'axe 1 et 2. 
-# a discuter pour le troisième. 
-# je pense qu'il est drivé par le brca_mut
+
+
 
 # eigenvalue variance.percent cumulative.variance.percent
-# Dim.1 0.21136748        24.659539                    24.65954
-# Dim.2 0.16985691        19.816640                    44.47618
-# Dim.3 0.14877973        17.357635                    61.83381
-# Dim.4 0.13393374        15.625604                    77.45942
-# Dim.5 0.10981873        12.812185                    90.27160
-# Dim.6 0.08338627         9.728398                   100.00000
+# eigenvalue variance.percent cumulative.variance.percent
+# Dim.1 0.37518467        37.518467                    37.51847
+# Dim.2 0.21573299        21.573299                    59.09177
+# Dim.3 0.16414088        16.414088                    75.50585
+# Dim.4 0.15653874        15.653874                    91.15973
+# Dim.5 0.08840272         8.840272                   100.00000
 
 # #################### A mettre dans le rendu : plot des valeurs propres pour visualiser la règle de décision dite du coude 
 
 fviz_screeplot (res.mca, addlabels = TRUE, ylim = c (0, 45))
 
-# on garderait 2-3 dimensions a priori
+# oon ne garde que deux dimensions
 
 ####################### Coordonnées, qualité de réprésentation et controbutiona aux axes des variables 
 
@@ -116,21 +106,17 @@ var
 
 # Coordonnées
 var$coord
-
-#                      Dim 1      Dim 2        Dim 3
-# pf_discussion_No   0.6935321 -0.3031002 -0.056601862
-# pf_discussion_Yes -0.8398944  0.3670662  0.068547060
-# [0 -40)           -0.4321631  0.1562855  0.001692577
-# 40+                1.4187995 -0.5130883 -0.005556763
-# Curie Paris       -0.1255357 -0.3642521  0.201843926
-# Curie St Cloud     0.2398053  0.6958149 -0.385573654
-# brca_screen_Yes    0.0000000  0.0000000  0.000000000
-# brca_mut_No        0.1102971  0.1573850 -0.392983950
-# brca_mut_Yes      -0.4262195 -0.6081807  1.518602264
-# neo_ct_No          0.4246005  0.4614313  0.621482787
-# neo_ct_Yes        -0.3719641 -0.4042291 -0.544439466
-# Grade I-II         0.3006457  0.9242007  0.213281568
-# Grade III         -0.1625664 -0.4997375 -0.115326459
+# Dim 1      Dim 2       Dim 3
+# pf_discussion_No  -0.5747186 -0.1711726  0.05795223
+# pf_discussion_Yes  1.1662645  0.3473570 -0.11760127
+# (22,37]            0.9805459  0.1738657 -0.07942678
+# (37,44]           -0.5876280 -0.1041954  0.04759940
+# Has children      -0.3823415 -0.1550088 -0.01057949
+# No children        1.0150752  0.4115314  0.02808740
+# neo_ct_No         -0.3642917  0.5593574 -0.61925375
+# neo_ct_Yes         0.4389416 -0.6739798  0.74615001
+# Grade I-II        -0.3247913  0.8518911  0.67113342
+# Grade III          0.2507612 -0.6577183 -0.51816098
 
 
 
@@ -138,60 +124,42 @@ var$coord
 # Cos2: qualité de représentation
 var$cos2
 
-# Dim 1      Dim 2          Dim 3
-# pf_discussion_No  0.58249367 0.11125783 0.003879891217
-# pf_discussion_Yes 0.58249367 0.11125783 0.003879891217
-# [0 -40)           0.61315276 0.08018826 0.000009405252
-# 40+               0.61315276 0.08018826 0.000009405252
-# Curie Paris       0.03010412 0.25345206 0.077825700164
-# Curie St Cloud    0.03010412 0.25345206 0.077825700164
-# brca_screen_Yes          NaN        NaN            NaN
-# brca_mut_No       0.04701078 0.09571854 0.596786315868
-# brca_mut_Yes      0.04701078 0.09571854 0.596786315868
-# neo_ct_No         0.15793614 0.18652395 0.338359757108
-# neo_ct_Yes        0.15793614 0.18652395 0.338359757108
-# Grade I-II        0.04887488 0.46185773 0.024597007962
-# Grade III         0.04887488 0.46185773 0.024597007962
+# Dim 1      Dim 2        Dim 3
+# pf_discussion_No  0.67027392 0.05945800 0.0068152560
+# pf_discussion_Yes 0.67027392 0.05945800 0.0068152560
+# (22,37]           0.57619620 0.01811600 0.0037806668
+# (37,44]           0.57619620 0.01811600 0.0037806668
+# Has children      0.38810541 0.06379098 0.0002971503
+# No children       0.38810541 0.06379098 0.0002971503
+# neo_ct_No         0.15990278 0.37699558 0.4620561925
+# neo_ct_Yes        0.15990278 0.37699558 0.4620561925
+# Grade I-II        0.08144504 0.56030439 0.3477551518
+# Grade III         0.08144504 0.56030439 0.3477551518
 
 
 # Interprétation de la qualité de la représentation 
 
-# sur l'axe 1, les mieux représentés sont pf_discussion, l'âge
-#sur l'axe2 les mmieux représentés sont le Grade et le centre de traitement 
-# axe 3 : le mieux représentée : brca_mut et neo_ct 
-
-## Donc corrélation entre âge et pf_discussion 
-### Donc corrélation entre Grade et centre d etraitement 
-#### Corrélation entre neo_ct et brca_mut
 
 
 #################################################################
 # #####################Contributions aux axes######################
 var$contrib
 
-# 
-# Dim 1     Dim 2         Dim 3
-# pf_discussion_No  17.8056820  4.232071  0.1684928053
-# pf_discussion_Yes 21.5633746  5.125203  0.2040513519
-# [0 -40)            9.6757022  1.574634  0.0002108525
-# 40+               31.7655129  5.169552  0.0006922326
-# Curie Paris        0.6991308  7.324590  2.5677337491
-# Curie St Cloud     1.3355190 13.991844  4.9050298541
-# brca_screen_Yes    0.0000000  0.000000  0.0000000000
-# brca_mut_No        0.6531939  1.654991 11.7803444022
-# brca_mut_Yes       2.5241280  6.395359 45.5226165830
-# neo_ct_No          5.6899025  8.362052 17.3179477472
-# neo_ct_Yes         4.9845427  7.325434 15.1710947207
-# Grade I-II         2.1439994 25.211699  1.5329064317
-# Grade III          1.1593119 13.632570  0.8288792696
+# Dim 1      Dim 2       Dim 3
+# pf_discussion_No  11.794999  1.8196355  0.27412970
+# pf_discussion_Yes 23.935347  3.6925485  0.55628572
+# (22,37]           19.205650  1.0501457  0.28804169
+# (37,44]           11.509688  0.6293382  0.17261951
+# Has children       5.660570  1.6180734  0.00990638
+# No children       15.028197  4.2958090  0.02630036
+# neo_ct_No          3.865881 15.8510209 25.53380720
+# neo_ct_Yes         4.658070 19.0991809 30.76614474
+# Grade I-II         2.450017 29.3127763 23.91147094
+# Grade III          1.891581 22.6314716 18.46129377
 
 
 ######################## Interprétation ############################
 ####################################################################
-
-# ax1 : max contribution ets pf_discussion, age 
-#axe 2 : max contribution  : Grade et le centre 
-# axe 3 : max contribution brca et neo_ct 
 
 ###################### Plot corrélation axe et variables : même info mais plus visuel 
 library("corrplot")
@@ -221,22 +189,11 @@ fviz_mca_var(res.mca, col.var = "cos2",
              repel = TRUE, 
              ggtheme = theme_minimal())
 
-###################################### Plot qualité de représentation des individus
-ind <- get_mca_ind (res.mca)
-ind
 
-fviz_mca_ind(res.mca, col.ind = "cos2", 
-             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-             repel = TRUE, 
-             ggtheme = theme_minimal())
+fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme_minimal(), axes=c(1,2), title="MCA for fertility preservation discussion",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation discussion")
 
 
-# ####################################  A mettre dans le rendu :   graph récapitulatif de la projection des variables sur axe 1 et 2 
-
-plot(res.mca, 
-     invisible = "ind",
-     cex = 0.8,
-     autoLab = "yes")
 
 
 
@@ -247,17 +204,7 @@ explor(res.mca)
 
 
 
-##################@ Plot ellispe 
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "pf_discussion", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = TRUE,
-                     labels_positions = NULL, xlim = c(-1.04, 1.35), ylim = c(-1.15, 1.25))
-
-
-
-##################### Plot variable 
+#####################################################  A mettre dans le rapport : Plot variable 
 res <- explor::prepare_results(res.mca)
 explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
                      var_lab_min_contrib = 0, col_var = "Variable", symbol_var = NULL, size_var = "Contrib",
@@ -266,63 +213,6 @@ explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
                      ylim = c(-1.42, 1.74))
 
 ####################@
-
-
-
-############################# ACM3 
-
-
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
-                     var_lab_min_contrib = 0, col_var = "Variable", symbol_var = NULL, size_var = NULL,
-                     size_range = c(10, 300), labels_size = 10, point_size = 56, transitions = TRUE,
-                     labels_positions = NULL, labels_prepend_var = FALSE)
-
-
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
-                     var_lab_min_contrib = 0, col_var = "Variable", symbol_var = NULL, size_var = "Contrib",
-                     size_range = c(52.5, 700), labels_size = 10, point_size = 56, transitions = TRUE,
-                     labels_positions = NULL, labels_prepend_var = FALSE, xlim = c(-1.04, 1.68),
-                     ylim = c(-1.25, 1.47))
-
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "pf_discussion", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
-                     labels_positions = NULL, xlim = c(-1.44, 1.82), ylim = c(-1.47, 1.79))
-
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "age_young_cl", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
-                     labels_positions = NULL, xlim = c(-1.44, 1.82), ylim = c(-1.47, 1.79))
-
-
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "nb_child_3cl", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
-                     labels_positions = NULL, xlim = c(-1.44, 1.82), ylim = c(-1.47, 1.79))
-
-
-
-res <- explor::prepare_results(res.mca)
-explor::MCA_ind_plot(res, xax = 2, yax = 3, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "center_curie", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = FALSE,
-                     labels_positions = NULL, xlim = c(-1.44, 1.82), ylim = c(-1.47, 1.79))
-
-
-
-
-
-
 
 
 
@@ -337,7 +227,7 @@ explor::MCA_ind_plot(res, xax = 2, yax = 3, ind_sup = FALSE, lab_var = NULL,
 # les variables qu'on garde 
 
 
-data.active.2 <- data_v2 %>% select(fertil_preserv, pf_discussion, age_young_cl_40_bin, center_curie, brca_screen, brca_mut, neo_ct,grade_2cl) %>% drop_na()
+data.active.2 <- base_julie %>% select(fertil_preserv, pf_discussion,age_young_2cl,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
 
 
 
@@ -352,34 +242,23 @@ plot(res.mca.2)
 #axe 1 et 2 
 plot(res.mca.2, axes = c(1, 2),choix = "ind", invisible = "ind")
 
-#axe 2 et 3 
-plot(res.mca.2, axes = c(2, 3),choix = "ind", invisible = "ind")
-
-# Axe 1 et 3
-plot(res.mca.2, axes = c(1, 3),choix = "ind", invisible = "ind")
 
 
 plotellipses(res.mca.2, axes = c(1, 2), means = FALSE)
-
-
-plotellipses(res.mca.2, axes = c(2, 3), means = FALSE)
-
-plotellipses(res.mca.2, axes = c(1, 3), means = FALSE)
 
 
 # Valeurs propres 
 eig.val.2 <- get_eigenvalue(res.mca.2)
 head(eig.val.2)
 
-# 
 # eigenvalue variance.percent cumulative.variance.percent
-# Dim.1 0.25175061         28.77150                    28.77150
-# Dim.2 0.15440814         17.64664                    46.41814
-# Dim.3 0.13049247         14.91343                    61.33157
-# Dim.4 0.11787295         13.47119                    74.80276
-# Dim.5 0.09734135         11.12473                    85.92749
-# Dim.6 0.08636294          9.87005                    95.79754
-# 
+# Dim.1 0.41203448        41.203448                    41.20345
+# Dim.2 0.18875438        18.875438                    60.07889
+# Dim.3 0.13701944        13.701944                    73.78083
+# Dim.4 0.13050676        13.050676                    86.83151
+# Dim.5 0.08075943         8.075943                    94.90745
+# Dim.6 0.05092551         5.092551                   100.00000
+
 
 #graphique valeurs propres et règle de décision 
 
@@ -398,21 +277,18 @@ var2$coord
 
 
 # Dim 1       Dim 2       Dim 3
-# fertil_preserv_No  -0.5580156808 -0.10140829 -0.02678426
-# fertil_preserv_Yes  1.3047719595  0.23711644  0.06262790
-# pf_discussion_No   -0.8036404537 -0.08076833 -0.01315574
-# pf_discussion_Yes   0.9732399001  0.09781360  0.01593212
-# [0 -40)             0.3722781774 -0.02960312 -0.04182839
-# 40+                -1.2221962807  0.09718760  0.13732338
-# Curie Paris         0.0502202709 -0.34951781  0.23936316
-# Curie St Cloud     -0.0959335944  0.66766863 -0.45724501
-# brca_screen_Yes     0.0000000000  0.00000000  0.00000000
-# brca_mut_No        -0.0547983756  0.17654643 -0.39046270
-# brca_mut_Yes        0.2117565800 -0.68222587  1.50885942
-# neo_ct_No          -0.1922193243  0.61567486  0.60721317
-# neo_ct_Yes          0.1683904825 -0.53935153 -0.53193881
-# Grade I-II         -0.0002875463  0.97551650  0.16492345
-# Grade III           0.0001554832 -0.52748517 -0.08917806
+# fertil_preserv_No  -0.4174151 -0.10276422  0.01801340
+# fertil_preserv_Yes  1.7336319  0.42680618 -0.07481426
+# pf_discussion_No   -0.5994780 -0.07530757  0.04467655
+# pf_discussion_Yes   1.2165082  0.15282009 -0.09066120
+# (22,37]             0.9425505 -0.02958208 -0.05409500
+# (37,44]            -0.5648578  0.01772814  0.03241840
+# Has children       -0.3787981 -0.06830711 -0.03428352
+# No children         1.0056677  0.18134794  0.09101901
+# neo_ct_No          -0.2528984  0.62773953 -0.60653231
+# neo_ct_Yes          0.3047219 -0.75637468  0.73082172
+# Grade I-II         -0.1933974  0.87375891  0.69093380
+# Grade III           0.1493160 -0.67460174 -0.53344823
 
 
 
@@ -421,106 +297,44 @@ var2$coord
 # Cos2: qualité de représentation des variables sur les axes 
 var2$cos2
 
-#                           Dim 1       Dim 2        Dim 3
-# fertil_preserv_No  0.72808321323888 0.024045573 0.0016774420
-# fertil_preserv_Yes 0.72808321323888 0.024045573 0.0016774420
-# pf_discussion_No   0.78213495481292 0.007900241 0.0002095988
-# pf_discussion_Yes  0.78213495481293 0.007900241 0.0002095988
-# [0 -40)            0.45499700385754 0.002877056 0.0057440153
-# 40+                0.45499700385755 0.002877056 0.0057440153
-# Curie Paris        0.00481781110195 0.233362074 0.1094476103
-# Curie St Cloud     0.00481781110195 0.233362074 0.1094476103
-# brca_screen_Yes                 NaN         NaN          NaN
-# brca_mut_No        0.01160391660882 0.120444544 0.5891533139
-# brca_mut_Yes       0.01160391660882 0.120444544 0.5891533139
-# neo_ct_No          0.03236790476993 0.332065177 0.3230002468
-# neo_ct_Yes         0.03236790476993 0.332065177 0.3230002468
-# Grade I-II         0.00000004470862 0.514570483 0.0147075542
-# Grade III          0.00000004470862 0.514570483 0.0147075542
-
-
-
-#### Concernant la qualité de la représentation : 
-
-#dim 1 : fertil_preserv, pf_discussion, et âge bien représentée 
-#dim2 : Grade les plu sreprésentée avec neo-ct mais c'est une moins bonne qualité de représentation 
-
-# dim3 : brca_mut le plus représentée mais ca ne convient pas spécialement 
-#car on a peu d'observation de brca mut et de plus la qualité d ereprésentation est faible 
+# Dim 1        Dim 2       Dim 3
+# fertil_preserv_No  0.72364403 0.0438604039 0.001347659
+# fertil_preserv_Yes 0.72364403 0.0438604039 0.001347659
+# pf_discussion_No   0.72926986 0.0115085101 0.004050430
+# pf_discussion_Yes  0.72926986 0.0115085101 0.004050430
+# (22,37]            0.53240701 0.0005244352 0.001753673
+# (37,44]            0.53240701 0.0005244352 0.001753673
+# Has children       0.38094497 0.0123873532 0.003120452
+# No children        0.38094497 0.0123873532 0.003120452
+# neo_ct_No          0.07706367 0.4748062903 0.443266989
+# neo_ct_Yes         0.07706367 0.4748062903 0.443266989
+# Grade I-II         0.02887734 0.5894392811 0.368577408
+# Grade III          0.02887734 0.5894392811 0.368577408
 
 
 
 # Contributions des variables aux axes
 var2$contrib
 
-# Dim 1       Dim 2        Dim 3
-# fertil_preserv_No  10.829379212550  0.58312007  0.048134352
-# fertil_preserv_Yes 25.321636688168  1.36347193  0.112549440
-# pf_discussion_No   17.564054997966  0.28925691  0.009080651
-# pf_discussion_Yes  21.270754916368  0.35030139  0.010997022
-# [0 -40)             5.274703319800  0.05437987  0.128466577
-# 40+                17.316950521608  0.17853014  0.421758196
-# Curie Paris         0.082197385082  6.49140690  3.602463435
-# Curie St Cloud      0.157018081758 12.40025164  6.881628870
-# brca_screen_Yes     0.000000000000  0.00000000  0.000000000
-# brca_mut_No         0.118447257875  2.00450835 11.602025112
-# brca_mut_Yes        0.457714046504  7.74599297 44.833539896
-# neo_ct_No           0.856670060109 14.32922359 16.492516216
-# neo_ct_Yes          0.750471292327 12.55287356 14.447989412
-# Grade I-II          0.000001440807 27.03708332  0.914408315
-# Grade III           0.000000779079 14.61959935  0.494442505
-
+# Dim 1       Dim 2       Dim 3
+# fertil_preserv_No   5.6801316  0.75152350  0.03181008
+# fertil_preserv_Yes 23.5910446  3.12127000  0.13211544
+# pf_discussion_No    9.7378737  0.33545286  0.16264038
+# pf_discussion_Yes  19.7608654  0.68072754  0.33004275
+# (22,37]            13.4658156  0.02895458  0.13337948
+# (37,44]             8.0698823  0.01735209  0.07993253
+# Has children        4.2160230  0.29926489  0.10385073
+# No children        11.1930828  0.79451575  0.27571240
+# neo_ct_No           1.4137494 19.01409802 24.45341492
+# neo_ct_Yes          1.7034522 22.91042959 29.46436060
+# Grade I-II          0.6591615 29.37042831 25.29966556
+# Grade III           0.5089178 22.67598286 19.53307512
 
 #plot de corrélation 
 
 library("corrplot")
 corrplot(var2$cos2, is.corr=FALSE)
 
-#axe 1 : fertil_preserv, pf_discussion et âge 
-#axe 2 : grade et neo_ct 
-#axe 3 : brca_mut 
-
-
-########### BarPlot qualité de la représentation des variables selon les axes 
-
-
-# Cos2 des variable sur Dim.1 
-fviz_cos2(res.mca.2, choice = "var", axes = 1)
-
-#axe 1 : pf_discussion, fertil_preserv, age
-
-# Cos2 des variable sur Dim.2
-fviz_cos2(res.mca.2, choice = "var", axes = 2)
-
-#grade, neo_ct, center
-
-# Cos2 des variable sur Dim.3
-fviz_cos2(res.mca.2, choice = "var", axes = 3)
-
-#brca_mut et neo_ct 
-
-# je pense qu'on va rester sur deux axes d'analyse 
-
-
-
-######################### Qualité de représentation des variables 
-
-
-fviz_mca_var(res.mca.2, col.var = "cos2",
-             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
-             repel = TRUE, 
-             ggtheme = theme_minimal())
-
-
-
-######################@ Qualité de représentation des individus 
-ind.2 <- get_mca_ind (res.mca.2)
-ind.2
-
-fviz_mca_ind(res.mca.2, col.ind = "cos2", 
-             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-             repel = TRUE, 
-             ggtheme = theme_minimal())
 
 
 # Graphique récapitulatif de projection des variables ur l'axe 1 et 2 
@@ -545,23 +359,15 @@ explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
                      ylim = c(-1.62, 1.67))
 
 
-res <- explor::prepare_results(res.mca.2)
-explor::MCA_biplot(res, xax = 1, yax = 2, col_var = "Variable", ind_point_size = 32,
-                   ind_opacity = 0.5, ind_opacity_var = NULL, ind_labels = FALSE, var_point_size = 96,
-                   var_sup = FALSE, ind_sup = FALSE, labels_size = 12, bi_lab_min_contrib = 0,
-                   symbol_var = "Nature", transitions = TRUE, labels_positions = NULL, xlim = c(-1.51,1.65), ylim = c(-1.17, 1.98))
+
+fviz_mca_biplot(res.mca.2,col.ind = data.active.2$pf_discussion, ggtheme = theme_minimal(), axes=c(1,2), title="MCA for Fertility preservation discussion",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation discussion")
 
 
-res <- explor::prepare_results(res.mca.2)
-explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "fertil_preserv", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = TRUE,
-                     labels_positions = NULL, xlim = c(-1.11, 1.14), ylim = c(-1.06, 1.19))
+fviz_mca_biplot(res.mca.2,col.ind = data.active.2$fertil_preserv, ggtheme = theme_minimal(), axes=c(1,2), title="MCA for Fertility preservation procedure",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation procedure")
 
 
-res <- explor::prepare_results(res.mca.2)
-explor::MCA_ind_plot(res, xax = 1, yax = 2, ind_sup = FALSE, lab_var = NULL,
-                     ind_lab_min_contrib = 0, col_var = "pf_discussion", labels_size = 9, point_opacity = 0.5,
-                     opacity_var = NULL, point_size = 64, ellipses = TRUE, transitions = TRUE,
-                     labels_positions = NULL, xlim = c(-1.11, 1.14), ylim = c(-1.06, 1.19))
+
+
 
