@@ -41,6 +41,7 @@ table(base_julie$center_curie.2)
 
 base_julie$bmi_4cl_ord <- fct_relevel(base_julie$bmi_4cl,"<18.5", "18.5-24.9", "25-29.9",">=30")
 
+base_complet <- merge(base_julie,database_preprocessed_labels, by = "numdos_curie")
 
 data_fertil_preserv = base_complet %>% filter(fertil_preserv=="Yes")
 
@@ -55,7 +56,7 @@ table(data_fertil_preserv$fertil_miv_cos_2)
 
 ################################################################################## Fusion des deux bases pour obtenir les subtypes 
 
-base_complet <- merge(base_julie,database_preprocessed_labels, by = "numdos_curie")
+
 
 
 
@@ -200,29 +201,137 @@ write_csv2(tab12[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Jul
 
 
 
-ggplot(base_complet) +
-  geom_boxplot(aes(y = age, x = pf_discussion ,fill= pf_discussion), notch=F,show.legend=T)+
-  geom_jitter(aes(y = age, x = pf_discussion) , col = "black", alpha = 0.4)+ theme(axis.text.x = element_blank(),legend.position="top", legend.title=element_blank())+scale_y_continuous(limits=c(20, 45))+
-  labs(title="Age at BC diagnostis") + xlab("Fertility preservation discussion")+ ylab("Age")
 
+######################@ Figure 1 Plot B : BMI
 
-
-
-d2 <- base_complet %>%
-  group_by(bmi_4cl_ord,pf_discussion) %>%
+B <- base_complet %>%drop_na(pf_discussion,bmi_4cl_ord) %>% 
+  group_by(bmi_4cl_ord,pf_discussion) %>% 
   summarise(count = n()) %>%
   mutate(perc = (count/sum(count)))
-df$title <- "Underweight class distribution in our population (n=1233)"
-d2$perc <- round(d2$perc,2)
-d2$x <- paste0(paste0(as.character(d2$count),'(',sep = ''),paste(paste0(as.character(100*d2$perc),'%)',sep= '')))
-d2
+B$perc <- round(B$perc,2)
+B$x <- paste0(paste0(as.character(B$count),'(',sep = ''),paste(paste0(as.character(100*B$perc),'%)',sep= '')))
+B
 
 
-d=ggplot(data=d2, aes(fill=pf_discussion,y=100*perc,x=bmi_4cl_ord),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Rate of informations given by doctors")+
-  xlab(" ")+ ylab("  ")+theme_bw()+theme(legend.position="bottom")+scale_fill_manual(values=c( "#456268","#79a3b1","#d0e8f2","#91091e"))+ guides(fill=guide_legend(title="Info",reverse=T))+
+b=ggplot(data=B, aes(fill=pf_discussion,y=100*perc,x=bmi_4cl_ord),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "BMI")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
   geom_text(aes(x=bmi_4cl_ord,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
   theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+b
+
+################# Figure 1 Plot C : Children
+
+
+C<- base_complet %>%drop_na(pf_discussion,nb_child_3cl) %>% 
+  group_by(nb_child_3cl,pf_discussion) %>% 
+  summarise(count = n()) %>%
+  mutate(perc = (count/sum(count)))
+C$perc <- round(C$perc,2)
+C$x <- paste0(paste0(as.character(C$count),'(',sep = ''),paste(paste0(as.character(100*C$perc),'%)',sep= '')))
+C
+
+
+c<-ggplot(data=C, aes(fill=pf_discussion,y=100*perc,x=nb_child_3cl),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Children")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=nb_child_3cl,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+c
+
+
+################## Figure 1 Plot E : ctuicc_3cl
+
+
+E <- base_complet %>%drop_na(pf_discussion,ctuicc_3cl) %>% 
+  group_by(ctuicc_3cl,pf_discussion) %>% 
+  summarise(count = n()) %>%
+  mutate(perc = (count/sum(count)))
+E$perc <- round(E$perc,2)
+E$x <- paste0(paste0(as.character(E$count),'(',sep = ''),paste(paste0(as.character(100*E$perc),'%)',sep= '')))
+E
+
+
+e=ggplot(data=E, aes(fill=pf_discussion,y=100*perc,x=ctuicc_3cl),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Clinical T stage (TNM)")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=ctuicc_3cl,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+e
+
+
+################## Figure 1 Plot F : neo_ct 
+
+
+FF <- base_complet %>%drop_na(pf_discussion,neo_ct) %>% 
+  group_by(neo_ct,pf_discussion) %>% 
+  summarise(count = n()) %>%
+  mutate(perc = (count/sum(count)))
+FF$perc <- round(FF$perc,2)
+FF$x <- paste0(paste0(as.character(FF$count),'(',sep = ''),paste(paste0(as.character(100*FF$perc),'%)',sep= '')))
+FF
+
+
+f=ggplot(data=FF, aes(fill=pf_discussion,y=100*perc,x=neo_ct),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Neoadjuvant chemotherapy")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=neo_ct,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+f
+
+
+
+################ figure 1 plot A : boxplot age pf_dicussion
+
+A <- base_complet %>%drop_na(pf_discussion,age) 
+
+
+a = ggplot(A) +
+  geom_violin(aes(y = age, x = pf_discussion ,fill= pf_discussion), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(22, 45))+theme_minimal()+
+  geom_boxplot(aes(y = age, x = pf_discussion),width=0.1)+labs(title="Age at BC diagnostis") + xlab("")+ ylab("Age")
+
+a
+
+
+
+######################@ Figure 1 plot D : boxplot tclin 
+
+D <- base_complet %>%drop_na(pf_discussion,tclin) 
+
+
+d = ggplot(D) +
+  geom_violin(aes(y = tclin, x = pf_discussion ,fill= pf_discussion), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(0, 100))+theme_minimal()+
+  geom_boxplot(aes(y = tclin, x = pf_discussion),width=0.1)+labs(title="Clinical Tumor size (mm)") + xlab("")+ ylab("Clinical Tumor size(mm)")
+
 d
+
+
+ggplot(df, aes(x=dose, y=len, fill=dose)) +
+  geom_dotplot(binaxis='y', stackdir='center')+
+  stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+               geom="pointrange", color="red")+
+  theme(legend.position = "none")
+
+########################################################### Création du grid de Figure 1 !!!!!!!
+
+install.packages("gridExtra")
+library("gridExtra")
+library('cowplot')
+
+
+
+plot_row <-plot_grid(a, b, c, d, e, f, labels=c("A", "B", "C","D","E","F"), ncol = 2, nrow = 3,align = "h")
+
+
+# now add the title
+title <- ggdraw() + 
+  draw_label(
+    "Figure 1 : Factors associated with Fertility preservation discussion",
+    fontface = 'bold',
+    x = 0,
+    hjust = 0) +theme(plot.margin = margin(0, 0, 0, 7))
+
+plot_grid(
+  title, plot_row,
+  ncol = 1,
+  # rel_heights values control vertical title margins
+  rel_heights = c(0.1, 1))
 
 
 

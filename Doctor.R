@@ -375,33 +375,127 @@ lm %>% kbl("latex", align = "llr", vline = "|", caption = "Logistic regression r
 #################################################################################################################################
 ################################################################################################################################
 
-############################################################################  Graphiques ######################################
-###############################################################################################################################
+########################################################################################################################  Figure 2 : Factors related to patient management 
 
 
 
-g <- ggplot(base_doctor, aes(pf_discussion.2)) 
-
-g + geom_histogram(stat = "count") +  
-  labs(title="Histogram with fertility preservation discussion", 
-       subtitle="fp_discussion") + geom_text(stat='count', aes(label=..count..), vjust=-1, size=2) + xlab("Has a discussion ")+ theme_classic()
+################## Figure 2 plot A : specialty 
 
 
+AA <- base_doctor %>%drop_na(pf_discussion,specialty) %>% 
+  group_by(specialty,pf_discussion) %>% 
+  summarise(count = n()) %>%
+  mutate(perc = (count/sum(count)))
+AA$perc <- round(AA$perc,2)
+AA$x <- paste0(paste0(as.character(AA$count),'(',sep = ''),paste(paste0(as.character(100*AA$perc),'%)',sep= '')))
+AA
+
+
+aa=ggplot(data=AA, aes(fill=pf_discussion,y=100*perc,x=specialty),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Doctor's Specialty")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=specialty,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+aa
 
 
 
-######################################################################### Pour faire la grille des graphiques : code Amyn
+################## Figure 2 plot B : Age 
 
-# Nouvelle page
-grid.newpage()
-# Créer la mise en page : nrow = 3, ncol = 1
-pushViewport(viewport(layout = grid.layout(3, 1)))
 
-# Arranger les graphiques
-print(a, vp = define_region(1, 1))
-print(c, vp = define_region(2, 1))
-print(d, vp = define_region(3, 1))
+BB <- base_doctor %>%drop_na(pf_discussion,junior_senior) %>% 
+  group_by(junior_senior,pf_discussion) %>% 
+  summarise(count = n()) %>%
+  mutate(perc = (count/sum(count)))
+BB$perc <- round(BB$perc,2)
+BB$x <- paste0(paste0(as.character(BB$count),'(',sep = ''),paste(paste0(as.character(100*BB$perc),'%)',sep= '')))
+BB
 
+bb=ggplot(data=BB, aes(fill=pf_discussion,y=100*perc,x=junior_senior),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Doctor's Age")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=junior_senior,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+bb
+
+
+
+################## Figure 2 plot C : Gender
+
+
+CC <- base_doctor %>%drop_na(pf_discussion,gender_bin) %>% 
+  group_by(gender_bin,pf_discussion) %>% 
+  summarise(count = n()) %>%
+  mutate(perc = (count/sum(count)))
+CC$perc <- round(CC$perc,2)
+CC$x <- paste0(paste0(as.character(CC$count),'(',sep = ''),paste(paste0(as.character(100*CC$perc),'%)',sep= '')))
+CC
+
+cc=ggplot(data=CC, aes(fill=pf_discussion,y=100*perc,x=gender_bin),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Doctor's Gender")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=gender_bin,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+cc
+
+
+
+##############################  Figure 2 plot D : Center 
+
+
+
+DD <- base_doctor %>%drop_na(pf_discussion,center_anonym) %>% 
+  group_by(center_anonym,pf_discussion) %>% 
+  summarise(count = n()) %>%
+  mutate(perc = (count/sum(count)))
+DD$perc <- round(DD$perc,2)
+DD$x <- paste0(paste0(as.character(DD$count),'(',sep = ''),paste(paste0(as.character(100*DD$perc),'%)',sep= '')))
+DD
+
+dd=ggplot(data=DD, aes(fill=pf_discussion,y=100*perc,x=center_anonym),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Treatment center")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=center_anonym,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+dd
+
+
+
+
+
+##################################@@@ Figure 2 plot E et F : les ACMs qu'on va mettre dans le plot 
+
+
+
+ee <-fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme_minimal(), axes=c(1,2), title="MCA with Fertility preservation discussion",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation discussion")
+
+ff<-fviz_mca_biplot(res.mca,col.ind = data.active$specialty, ggtheme = theme_minimal(), axes=c(1,2), title="MCA with doctors'specialty",
+                    addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Specialty")
+
+
+
+
+########################################################### Création du grid de Figure 1 !!!!!!!
+
+install.packages("gridExtra")
+library("gridExtra")
+library('cowplot')
+
+
+
+plot_row <-plot_grid(aa, bb, cc, dd, ee, ff, labels=c("A", "B", "C","D","E","F"), ncol = 2, nrow = 3,align = "h")
+
+
+# now add the title
+title <- ggdraw() + 
+  draw_label(
+    "Figure 2 : Factors related to patient management",
+    fontface = 'bold',
+    x = 0,
+    hjust = 0) +theme(plot.margin = margin(0, 0, 0, 7))
+
+plot_grid(
+  title, plot_row,
+  ncol = 1,
+  # rel_heights values control vertical title margins
+  rel_heights = c(0.1, 1))
 
 
 
