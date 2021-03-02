@@ -43,6 +43,10 @@ table(base_julie$nb_child_2cl)
 base_julie$age_young_2cl <- cut(base_julie$age, c(22, 37,44))
 table(base_julie$age_young_2cl)
 
+base_julie$age_young_acm  <- NA
+base_julie$age_young_acm [base_julie$age_young_2cl == "(22,37]"] <- "below 37 y.o"
+base_julie$age_young_acm [base_julie$age_young_2cl == "(37,44]"] <- "above 37 y.o"
+table(base_julie$age_young_acm )
 
 
 
@@ -51,7 +55,7 @@ table(base_julie$age_young_2cl)
 
 ################################## ACM FactomineR
 library(tidyr)
-data.active <- base_julie %>% select(pf_discussion,age_young_2cl,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
+data.active <- base_julie %>% select(pf_discussion,age_young_acm,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
                         
 
 #on crée l'ACM 
@@ -227,7 +231,7 @@ explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
 # les variables qu'on garde 
 
 
-data.active.2 <- base_julie %>% select(fertil_preserv, pf_discussion,age_young_2cl,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
+data.active.2 <- base_julie %>% select(fertil_preserv, pf_discussion,age_young_acm,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
 
 
 
@@ -380,18 +384,18 @@ fviz_mca_biplot(res.mca.2,col.ind = data.active.2$fertil_preserv, ggtheme = them
 
 ######################################################################################### Figure 3 plot A Age 2 cat 
 
-AAA <- base_julie %>%drop_na(pf_discussion,age_young_2cl) %>% 
-  group_by(age_young_2cl,pf_discussion) %>% 
+AAA <- base_julie %>%drop_na(pf_discussion,age_young_acm) %>% 
+  group_by(age_young_acm,pf_discussion) %>% 
   summarise(count = n()) %>%
   mutate(perc = (count/sum(count)))
 AAA$perc <- round(AAA$perc,2)
-AAA$x <- paste0(paste0(as.character(AAA$count),'(',sep = ''),paste(paste0(as.character(100*AAA$perc),'%)',sep= '')))
+AAA$x <- paste0(paste0(as.character(AAA$count),sep="\n"),paste(paste0(as.character(100*AAA$perc),'%',sep= '')))
 AAA
 
 
-aaa=ggplot(data=AAA, aes(fill=pf_discussion,y=100*perc,x=age_young_2cl),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Age")+
-  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
-  geom_text(aes(x=age_young_2cl,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+aaa=ggplot(data=AAA, aes(fill=pf_discussion,y=100*perc,x=age_young_acm),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Age")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=age_young_acm,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
   theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
 aaa
 
@@ -404,13 +408,13 @@ BBB <- base_julie %>%drop_na(pf_discussion,nb_child_2cl) %>%
   summarise(count = n()) %>%
   mutate(perc = (count/sum(count)))
 BBB$perc <- round(BBB$perc,2)
-BBB$x <- paste0(paste0(as.character(BBB$count),'(',sep = ''),paste(paste0(as.character(100*BBB$perc),'%)',sep= '')))
+BBB$x <- paste0(paste0(as.character(BBB$count),sep="\n"),paste(paste0(as.character(100*BBB$perc),'%',sep= '')))
 BBB
 
 
-bbb=ggplot(data=BBB, aes(fill=pf_discussion,y=100*perc,x=nb_child_2cl),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Children")+
-  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
-  geom_text(aes(x=nb_child_2cl,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+bbb=ggplot(data=BBB, aes(fill=pf_discussion,y=100*perc,x=nb_child_2cl),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Children")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=nb_child_2cl,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
   theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
 bbb
 
@@ -423,13 +427,13 @@ CCC <- base_julie %>%drop_na(pf_discussion,neo_ct) %>%
   summarise(count = n()) %>%
   mutate(perc = (count/sum(count)))
 CCC$perc <- round(CCC$perc,2)
-CCC$x <- paste0(paste0(as.character(CCC$count),'(',sep = ''),paste(paste0(as.character(100*CCC$perc),'%)',sep= '')))
+CCC$x <- paste0(paste0(as.character(CCC$count),sep="\n"),paste(paste0(as.character(100*CCC$perc),'%',sep= '')))
 CCC
 
 
 ccc=ggplot(data=CCC, aes(fill=pf_discussion,y=100*perc,x=neo_ct),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Neoadjuvant chemotherapy")+
-  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
-  geom_text(aes(x=neo_ct,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=neo_ct,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
   theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
 ccc
 
@@ -440,50 +444,37 @@ ccc
 #################################################################### Figure 3 plot D ACM pf_discussion
 
 
-ddd<-fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme_minimal(), axes=c(1,2), title="MCA for fertility preservation discussion",
+ddd<-fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),legend.position="None"), axes=c(1,2), title="MCA for fertility preservation discussion",
                 addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation discussion")
 
-
+ddd
 
 #################################################################### Figure 3 plot E ACM fertil_preserv
 
 
 
-eee<-fviz_mca_biplot(res.mca.2,col.ind = data.active.2$fertil_preserv, ggtheme = theme_minimal(), axes=c(1,2), title="MCA for Fertility preservation procedure",
+eee<-fviz_mca_biplot(res.mca.2,col.ind = data.active.2$fertil_preserv, ggtheme = theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),legend.position=c(0.8, 0)), axes=c(1,2), title="MCA for Fertility preservation procedure",
                      addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation procedure")
 
 
 
-
+eee
 
 
 ###############################################################@ Grid figure 3 
 
 
 
-library("gridExtra")
-library('cowplot')
+
+library(patchwork)
 
 
-
-plot_row <-plot_grid(aaa, bbb, ccc, ddd, eee, labels=c("A", "B", "C","D","E"), ncol = 2, nrow = 3,align = "h")
-
-
-# now add the title
-title <- ggdraw() + 
-  draw_label(
-    "Figure 3 ",
-    fontface = 'bold',
-    x = 0,
-    hjust = 0) +theme(plot.margin = margin(0, 0, 0, 7))
-
-plot_grid(
-  title, plot_row,
-  ncol = 1,
-  # rel_heights values control vertical title margins
-  rel_heights = c(0.1, 1))
-
-
+patchwork <- (aaa + bbb +ccc) / (eee)
+patchwork + plot_annotation(
+  tag_levels = 'A',
+  title = "Figure 3 : Factors associated with Fertility preservation procedure and related to patient's characteristics",
+  subtitle = "These 6 plots describe the relation between patients'characteristics and the Fertility preservation procedure",
+  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="bottom")
 
 
 

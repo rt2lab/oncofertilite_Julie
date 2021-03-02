@@ -254,7 +254,7 @@ fviz_mca_var(res.mca, col.var = "cos2",
 
 ###########################################@ biplot pf_discussion 
 
-fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme_minimal(), axes=c(1,2), title="MCA (axis 1 and 2)",
+fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme_minimal(), axes=c(1,2), title="MCA with Fertility preservation discussion",
                 addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation discussion")
 
 
@@ -344,6 +344,8 @@ explor::MCA_var_plot(res, xax = 2, yax = 3, var_sup = FALSE, var_sup_choice = ,
                      ylim = c(-2.45, 3.23))
 
 
+############################################################################ A mettre dans la figure 2 
+
 res <- explor::prepare_results(res.mca)
 explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
                      var_lab_min_contrib = 0, col_var = "Variable", symbol_var = NULL, size_var = "Cos2",
@@ -387,13 +389,13 @@ AA <- base_doctor %>%drop_na(pf_discussion,specialty) %>%
   summarise(count = n()) %>%
   mutate(perc = (count/sum(count)))
 AA$perc <- round(AA$perc,2)
-AA$x <- paste0(paste0(as.character(AA$count),'(',sep = ''),paste(paste0(as.character(100*AA$perc),'%)',sep= '')))
+AA$x <- paste0(paste0(as.character(AA$count),sep="\n"),paste(paste0(as.character(100*AA$perc),'%',sep= '')))
 AA
 
 
-aa=ggplot(data=AA, aes(fill=pf_discussion,y=100*perc,x=specialty),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Doctor's Specialty")+
-  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
-  geom_text(aes(x=specialty,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+aa=ggplot(data=AA, aes(fill=pf_discussion,y=100*perc,x=specialty),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Doctor's Specialty")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=specialty,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
   theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
 aa
 
@@ -407,12 +409,12 @@ BB <- base_doctor %>%drop_na(pf_discussion,junior_senior) %>%
   summarise(count = n()) %>%
   mutate(perc = (count/sum(count)))
 BB$perc <- round(BB$perc,2)
-BB$x <- paste0(paste0(as.character(BB$count),'(',sep = ''),paste(paste0(as.character(100*BB$perc),'%)',sep= '')))
+BB$x <- paste0(paste0(as.character(BB$count),sep="\n"),paste(paste0(as.character(100*BB$perc),'%',sep= '')))
 BB
 
-bb=ggplot(data=BB, aes(fill=pf_discussion,y=100*perc,x=junior_senior),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Doctor's Age")+
-  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
-  geom_text(aes(x=junior_senior,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+bb=ggplot(data=BB, aes(fill=pf_discussion,y=100*perc,x=junior_senior),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Doctor's Age")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=junior_senior,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
   theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
 bb
 
@@ -426,12 +428,12 @@ CC <- base_doctor %>%drop_na(pf_discussion,gender_bin) %>%
   summarise(count = n()) %>%
   mutate(perc = (count/sum(count)))
 CC$perc <- round(CC$perc,2)
-CC$x <- paste0(paste0(as.character(CC$count),'(',sep = ''),paste(paste0(as.character(100*CC$perc),'%)',sep= '')))
+CC$x <- paste0(paste0(as.character(CC$count),sep="\n"),paste(paste0(as.character(100*CC$perc),'%',sep= '')))
 CC
 
-cc=ggplot(data=CC, aes(fill=pf_discussion,y=100*perc,x=gender_bin),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Doctor's Gender")+
-  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
-  geom_text(aes(x=gender_bin,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+cc=ggplot(data=CC, aes(fill=pf_discussion,y=100*perc,x=gender_bin),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Doctor's Gender")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=gender_bin,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
   theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
 cc
 
@@ -446,12 +448,12 @@ DD <- base_doctor %>%drop_na(pf_discussion,center_anonym) %>%
   summarise(count = n()) %>%
   mutate(perc = (count/sum(count)))
 DD$perc <- round(DD$perc,2)
-DD$x <- paste0(paste0(as.character(DD$count),'(',sep = ''),paste(paste0(as.character(100*DD$perc),'%)',sep= '')))
+DD$x <- paste0(paste0(as.character(DD$count),sep="\n"),paste(paste0(as.character(100*DD$perc),'%',sep= '')))
 DD
 
-dd=ggplot(data=DD, aes(fill=pf_discussion,y=100*perc,x=center_anonym),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Treatment center")+
-  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme_minimal()+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
-  geom_text(aes(x=center_anonym,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=3)+
+dd=ggplot(data=DD, aes(fill=pf_discussion,y=100*perc,x=center_anonym),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Treatment center")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+  geom_text(aes(x=center_anonym,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
   theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
 dd
 
@@ -463,16 +465,17 @@ dd
 
 
 
-ee <-fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme_minimal(), axes=c(1,2), title="MCA with Fertility preservation discussion",
-                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation discussion")
+ee <-fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank()), axes=c(1,2), title="MCA with Fertility preservation discussion",
+                     addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation discussion")
 
-ff<-fviz_mca_biplot(res.mca,col.ind = data.active$specialty, ggtheme = theme_minimal(), axes=c(1,2), title="MCA with doctors'specialty",
+
+ff<-fviz_mca_biplot(res.mca,col.ind = data.active$specialty,ggtheme = theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank()), axes=c(1,2), title="MCA with doctors'specialty",
                     addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Specialty")
 
+ee
+ff
 
-
-
-########################################################### Création du grid de Figure 1 !!!!!!!
+########################################################### Création du grid de Figure 2 !!!!!!!
 
 install.packages("gridExtra")
 library("gridExtra")
@@ -496,6 +499,27 @@ plot_grid(
   ncol = 1,
   # rel_heights values control vertical title margins
   rel_heights = c(0.1, 1))
+
+
+
+########################################################### Création figure 2 
+
+
+library(patchwork)
+
+
+patchwork <- (aa + bb +cc+dd) / (ee+ff)
+patchwork + plot_annotation(
+  tag_levels = 'A',
+  title = 'Figure 2 : Factors associated with Fertility preservation discussion and related to patient management',
+  subtitle = "These 6 plots describe the relation between patients'management characteristics and the Fertility preservation discussion",
+  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="bottom")
+
+
+
+
+
+
 
 
 
