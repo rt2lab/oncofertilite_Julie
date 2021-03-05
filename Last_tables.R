@@ -19,6 +19,9 @@ library(forcats)
 library('dplyr')
 source(file.path("/Users/julieborghese/Documents/GitHub/databases/core/00_common/src/R_functions_Nadir/functions_RT2_Nadir.R"))
 library(tidyr)
+library(forcats)
+library(dplyr)
+
 
 ######################################################################################################
 #######################################################################################################
@@ -97,6 +100,7 @@ table1<-preformatTable1(stratif = "age_young_cl_40_bin", stratif_order = c("[0 -
 
 
 table1[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Patients Characteristics as a function of Age")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+write_csv2(table1[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table2_age.xlsx')
 
 
 
@@ -121,10 +125,9 @@ write_csv2(tab2[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Juli
 
 
 
-
 var_selected<-c("age_young_cl","age", "nb_child_3cl", "bmi_4cl_ord","bmi", "center_curie.2","year_diag","brca_screen", "brca_mut", "inflammatory_bc","tclin", "ctuicc_3cl","cnuicc_2cl","grade_3cl","subtype4.y", "histo_3cl", "neo_ct", "ct_setting_5cl.2")
 
-names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mean)", "Treatment center","Year BC diagnosis","Year BC diagnosis","Genetic analysis", "Hereditary predisposition", "Inflammatory BC", "Clinical Tumor size (mm)","Clinical T stage (TNM)", "Clinical N stage (TNM)", "SBR grade","BC subtype", "Histological type", "Neoajuvant chemotherapy", "Chemotherapy setting")
+names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mean)", "Treatment center","Year BC diagnosis","Genetic analysis", "Hereditary predisposition", "Inflammatory BC", "Clinical Tumor size (mm)","Clinical T stage (TNM)", "Clinical N stage (TNM)", "SBR grade","BC subtype", "Histological type", "Neoajuvant chemotherapy", "Chemotherapy setting")
 
 
 
@@ -132,7 +135,7 @@ tab7<-preformatTable1(stratif = "pf_discussion", stratif_order = c("Yes", "No"),
 
 
 tab7[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Patients Characteristics as a function of Fertility Procedure discussion")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
-write_csv2(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table6_fp_discussion_csv.xlsx')
+write_csv2(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fp_discussion_csv.xlsx')
 
 
 
@@ -149,7 +152,7 @@ tab8<-preformatTable1(stratif = "fertil_preserv", stratif_order = c("Yes", "No")
 
 
 tab8[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Patients Characteristics as a function of patients'choice of Fertility preservation")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
-write_csv2(tab8[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table6_fertil_preserv_csv.xlsx')
+write_csv2(tab8[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fertil_preserv_csv.xlsx')
 
 
 
