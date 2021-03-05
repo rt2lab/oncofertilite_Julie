@@ -5,7 +5,11 @@
 ##########################################################################################################
 
 
+install.packages("readxl")
+devtools::install_github("ropensci/writexl")
 
+library('readxl')
+library(writexl)
 
 install.packages("ggplot2")
 install.packages('table1')
@@ -87,7 +91,7 @@ write_csv2(tab0[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Juli
 
 
 ################################################# Table colonne âge##########################################
-
+library(dplyr)
 a = base_julie %>% subset(is.na(age_young_cl_40_bin))
 
 
@@ -101,7 +105,7 @@ table1<-preformatTable1(stratif = "age_young_cl_40_bin", stratif_order = c("[0 -
 
 table1[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Patients Characteristics as a function of Age")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(table1[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table2_age.xlsx')
-
+write_xlsx(table1[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table2_age_excel.xlsx')
 
 
 ################################################### Table treatment center colonnnes #####################################
@@ -136,6 +140,7 @@ tab7<-preformatTable1(stratif = "pf_discussion", stratif_order = c("Yes", "No"),
 
 tab7[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Patients Characteristics as a function of Fertility Procedure discussion")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fp_discussion_csv.xlsx')
+write_xlsx(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fp_discussion_excel.xlsx')
 
 
 
@@ -153,6 +158,7 @@ tab8<-preformatTable1(stratif = "fertil_preserv", stratif_order = c("Yes", "No")
 
 tab8[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Patients Characteristics as a function of patients'choice of Fertility preservation")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab8[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fertil_preserv_csv.xlsx')
+write_xlsx(tab8[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fertil_preserv_excel.xlsx')
 
 
 
@@ -172,6 +178,7 @@ tab13<-preformatTable1(stratif = "fertil_miv_cos_2", stratif_order = c("IVM","At
 
 tab13[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Patients Characteristics as a function of patients'choice of Fertility preservation")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab13[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table6_fertil_preserv_miv_cos_csv.xlsx')
+write_xlsx(tab13[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table6_fertil_preserv_miv_cos_excel.xlsx')
 
 
 ####################################################### Type de centre de fertilité colonne #############################################
