@@ -24,9 +24,18 @@ base_julie$bmi_4cl_ord <- fct_relevel(base_julie$bmi_4cl,"<18.5", "18.5-24.9", "
 
 
 
-base_complet <- merge(base_julie,database_preprocessed_labels, by = "numdos_curie")
-
 base_doctor = d2_long_2_with_names_centers
+
+
+# 1364 observations pour base complet 
+
+base_complet <- left_join(base_julie, database_preprocessed_labels, by = c("numdos_curie" = "numdos_curie")) 
+
+
+# maintenant si on enlève les duplicats dans notre base de données : on a bien 1357 observations !!
+
+base_complet<-base_complet[!duplicated(base_complet$numdos_curie), ]
+
 
 
 ####################################################################### Modification de la base docteur 

@@ -14,7 +14,9 @@ library(writexl)
 install.packages("ggplot2")
 install.packages('table1')
 install.packages('psych')
+install.packages('arsenal')
 
+library(arsenal)
 library(ggplot2)
 library(table1)
 library(psych)
@@ -25,6 +27,284 @@ source(file.path("/Users/julieborghese/Documents/GitHub/databases/core/00_common
 library(tidyr)
 library(forcats)
 library(dplyr)
+
+
+comparedf(base_julie, base_complet)
+
+# Compare Object
+# 
+# Function Call: 
+#   comparedf(x = base_julie, y = base_complet)
+# 
+# Shared: 131 non-by variables and 1351 observations.
+# Not shared: 49 variables and 6 observations.
+# 
+# Differences found in 127/131 variables compared.
+# 0 variables compared have non-identical attributes.
+
+summary(comparedf(base_julie, base_complet)) 
+
+
+# Table: Summary of data.frames
+# 
+# version   arg             ncol   nrow
+# --------  -------------  -----  -----
+#   x         base_julie       142   1357
+# y         base_complet     169   1351
+
+
+# Table: Summary of overall comparison
+# 
+# statistic                                                      value
+# ------------------------------------------------------------  ------
+#   Number of by-variables                                             0
+# Number of non-by variables in common                             131
+# Number of variables compared                                     131
+# Number of variables in x but not y                                11
+# Number of variables in y but not x                                38
+# Number of variables compared with some values unequal            127
+# Number of variables compared with all values equal                 4
+# Number of observations in common                                1351
+# Number of observations in x but not y                              6
+# Number of observations in y but not x                              0
+# Number of observations with some compared variables unequal     1202
+# Number of observations with all compared variables equal         149
+# Number of values unequal                                       55633
+# 
+
+
+# Table: Observations not shared
+# 
+# version    ..row.names..   observation
+# --------  --------------  ------------
+#   x                   1352          1352
+# x                   1353          1353
+# x                   1354          1354
+# x                   1355          1355
+# x                   1356          1356
+# x                   1357          1357
+
+
+
+summary(comparedf(base_julie, base_complet, by = "numdos_curie"))
+
+
+
+# Table: Observations not shared
+# 
+# version   numdos_curie    observation
+# --------  -------------  ------------
+# x         0987029                1356
+# x         1103442                  94
+# x         1107764                 133
+# x         1108282                 136
+# x         1110275                 152
+# x         1110584                 153
+# x         1111295                 159
+# x         1118447                 209
+# x         1203281                 250
+# x         1317767                 551
+# x         1602776                1014
+# x         1608424                1065
+# x         1706959                1279
+
+# Table: Summary of overall comparison
+# 
+# statistic                                                      value
+# ------------------------------------------------------------  ------
+# Number of by-variables                                             1
+# Number of non-by variables in common                             130
+# Number of variables compared                                     130
+# Number of variables in x but not y                                11
+# Number of variables in y but not x                                38
+# Number of variables compared with some values unequal              0
+# Number of variables compared with all values equal               130
+# Number of observations in common                                1351
+# Number of observations in x but not y                             13
+# Number of observations in y but not x                              0
+# Number of observations with some compared variables unequal        0
+# Number of observations with all compared variables equal        1351
+# Number of values unequal                                           0
+
+
+summary(comparedf(base_complet, base_julie, by = "numdos_curie"))
+
+# Table: Observations not shared
+# 
+# version   numdos_curie    observation
+# --------  -------------  ------------
+# y         0987029                1356
+# y         1103442                  94
+# y         1107764                 133
+# y         1108282                 136
+# y         1110275                 152
+# y         1110584                 153
+# y         1111295                 159
+# y         1118447                 209
+# y         1203281                 250
+# y         1317767                 551
+# y         1602776                1014
+# y         1608424                1065
+# y         1706959                1279
+
+
+summary(comparedf(database_preprocessed_labels, base_julie, by = "numdos_curie"))
+
+# Table: Summary of overall comparison
+# 
+# statistic                                                      value
+# ------------------------------------------------------------  ------
+# Number of by-variables                                             1
+# Number of non-by variables in common                              11
+# Number of variables compared                                      11
+# Number of variables in x but not y                                16
+# Number of variables in y but not x                               130
+# Number of variables compared with some values unequal              7
+# Number of variables compared with all values equal                 4
+# Number of observations in common                                1351
+# Number of observations in x but not y                             38
+# Number of observations in y but not x                             13
+# Number of observations with some compared variables unequal     1351
+# Number of observations with all compared variables equal           0
+# Number of values unequal                                        6790
+
+
+# Table: Observations not shared
+# 
+# version   numdos_curie    observation
+# --------  -------------  ------------
+#   x         1114699                 142
+# x         1202828                 211
+# x         1210878                 275
+# x         1211276                 281
+# x         1214002                 309
+# x         1216387                 330
+# x         1219261                 362
+# x         1301979                 396
+# x         1307059                 434
+# x         1308054                 442
+# x         1315828                 525
+# x         1317556                 541
+# x         1318724                 563
+# x         1401596                 589
+# x         1401770                 590
+# x         1403916                 618
+# x         1404946                 631
+# x         1406600                 652
+# x         1407596                 665
+# x         1407799                 667
+# x         1407846                 668
+# x         1414472                 744
+# x         1415283                 757
+# x         1416190                 771
+# x         1501245                 813
+# x         1502631                 829
+# x         1504432                 846
+# x         1510593                 916
+# x         1517106                 994
+# x         1520091                1016
+# x         1609630                1107
+# x         1615924                1187
+# x         1618299                1214
+# x         1620473                1236
+# x         1700364                1247
+# x         1703079                1273
+# x         1709378                1343
+# x         1709907                1349
+# y         0987029                1356
+# y         1103442                  94
+# y         1107764                 133
+# y         1108282                 136
+# y         1110275                 152
+# y         1110584                 153
+# y         1111295                 159
+# y         1118447                 209
+# y         1203281                 250
+# y         1317767                 551
+# y         1602776                1014
+# y         1608424                1065
+# y         1706959                1279
+
+
+
+
+summary(comparedf(database_preprocessed_labels, base_complet, by = "numdos_curie"))
+
+
+# Table: Summary of data.frames
+# 
+# version   arg                             ncol   nrow
+# --------  -----------------------------  -----  -----
+# x         database_preprocessed_labels      28   1389
+# y         base_complet                     169   1351
+# 
+
+# 
+# Number of observations in x but not y                             38
+# Number of observations in y but not x                              0
+# 
+
+# Table: Observations not shared
+# 
+# version   numdos_curie    observation
+# --------  -------------  ------------
+# x         1114699                 142
+# x         1202828                 211
+# x         1210878                 275
+# x         1211276                 281
+# x         1214002                 309
+# x         1216387                 330
+# x         1219261                 362
+# x         1301979                 396
+# x         1307059                 434
+# x         1308054                 442
+# x         1315828                 525
+# x         1317556                 541
+# x         1318724                 563
+# x         1401596                 589
+# x         1401770                 590
+# x         1403916                 618
+# x         1404946                 631
+# x         1406600                 652
+# x         1407596                 665
+# x         1407799                 667
+# x         1407846                 668
+# x         1414472                 744
+# x         1415283                 757
+# x         1416190                 771
+# x         1501245                 813
+# x         1502631                 829
+# x         1504432                 846
+# x         1510593                 916
+# x         1517106                 994
+# x         1520091                1016
+# x         1609630                1107
+# x         1615924                1187
+# x         1618299                1214
+# x         1620473                1236
+# x         1700364                1247
+# x         1703079                1273
+# x         1709378                1343
+# x         1709907                1349
+
+
+
+joined_df <- merge(base_julie, database_preprocessed_labels, by.x = "numdos_curie", 
+                   by.y = "numdos_curie", all.x = TRUE, all.y = FALSE)
+
+# 1357 obs sont unique. on a 7 obsrevations problématiques
+d<-unique(base_complet[,c('numdos_curie')])
+
+
+library(tidyverse)
+duplicated(base_complet)
+base_complet[duplicated(base_complet),]
+
+### donc les observations dupliquées sont : 
+### observations : 14, 342, 743, 1181, 1364
+#### correspond au numéro de dossier : 1312082 (2 fois), 1214943 (2 fois), 1415211(2 fois), 1617828(2 fois), 0990233 (0 fois ??)
+
+
 
 
 ######################################################################################################
@@ -48,7 +328,6 @@ table(base_julie$center_curie.2)
 
 base_julie$bmi_4cl_ord <- fct_relevel(base_julie$bmi_4cl,"<18.5", "18.5-24.9", "25-29.9",">=30")
 
-base_complet <- merge(base_julie,database_preprocessed_labels, by = "numdos_curie")
 
 data_fertil_preserv = base_complet %>% filter(fertil_preserv=="Yes")
 
@@ -60,6 +339,21 @@ data_fertil_preserv$fertil_miv_cos_2[data_fertil_preserv$ivm == "No" & data_fert
 table(data_fertil_preserv$fertil_miv_cos_2)
 
 base_complet$year_diag<-as.character(base_complet$year_diag)
+
+
+
+
+# 1364 observations pour base complet 
+
+base_complet <- left_join(base_julie, database_preprocessed_labels, by = c("numdos_curie" = "numdos_curie")) 
+
+
+# maintenant si on enlève les duplicats dans notre base de données : on a bien 1357 observations !!
+
+base_complet<-base_complet[!duplicated(base_complet$numdos_curie), ]
+
+
+
 
 ################################################################################## Fusion des deux bases pour obtenir les subtypes 
 
@@ -100,12 +394,12 @@ var_selected<-c("nb_child_3cl", "bmi_4cl_ord","bmi", "center_curie.2","brca_scre
 names_var_selected <-c("Number of children", "BMI","BMI (mean)", "Treatment center","Genetic analysis", "Hereditary predisposition", "Inflammatory BC", "Clinical Tumor size (mm)","Clinical T stage (TNM)", "Clinical N stage (TNM)", "SBR grade","BC subtype", "Histological type", "Neoajuvant chemotherapy", "Chemotherapy setting", "Fertility preservation discussion")
 
 
-table1<-preformatTable1(stratif = "age_young_cl_40_bin", stratif_order = c("[0 -40)","40+"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = F)
+table1<-preformatTable1(stratif = "age_young_cl_40_bin", stratif_order = c("[0 -40)","40+"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = F,n_digits = 0)
 
 
 table1[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Patients Characteristics as a function of Age")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(table1[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table2_age.xlsx')
-write_xlsx(table1[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table2_age_excel.xlsx')
+write_xlsx(table1[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table2_age_excel_perc_3.xlsx')
 
 
 ################################################### Table treatment center colonnnes #####################################
@@ -127,6 +421,7 @@ write_csv2(tab2[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Juli
 
 ############################################################## Table fertility discussion lignes #############################
 
+a = base_complet %>% subset(is.na(pf_discussion))
 
 
 var_selected<-c("age_young_cl","age", "nb_child_3cl", "bmi_4cl_ord","bmi", "center_curie.2","year_diag","brca_screen", "brca_mut", "inflammatory_bc","tclin", "ctuicc_3cl","cnuicc_2cl","grade_3cl","subtype4.y", "histo_3cl", "neo_ct", "ct_setting_5cl.2")
@@ -135,30 +430,30 @@ names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mea
 
 
 
-tab7<-preformatTable1(stratif = "pf_discussion", stratif_order = c("Yes", "No"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = TRUE)
+tab7<-preformatTable1(stratif = "pf_discussion", stratif_order = c("Yes", "No"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = TRUE,n_digits = 0)
 
 
 tab7[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Patients Characteristics as a function of Fertility Procedure discussion")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fp_discussion_csv.xlsx')
-write_xlsx(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fp_discussion_excel.xlsx')
+write_xlsx(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fp_discussion_excel_perc_3.xlsx')
 
 
 
 ############################################################### Table fertility procedures lignes #################################@
 
 
-a = base_julie %>% subset(is.na(fertil_preserv))
+a = base_complet %>% subset(is.na(fertil_preserv))
 
 var_selected<-c("age_young_cl","age", "nb_child_3cl", "bmi_4cl_ord","bmi", "center_curie.2","brca_screen", "brca_mut", "inflammatory_bc","tclin", "ctuicc_3cl","cnuicc_2cl","grade_3cl","subtype4.y", "histo_3cl", "neo_ct", "ct_setting_5cl.2", "pf_discussion")
 
 names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mean)", "Treatment center","Genetic analysis", "Hereditary predisposition", "Inflammatory BC", "Clinical Tumor size (mm)","Clinical T stage (TNM)", "Clinical N stage (TNM)", "SBR grade","BC subtype", "Histological type", "Neoajuvant chemotherapy", "Chemotherapy setting", "Fertility preservation discussion")
 
-tab8<-preformatTable1(stratif = "fertil_preserv", stratif_order = c("Yes", "No"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = TRUE)
+tab8<-preformatTable1(stratif = "fertil_preserv", stratif_order = c("Yes", "No"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = TRUE,n_digits = 0)
 
 
 tab8[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Patients Characteristics as a function of patients'choice of Fertility preservation")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab8[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fertil_preserv_csv.xlsx')
-write_xlsx(tab8[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fertil_preserv_excel.xlsx')
+write_xlsx(tab8[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fertil_preserv_excel_perc_3.xlsx')
 
 
 
@@ -173,12 +468,12 @@ var_selected<-c("age_young_cl","age", "nb_child_3cl", "bmi_4cl_ord","bmi", "cent
 names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mean)", "Treatment center","Genetic analysis", "Hereditary predisposition", "Inflammatory BC", "Clinical Tumor size (mm)","Clinical T stage (TNM)", "Clinical N stage (TNM)", "SBR grade","BC subtype", "Histological type", "Neoajuvant chemotherapy", "Chemotherapy setting", "Fertility preservation discussion")
 
 
-tab13<-preformatTable1(stratif = "fertil_miv_cos_2", stratif_order = c("IVM","At least one COS"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, data_fertil_preserv, missing = F, perc_by_column = F)
+tab13<-preformatTable1(stratif = "fertil_miv_cos_2", stratif_order = c("IVM","At least one COS"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, data_fertil_preserv, missing = F, perc_by_column = F,n_digits = 0)
 
 
 tab13[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Patients Characteristics as a function of patients'choice of Fertility preservation")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab13[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table6_fertil_preserv_miv_cos_csv.xlsx')
-write_xlsx(tab13[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table6_fertil_preserv_miv_cos_excel.xlsx')
+write_xlsx(tab13[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table6_fertil_preserv_miv_cos_excel_perc_3.xlsx')
 
 
 ####################################################### Type de centre de fertilité colonne #############################################
@@ -191,10 +486,10 @@ var_selected<-c("age_young_cl","age", "nb_child_3cl", "bmi_4cl_ord","bmi", "cent
 names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mean)", "Treatment center","Genetic analysis", "Hereditary predisposition", "Inflammatory BC", "Clinical Tumor size (mm)","Clinical T stage (TNM)", "Clinical N stage (TNM)", "SBR grade","BC subtype", "Histological type", "Neoajuvant chemotherapy", "Chemotherapy setting", "Fertility preservation discussion")
 
 
-tab12<-preformatTable1(stratif = "center_fpp", stratif_order = c("Bondy", "Clamart", "Others", "Port Royal"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, data_fertil_preserv, missing = F, perc_by_column = F)
+tab12<-preformatTable1(stratif = "center_fpp", stratif_order = c("Bondy", "Clamart", "Others", "Port Royal"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, data_fertil_preserv, missing = F, perc_by_column = F,n_digits = 0)
 
 
-tab12[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Who are the patients in the different fertility centers? ?")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+tab12[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Who are the patients in the different fertility centers?")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab12[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table12_center_fpp_csv.xlsx')
 
 

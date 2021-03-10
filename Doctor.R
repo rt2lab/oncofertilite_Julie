@@ -63,10 +63,12 @@ var_selected<-c("specialty", "junior_senior","gender_bin", "center_anonym")
 
 names_var_selected <-c("Specialty", "Age","Gender","Treatment center")
 
-tab7<-preformatTable1(stratif = "pf_discussion", stratif_order = c("Yes", "No"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_doctor, missing = F, perc_by_column = F)
+tab7<-preformatTable1(stratif = "pf_discussion", stratif_order = c("Yes", "No"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_doctor, missing = F, perc_by_column = F,n_digits = 0)
+
+
 tab7[[1]]%>% kbl("latex", align = "llr", vline = "|", caption = "Specialty effect")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write.csv(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table_fertility_doctor_csv.xlsx')
-write_xlsx(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table_fertility_doctor_excel.xlsx')
+write_xlsx(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table_fertility_doctor_excel_percent_3.xlsx')
 
 
 a = read.csv('/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table_fertility_doctor_csv.xlsx')
