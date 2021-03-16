@@ -14,7 +14,7 @@ source(file.path("/Users/julieborghese/Documents/GitHub/databases/core/00_common
 library(tidyr)
 library(forcats)
 library(dplyr)
-
+library(kableExtra)
 
 ############### Chargement des bases de données 
 
@@ -104,7 +104,7 @@ names_var_selected <-c("Age","Age (mean)", "Number of children","Pregnancy at BC
 tab2<-preformatTable1(stratif = NA, stratif_order = NA, stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = F,n_digits = 0)
 
 
-tab2[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Baseline Delays Characteristics")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+tab2[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Baseline Pregnancy Characteristics")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab2[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table2_pregnancy_cara_csv.xlsx')
 write_xlsx(tab2[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table2_pregnancy_cara.xlsx')
 
@@ -139,7 +139,7 @@ names_var_selected <-c("Age","Age (mean)", "Number of children","Pregnancy at BC
 
 tab3<-preformatTable1(stratif = NA, stratif_order = NA, stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, preg, missing = F, perc_by_column = F,n_digits = 0)
 
-tab3[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Baseline Delays Characteristics")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+tab3[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Pregnancy post BC Outcome")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab3[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table3_pregnancy_csv.xlsx')
 write_xlsx(tab3[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table3_pregnancy.xlsx')
 
@@ -162,7 +162,7 @@ names_var_selected <-c("Age","Age (mean)", "Number of children","Pregnancy at BC
 
 tab4<-preformatTable1(stratif = "spontan_art_preg_1.2", stratif_order = c("spontaneous","ART wo frozen material reuse","ART with frozen material reuse","egg donation"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, preg, missing = F, perc_by_column = F,n_digits = 0)
 
-tab4[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Baseline Delays Characteristics")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+tab4[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Pregnancy outcome as a function of Pregnancy occurence")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab4[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table4_pregnancy_csv.xlsx')
 write_xlsx(tab4[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table4_pregnancy.xlsx')
 
@@ -187,9 +187,9 @@ names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mea
 
 
 
-tab5<-preformatTable1(stratif = "pregnancy_post_k", stratif_order = c("Yes","No"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = F,n_digits = 0)
+tab5<-preformatTable1(stratif = "pregnancy_post_k", stratif_order = c("Yes","No"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = TRUE,n_digits =0 )
 
-tab5[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Baseline Delays Characteristics")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+tab5[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Who got pregnant after BC ?")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab5[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_pregnancy_allvariable_csv.xlsx')
 write_xlsx(tab5[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_pregnancy_allvariable.xlsx')
 
@@ -228,10 +228,24 @@ O <- base_complet %>%drop_na(delay_os, pregnancy_post_k)
 
 o = ggplot(O) +
   geom_violin(aes(y = delay_os, x = pregnancy_post_k ,fill= pregnancy_post_k), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(22, 120))+theme_minimal()+
-  geom_boxplot(aes(y = delay_os, x = pregnancy_post_k),width=0.1)+labs(title="Delay OS since surgery (in months)") + xlab("")+ ylab("")+
+  geom_boxplot(aes(y = delay_os, x = pregnancy_post_k),width=0.1)+labs(title="Delay OS since surgery (in months)") + xlab("")+ ylab("")
   
 
 o
+
+################################## Figure delay
+
+library(patchwork)
+
+
+patchwork <- (d+o+r)
+patchwork + plot_annotation(
+  tag_levels = 'A',
+  title = 'Figure 1 : Delays associated with Pregnancy post BC',
+  subtitle = "These 7 plots describe the relation between Pregnancy post cancer and delays",
+  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="top")
+
+
 
 
 
@@ -300,10 +314,25 @@ rfs
 dd <- ggplot(O, aes(x=delay_diag_to_surg_day, fill = pregnancy_post_k)) + geom_density(alpha = 0.2)+labs(title="", subtitle="") + xlab("Delay diagnosis to surgery (in days)") + ylab("Pregnancy after BC")+
   theme(legend.position='none')+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),axis.text.x = element_blank(),
                                       axis.text.y = element_blank(),axis.ticks = element_blank()) + scale_x_continuous(limits=c(0, 300))
-
+dd
 delayd <- ggplotly(dd)
 
 delayd
+
+
+################### Figure density 
+
+
+patchwork <- (dd+rr+p)
+patchwork + plot_annotation(
+  tag_levels = 'A',
+  title = 'Figure 1 : Delays associated with Pregnancy post BC',
+  subtitle = "These 7 plots describe the relation between Pregnancy post cancer and delays",
+  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="right")
+
+
+
+
 
 
 ################################# Petit point sur delay_diag_to_surg_day 
@@ -338,7 +367,7 @@ names_var_selected=c("Reason why no PF")
 
 
 tab6<-preformatTable1(stratif = NA, stratif_order = NA, stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, no_fertil_preserv, missing = F, perc_by_column = F)
-tab6[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Baseline Delays Characteristics")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+tab6[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Among patient who did no fertility preservation procedure,why do they choose not to do fertility preservation procedure ?")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab6[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table6_no_fertil_preserv_csv.xlsx')
 write_xlsx(tab6[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table6_no_fertil_preserv.xlsx')
 
@@ -353,7 +382,7 @@ names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mea
 
 tab7<-preformatTable1(stratif = "fertil_preserv", stratif_order = c("Yes","No"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = TRUE,n_digits = 0)
 
-tab7[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Baseline Delays Characteristics")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+tab7[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Who chose to do fertility preservation procedure ? ")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table7_pregnancy_allvariable_csv.xlsx')
 write_xlsx(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table7_pregnancy_allvariable.xlsx')
 
@@ -381,9 +410,9 @@ names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mea
 
 
 
-tab8<-preformatTable1(stratif = "spontan_art_preg_1.3",  stratif_order = c("spontaneous","ART","egg donation"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = F,n_digits = 0)
+tab8<-preformatTable1(stratif = "spontan_art_preg_1.3",  stratif_order = c("spontaneous","ART","egg donation"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, preg, missing = F, perc_by_column = F,n_digits = 0)
 
-tab8[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Baseline Delays Characteristics")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+tab8[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Among patient who had a pregnancy after BC, what were the pregnancy occurencies ? ")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab8[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table8_pregnancy_allvariable_csv.xlsx')
 write_xlsx(tab8[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table8_pregnancy_allvariable.xlsx')
 
@@ -410,7 +439,7 @@ tab9<-preformatTable1(stratif = NA, stratif_order = NA, stratif2=NA, stratif2_or
 
 # There are no pregnancy post reuse frozen cortex
 
-tab9[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Baseline Delays Characteristics")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+tab9[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Among women who got pregnant after BC, what is the return rate to fertility center ?")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab9[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table9_pregnancy_csv.xlsx')
 write_xlsx(tab9[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table9_pregnancy.xlsx')
 
@@ -432,7 +461,7 @@ tab10<-preformatTable1(stratif = NA, stratif_order = NA, stratif2=NA, stratif2_o
 
 # There are no pregnancy post reuse frozen cortex
 
-tab10[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Baseline Delays Characteristics")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+tab10[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Among women who had fertility preservation, what is the return rate to fertility center ?")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab10[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table10_pregnancy_csv.xlsx')
 write_xlsx(tab10[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table10_pregnancy.xlsx')
 
