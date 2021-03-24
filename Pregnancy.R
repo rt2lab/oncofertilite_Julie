@@ -36,6 +36,18 @@ table(base_julie$center_curie.2)
 base_julie$bmi_4cl_ord <- fct_relevel(base_julie$bmi_4cl,"<18.5", "18.5-24.9", "25-29.9",">=30")
 
 
+
+# 1364 observations pour base complet 
+
+base_complet <- left_join(base_julie, database_preprocessed_labels, by = c("numdos_curie" = "numdos_curie")) 
+
+
+# maintenant si on enlève les duplicats dans notre base de données : on a bien 1357 observations !!
+
+base_complet<-base_complet[!duplicated(base_complet$numdos_curie), ]
+
+
+
 data_fertil_preserv = base_complet %>% filter(fertil_preserv=="Yes")
 
 data_fertil_preserv$fertil_miv_cos_2 <- NA
@@ -49,15 +61,27 @@ base_complet$year_diag<-as.character(base_complet$year_diag)
 
 
 
+base_complet$age_young_2cl <- cut(base_complet$age, c(22, 37,44))
+table(base_complet$age_young_2cl)
 
-# 1364 observations pour base complet 
+base_complet$age_young_acm  <- NA
+base_complet$age_young_acm [base_complet$age_young_2cl == "(22,37]"] <- "below 37 y.o"
+base_complet$age_young_acm [base_complet$age_young_2cl == "(37,44]"] <- "above 37 y.o"
+table(base_complet$age_young_acm )
 
-base_complet <- left_join(base_julie, database_preprocessed_labels, by = c("numdos_curie" = "numdos_curie")) 
+base_complet<-base_complet %>% drop_na(age_young_acm)
 
 
-# maintenant si on enlève les duplicats dans notre base de données : on a bien 1357 observations !!
+base_complet$nb_child_3cl<- as.character(base_complet$nb_child_3cl)
 
-base_complet<-base_complet[!duplicated(base_complet$numdos_curie), ]
+base_complet$nb_child_2cl  <- NA
+base_complet$nb_child_2cl[base_complet$nb_child_3cl == "More than 1"] <- "Has children"
+base_complet$nb_child_2cl[base_complet$nb_child_3cl == "1"] <- "Has children"
+base_complet$nb_child_2cl[base_complet$nb_child_3cl=="0"] <- "No children"
+table(base_complet$nb_child_2cl)
+
+
+
 
 
 
@@ -202,9 +226,27 @@ D <- base_complet %>%drop_na(delay_diag_to_surg_day, pregnancy_post_k)
 
 d = ggplot(D) +
   geom_violin(aes(y = delay_diag_to_surg_day, x = pregnancy_post_k ,fill= pregnancy_post_k), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(22, 45))+theme_minimal()+
-  geom_boxplot(aes(y = delay_diag_to_surg_day, x = pregnancy_post_k),width=0.1)+labs(title="Delay diagnosis to surgery (in days)") + xlab("")+ ylab("")
+  geom_boxplot(aes(y = delay_diag_to_surg_day, x = pregnancy_post_k),width=0.1)+labs(title="Delay diagnosis to surgery (in days)") + xlab("Pregnancy post BC")+ ylab("")
 
 d
+
+
+d = d + facet_wrap(~age_young_acm, ncol = 2)
+
+# Delay surgery VS age et fertil_preserv 
+
+
+
+D <- base_complet %>%drop_na(delay_diag_to_surg_day, pregnancy_post_k,age_young_acm,fertil_preserv) 
+
+
+y = ggplot(D) +
+  geom_violin(aes(y = delay_diag_to_surg_day, x = fertil_preserv ,fill= fertil_preserv), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(5, 62))+theme_minimal()+
+  geom_boxplot(aes(y = delay_diag_to_surg_day, x = fertil_preserv),width=0.1)+labs(title="Delay RFS since surgery (in months)") + xlab("")+ ylab("")
+
+
+y = y + facet_wrap(~age_young_acm, ncol = 2)
+
 
 
 # Boxplot delay rfs 
@@ -215,23 +257,61 @@ R <- base_complet %>%drop_na(delay_rfs, pregnancy_post_k)
 
 r = ggplot(R) +
   geom_violin(aes(y = delay_rfs, x = pregnancy_post_k ,fill= pregnancy_post_k), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(22, 120))+theme_minimal()+
-  geom_boxplot(aes(y = delay_rfs, x = pregnancy_post_k),width=0.1)+labs(title="Delay RFS since surgery (in months)") + xlab("")+ ylab("")
+  geom_boxplot(aes(y = delay_rfs, x = pregnancy_post_k),width=0.1)+labs(title="Delay RFS since surgery (in months)") + xlab("Pregnancy post BC")+ ylab("")
 
 r
 
+r = r + facet_wrap(~age_young_acm, ncol = 2)
+
+# Boxplot delay rfs 
 
 
-# Boxplot delay os 
+R <- base_complet %>%drop_na(delay_rfs, pregnancy_post_k,age_young_acm,fertil_preserv) 
 
-O <- base_complet %>%drop_na(delay_os, pregnancy_post_k) 
+
+x = ggplot(O) +
+  geom_violin(aes(y = delay_rfs, x = fertil_preserv ,fill= fertil_preserv), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(22, 120))+theme_minimal()+
+  geom_boxplot(aes(y = delay_rfs, x = fertil_preserv),width=0.1)+labs(title="Delay RFS since surgery (in months)") + xlab("")+ ylab("")
+
+
+x = x + facet_wrap(~age_young_acm, ncol = 2)
+
+
+
+
+
+# Boxplot delay os comparaison Age and pregancy after BC 
+
+O <- base_complet %>%drop_na(delay_os, pregnancy_post_k,age_young_acm,fertil_preserv) 
 
 
 o = ggplot(O) +
   geom_violin(aes(y = delay_os, x = pregnancy_post_k ,fill= pregnancy_post_k), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(22, 120))+theme_minimal()+
-  geom_boxplot(aes(y = delay_os, x = pregnancy_post_k),width=0.1)+labs(title="Delay OS since surgery (in months)") + xlab("")+ ylab("")
+  geom_boxplot(aes(y = delay_os, x = pregnancy_post_k),width=0.1)+labs(title="Delay OS since surgery (in months)") + xlab("Pregnancy after BC")+ ylab("")
   
 
-o
+o = o + facet_wrap(~age_young_acm, ncol = 2)
+
+
+
+# Boxplot delay os as comparaison Age and fertil_preserv 
+
+
+O <- base_complet %>%drop_na(delay_os, pregnancy_post_k,age_young_acm,fertil_preserv) 
+
+
+w = ggplot(O) +
+  geom_violin(aes(y = delay_os, x = fertil_preserv ,fill= fertil_preserv), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(22, 120))+theme_minimal()+
+  geom_boxplot(aes(y = delay_os, x = fertil_preserv),width=0.1)+labs(title="Delay OS since surgery (in months)") + xlab("")+ ylab("")
+
+
+w= w + facet_wrap(~age_young_acm, ncol = 2)
+
+
+
+
+
+
 
 ################################## Figure delay
 
@@ -244,6 +324,25 @@ patchwork + plot_annotation(
   title = 'Figure 1 : Delays associated with Pregnancy post BC',
   subtitle = "These 7 plots describe the relation between Pregnancy post cancer and delays",
   caption = '')+ plot_layout(guides="collect")&theme(legend.position ="top")
+
+
+
+
+patchwork <- (w+x+y)
+patchwork + plot_annotation(
+  tag_levels = 'A',
+  title = 'Figure 2 : Delays associated with Fertility preservation procedure as a function of Age',
+  subtitle = "These 7 plots describe the relation between fertility preservation procedure and delays",
+  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="top")
+
+
+patchwork <- (d+o+r)
+patchwork + plot_annotation(
+  tag_levels = 'A',
+  title = 'Figure 3 : Delays associated with Pregnancy post BC as a function of Age',
+  subtitle = "These 7 plots describe the relation between pregnancy post BC and delays",
+  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="top")
+
 
 
 
@@ -464,6 +563,174 @@ tab10<-preformatTable1(stratif = NA, stratif_order = NA, stratif2=NA, stratif2_o
 tab10[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Among women who had fertility preservation, what is the return rate to fertility center ?")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab10[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table10_pregnancy_csv.xlsx')
 write_xlsx(tab10[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table10_pregnancy.xlsx')
+
+
+
+
+
+##################################################################################################################################
+##################################################################################################################################
+##################################### ACM Pregnancy Post BC #####################################################################
+
+
+
+library(devtools)
+library(FactoMineR)
+library(ade4)
+library(dplyr)
+library("factoextra")
+
+
+library(tidyr)
+data.active <- base_complet %>% select(pregnancy_post_k,age_young_acm,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
+
+
+#on crée l'ACM 
+res.mca <- MCA (data.active,ncp = 3, graph = FALSE)
+fviz_screeplot (res.mca, addlabels = TRUE, ylim = c (0, 45))
+
+
+# 2 dims
+
+var <- get_mca_var(res.mca)
+var
+
+
+library("corrplot")
+corrplot(var$cos2, is.corr=FALSE)
+
+# dim 1 : preg, age , children 
+# dim 2 : grade et neo_adj 
+
+fviz_mca_biplot(res.mca,col.ind = data.active$pregnancy_post_k, ggtheme = theme_minimal(), axes=c(1,2), title="MCA for pregnancy post BC",
+                addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Pregnancy post BC")
+
+
+
+
+######################################## Box plot pregnancy neo_adj et grade
+
+
+
+library(dplyr)
+library(tidyr)
+
+G <- base_complet %>%drop_na(pregnancy_post_k,neo_ct) %>% 
+  group_by(neo_ct,pregnancy_post_k) %>% 
+  summarise(count = n()) %>%
+  mutate(perc = (count/sum(count)))
+G$perc <- round(G$perc,2)
+G$x <- paste0(paste0(as.character(G$count),sep="\n"),paste(paste0(as.character(100*G$perc),'%',sep= '')))
+G
+
+
+g=ggplot(data=G, aes(fill=pregnancy_post_k,y=100*perc,x=neo_ct),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Pregnancy post BC as a function of Neoadjuvant chemotherapy")+
+  xlab("Neoadjuvant chemotherapy")+ ylab("")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Pregnancy post BC",reverse=T))+
+  geom_text(aes(x=neo_ct,label=x,size=3), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+g
+
+
+# grade 
+
+G <- base_complet %>%drop_na(pregnancy_post_k,grade_2cl) %>% 
+  group_by(grade_2cl,pregnancy_post_k) %>% 
+  summarise(count = n()) %>%
+  mutate(perc = (count/sum(count)))
+G$perc <- round(G$perc,2)
+G$x <- paste0(paste0(as.character(G$count),sep="\n"),paste(paste0(as.character(100*G$perc),'%',sep= '')))
+G
+
+
+g=ggplot(data=G, aes(fill=pregnancy_post_k,y=100*perc,x=grade_2cl),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Pregnancy post BC as a function of Grade")+
+  xlab("")+ ylab("")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),legend.position="top")+ guides(fill=guide_legend(title="Pregnancy post BC",reverse=T))+
+  geom_text(aes(x=grade_2cl,label=x,size=3), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+g
+
+
+#########################################################   Amh, cfa et autres pour les patientes qui ont des procédures de fertilité
+########################################################   On fait une figure patchwork 
+
+
+#cfa, amh  : density et boxplot et corrélogramme 
+
+
+
+D <- data_fertil_preserv %>%drop_na(amh,cfa, pregnancy_post_k,age_young_acm) 
+
+
+
+a = ggplot(D) +
+  geom_violin(aes(y = cfa, x = age_young_acm ,fill= age_young_acm), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(5, 70))+theme_minimal()+
+  geom_boxplot(aes(y = cfa, x = age_young_acm),width=0.1)+labs(title="Cfa as a function of age among the women who did fertility preservation procedure") + xlab("")+ ylab("")
+
+a
+
+
+data_fertil_preserv$amh<-as.numeric(data_fertil_preserv$amh)
+
+
+b = ggplot(D) +
+  geom_violin(aes(y = amh, x = age_young_acm ,fill= age_young_acm), adjust = .8, show.legend=F)+theme_minimal()+scale_y_continuous(limits=c(0, 20))+
+  geom_boxplot(aes(y = amh, x = age_young_acm),width=0.1)+labs(title="Amh as a function of age among the women who did fertility preservation procedure") + xlab("")+ ylab("")
+
+b
+
+
+
+
+# Density cfa et amh 
+
+# cfa 
+
+
+c <- ggplot(D, aes(x=cfa, fill = age_young_acm)) + geom_density(alpha = 0.2)+labs(title="Cfa as a function of age among the women who did fertility preservation procedure", subtitle="") + xlab("") + ylab("")+
+  theme(legend.position='none')+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),axis.text.x = element_blank(),
+                                      axis.text.y = element_blank(),axis.ticks = element_blank())
+
+fig <- ggplotly(c)
+
+fig
+
+
+
+# amh 
+
+
+d <- ggplot(D, aes(x=amh, fill = age_young_acm)) + geom_density(alpha = 0.2)+labs(title="Amh as a function of age among the women who did fertility preservation procedure", subtitle="") + xlab("") + ylab("")+
+  theme(legend.position='none')+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),axis.text.x = element_blank(),
+                                      axis.text.y = element_blank(),axis.ticks = element_blank())
+
+fig2 <- ggplotly(d)
+
+fig2
+
+
+############################# Corrplot entre cfa et amh et on colore en fonction de l'âge 
+
+e = ggplot(D) + 
+  geom_point(aes(x = amh, y = cfa, shape=age_young_acm, color=age_young_acm), 
+             size = 3, alpha = 0.3)+theme_minimal()+geom_smooth(aes(x = amh, y = cfa, shape=age_young_acm, color=age_young_acm),method=lm, se=FALSE, fullrange=TRUE)
+
+
+
+
+################################################## Figure 4 : cfa et amh pour le spatientes en fertil_preserv 
+
+patchwork <- (a+b)/e
+patchwork + plot_annotation(
+  tag_levels = 'A',
+  title = 'Figure 4: Biological parameters among the patients who did fertility preservation procedure as a function of Age',
+  subtitle = "These 3 plots describe the relation between age and biological parameters",
+  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="right")
+
+
+
+
+
+
+
 
 
 
