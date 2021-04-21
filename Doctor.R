@@ -16,6 +16,12 @@ source(file.path("/Users/julieborghese/Documents/GitHub/databases/core/00_common
 
 base_doctor = d2_long_2_with_names_centers
 
+base_doctor$pf_discussion_2  <- NA
+base_doctor$pf_discussion_2[base_doctor$pf_discussion == "Yes"] <- "Has the discussion"
+base_doctor$pf_discussion_2[base_doctor$pf_discussion == "No"] <- "No discussion"
+table(base_doctor$pf_discussion_2)
+
+
 # quand on avait la mauvaise base 
 
 # base_doctor$pf_discussion.2 = NA
@@ -46,7 +52,7 @@ table0<-preformatTable1(stratif = NA, stratif_order = NA, stratif2=NA, stratif2_
 
 
 table0[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Baseline Doctors Characteristics")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
-write_csv2(tab0[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table0_baseline_doctor_csv.xlsx')
+write_csv2(table0[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table0_baseline_doctor_csv.xls')
 
 
 
@@ -68,7 +74,7 @@ tab7<-preformatTable1(stratif = "pf_discussion", stratif_order = c("Yes", "No"),
 
 tab7[[1]]%>% kbl("latex", align = "llr", vline = "|", caption = "Specialty effect")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write.csv(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table_fertility_doctor_csv.xlsx')
-write_xlsx(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table_fertility_doctor_excel_percent_3.xlsx')
+write_xlsx(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table_fertility_doctor_excel_percent_3.xls')
 
 
 a = read.csv('/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table_fertility_doctor_csv.xlsx')
@@ -89,7 +95,7 @@ tab9<-preformatTable1(stratif = "specialty", stratif_order = c("oncologist", "ra
 
 
 tab9[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Specialty effect")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
-write_csv2(tab9[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table1_doctor_specialty_csv.xlsx')
+write_csv2(tab9[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table1_doctor_specialty_csv.xls')
 
 
 ############################################################## Table Gender 
@@ -158,7 +164,7 @@ library(dplyr)
 library("factoextra")
 
 library(tidyr)
-data.active <- base_doctor %>% select(pf_discussion, specialty, junior_senior, gender_bin,center_anonym) %>% drop_na()
+data.active <- base_doctor %>% select(pf_discussion_2, specialty, junior_senior, gender_bin,center_anonym) %>% drop_na()
 
 
 
@@ -343,7 +349,7 @@ explor(res.mca)
 ###############################################  Projection des variables sur les axes 
 
 res <- explor::prepare_results(res.mca)
-explor::MCA_var_plot(res, xax = 1, yax = 3, var_sup = FALSE, var_sup_choice = ,
+explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
                      var_lab_min_contrib = 0, col_var = "Variable", symbol_var = NULL, size_var = "Cos2",
                      size_range = c(52.5, 700), labels_size = 10, point_size = 56, transitions = TRUE,
                      labels_positions = NULL, labels_prepend_var = FALSE, xlim = c(-1.46, 1.52),
@@ -368,27 +374,6 @@ explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
 
 
 
-
-#######################################################################################################################
-###########################################################################################################################
-###########################################################################################################################
-#########################################################################@ Regression logistique ##############################
-
-base_doctor$pf_discussion.2 <-as.factor(base_doctor$pf_discussion)
-
-var_selected<-c("specialty", "junior_senior","gender_bin")
-
-names_var_selected <-c("Specialty", "Age","Gender")
-
-lm =logisticRegressionTable(base_doctor, var_selected, names_var_selected, var_to_explain= "pf_discussion.2",level_to_import="Yes",variables_use_multivariate = NA, alpha_cut_multivariate = 1, all_multivariate_values = F)
-
-lm %>% kbl("latex", align = "llr", vline = "|", caption = "Logistic regression results for fertility preservation discussion")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
-
-
-
-#################################################################################################################################
-#################################################################################################################################
-################################################################################################################################
 
 ########################################################################################################################  Figure 2 : Factors related to patient management 
 

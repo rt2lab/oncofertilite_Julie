@@ -37,6 +37,20 @@ base_julie$bmi_4cl_ord <- fct_relevel(base_julie$bmi_4cl,"<18.5", "18.5-24.9", "
 
 
 
+base_complet$nb_child_2cl= NA
+base_complet$nb_child_2cl[base_complet$prev_child == "No"] <- "No child"
+base_complet$nb_child_2cl[base_complet$prev_child == "Yes"] <- "Has children"
+table(base_complet$nb_child_2cl)
+
+base_complet$preg_post_k_2= NA
+base_complet$preg_post_k_2[base_complet$pregnancy_post_k == "No"] <- "No Pregnancy"
+base_complet$preg_post_k_2[base_complet$pregnancy_post_k == "Yes"] <- "Pregnancy"
+table(base_complet$preg_post_k_2)
+
+
+
+
+
 # 1364 observations pour base complet 
 
 base_complet <- left_join(base_julie, database_preprocessed_labels, by = c("numdos_curie" = "numdos_curie")) 
@@ -49,7 +63,6 @@ base_complet<-base_complet[!duplicated(base_complet$numdos_curie), ]
 
 
 data_fertil_preserv = base_complet %>% filter(fertil_preserv=="Yes")
-
 data_fertil_preserv$fertil_miv_cos_2 <- NA
 data_fertil_preserv$fertil_miv_cos_2[data_fertil_preserv$ivm == "Yes" & data_fertil_preserv$cos == "No"] <- "IVM"
 data_fertil_preserv$fertil_miv_cos_2[data_fertil_preserv$ivm == "No" & data_fertil_preserv$cos == "Yes"] <- "At least one COS"
@@ -205,13 +218,13 @@ write_xlsx(tab4[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Juli
 
 
 
-var_selected<-c("age_young_cl","age", "nb_child_3cl", "bmi_4cl_ord","bmi", "center_curie.2","brca_screen", "brca_mut", "inflammatory_bc","tclin", "ctuicc_3cl","cnuicc_4cl","grade_3cl","subtype4.y", "histo_3cl", "neo_ct", "ct_setting_5cl.2", "pf_discussion","delay_diag_to_surg_day","delay_rfs", "delay_os","preg_dg","mention_preg_desire","fertil_preserv")
+var_selected<-c("age_young_cl","age", "nb_child_2cl", "bmi_4cl_ord","bmi", "center_curie.2","brca_screen", "brca_mut", "inflammatory_bc","tclin", "ctuicc_3cl","cnuicc_4cl","grade_3cl","subtype4.y", "histo_3cl", "neo_ct", "ct_setting_5cl.2", "pf_discussion","delay_diag_to_surg_day","delay_rfs", "delay_os","preg_dg","mention_preg_desire","fertil_preserv","cfa","amh")
 
-names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mean)", "Treatment center","Genetic analysis", "Hereditary predisposition", "Inflammatory BC", "Clinical Tumor size (mm)","Clinical T stage (TNM)", "Clinical N stage (TNM)", "SBR grade","BC subtype", "Histological type", "Neoajuvant chemotherapy", "Chemotherapy setting", "Fertility preservation discussion","Delay diagnosis to surgery (in days)","Delay RFS since surgery (in months)", "Delay OS since surgery (in months)","Pregnancy at BC diagnosis", "Pregnancy desire", "Fertility preservation procedure")
+names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mean)", "Treatment center","Genetic analysis", "Hereditary predisposition", "Inflammatory BC", "Clinical Tumor size (mm)","Clinical T stage (TNM)", "Clinical N stage (TNM)", "SBR grade","BC subtype", "Histological type", "Neoajuvant chemotherapy", "Chemotherapy setting", "Fertility preservation discussion","Delay diagnosis to surgery (in days)","Delay RFS since surgery (in months)", "Delay OS since surgery (in months)","Pregnancy at BC diagnosis", "Pregnancy desire", "Fertility preservation procedure","CFA","AMH")
 
 
 
-tab5<-preformatTable1(stratif = "pregnancy_post_k", stratif_order = c("Yes","No"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = TRUE,n_digits =0 )
+tab5<-preformatTable1(stratif = "preg_post_k_2", stratif_order = c("No Pregnancy","Pregnancy"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, base_complet, missing = F, perc_by_column = FALSE,n_digits =0 )
 
 tab5[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Who got pregnant after BC ?")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
 write_csv2(tab5[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_pregnancy_allvariable_csv.xlsx')
@@ -425,8 +438,8 @@ delayd
 patchwork <- (dd+rr+p)
 patchwork + plot_annotation(
   tag_levels = 'A',
-  title = 'Figure 1 : Delays associated with Pregnancy post BC',
-  subtitle = "These 7 plots describe the relation between Pregnancy post cancer and delays",
+  title = 'Figure 1 : Delays associated with Neoadjuvant chemotherapy',
+  subtitle = "These 7 plots describe the relation between Neoadjuvant chemotherapy and delays",
   caption = '')+ plot_layout(guides="collect")&theme(legend.position ="right")
 
 
@@ -657,23 +670,23 @@ g
 
 
 
-D <- data_fertil_preserv %>%drop_na(amh,cfa, pregnancy_post_k,age_young_acm) 
+D <- data_fertil_preserv %>%drop_na(amh,cfa, parcours_surgery_chemio) 
 
-
+D$amh<-as.numeric(D$amh)
 
 a = ggplot(D) +
-  geom_violin(aes(y = cfa, x = age_young_acm ,fill= age_young_acm), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(5, 70))+theme_minimal()+
-  geom_boxplot(aes(y = cfa, x = age_young_acm),width=0.1)+labs(title="Cfa as a function of age among the women who did fertility preservation procedure") + xlab("")+ ylab("")
+  geom_violin(aes(y = cfa, x = parcours_surgery_chemio ,fill= parcours_surgery_chemio), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(0, 70))+theme_minimal()+
+  geom_boxplot(aes(y = cfa, x = parcours_surgery_chemio),width=0.1)+labs(title="Cfa as a function of Therapy") + xlab("")+ ylab("")
 
 a
 
 
-data_fertil_preserv$amh<-as.numeric(data_fertil_preserv$amh)
+base_complet$amh<-as.numeric(base_complet$amh)
 
 
 b = ggplot(D) +
-  geom_violin(aes(y = amh, x = age_young_acm ,fill= age_young_acm), adjust = .8, show.legend=F)+theme_minimal()+scale_y_continuous(limits=c(0, 20))+
-  geom_boxplot(aes(y = amh, x = age_young_acm),width=0.1)+labs(title="Amh as a function of age among the women who did fertility preservation procedure") + xlab("")+ ylab("")
+  geom_violin(aes(y = amh, x = parcours_surgery_chemio ,fill= parcours_surgery_chemio), adjust = .8, show.legend=F)+theme_minimal()+scale_y_continuous(limits=c(0, 20))+
+  geom_boxplot(aes(y = amh, x = parcours_surgery_chemio),width=0.1)+labs(title="Amh as a function of Therapy") + xlab("")+ ylab("")
 
 b
 
@@ -684,52 +697,196 @@ b
 
 # cfa 
 
+library(patchwork)
+library(plotly)
 
-c <- ggplot(D, aes(x=cfa, fill = age_young_acm)) + geom_density(alpha = 0.2)+labs(title="Cfa as a function of age among the women who did fertility preservation procedure", subtitle="") + xlab("") + ylab("")+
+
+c <- ggplot(D, aes(x=cfa, fill = parcours_surgery_chemio)) + geom_density(alpha = 0.2)+labs(title="Cfa as a function of Therapy", subtitle="") + xlab("") + ylab("")+
   theme(legend.position='none')+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),axis.text.x = element_blank(),
                                       axis.text.y = element_blank(),axis.ticks = element_blank())
 
-fig <- ggplotly(c)
+g <- ggplotly(c)
 
-fig
+g
 
 
 
 # amh 
 
 
-d <- ggplot(D, aes(x=amh, fill = age_young_acm)) + geom_density(alpha = 0.2)+labs(title="Amh as a function of age among the women who did fertility preservation procedure", subtitle="") + xlab("") + ylab("")+
+d <- ggplot(D, aes(x=amh, fill = parcours_surgery_chemio)) + geom_density(alpha = 0.2)+labs(title="Amh as a function of Therapy", subtitle="") + xlab("") + ylab("")+
   theme(legend.position='none')+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),axis.text.x = element_blank(),
                                       axis.text.y = element_blank(),axis.ticks = element_blank())
 
-fig2 <- ggplotly(d)
+h <- ggplotly(d)
 
-fig2
+h
 
 
 ############################# Corrplot entre cfa et amh et on colore en fonction de l'âge 
 
 e = ggplot(D) + 
-  geom_point(aes(x = amh, y = cfa, shape=age_young_acm, color=age_young_acm), 
-             size = 3, alpha = 0.3)+theme_minimal()+geom_smooth(aes(x = amh, y = cfa, shape=age_young_acm, color=age_young_acm),method=lm, se=FALSE, fullrange=TRUE)
+  geom_point(aes(x = amh, y = cfa, shape=parcours_surgery_chemio, color=parcours_surgery_chemio), 
+             size = 3, alpha = 0.3)+theme_minimal()+geom_smooth(aes(x = amh, y = cfa, shape=parcours_surgery_chemio, color=parcours_surgery_chemio),method=lm, se=FALSE, fullrange=TRUE)
 
 
-
+e
 
 ################################################## Figure 4 : cfa et amh pour le spatientes en fertil_preserv 
 
-patchwork <- (a+b)/e
+library(patchwork)
+
+patchwork <- (a+b)/(c+d)/e
 patchwork + plot_annotation(
   tag_levels = 'A',
-  title = 'Figure 4: Biological parameters among the patients who did fertility preservation procedure as a function of Age',
-  subtitle = "These 3 plots describe the relation between age and biological parameters",
+  title = 'Figure 5: Biological parameters as a function of Therapy',
+  subtitle = "These 3 plots describe the relation between Therapy and biological parameters",
   caption = '')+ plot_layout(guides="collect")&theme(legend.position ="right")
 
 
+library(ggplot2)
+
+
+
+base_complet$amh<-as.numeric(base_complet$amh)
+
+
+ggplot(base_complet, aes(x=cfa)) + 
+  geom_histogram(aes(y=..density..), colour="black", fill="white")+
+  geom_density(alpha=.2, fill="#FF6666")
+
+ggplot(base_complet, aes(x=amh)) + 
+  geom_histogram(aes(y=..density..), colour="black", fill="white")+
+  geom_density(alpha=.2, fill="#FF6666")
+
+
+library(scales)
+
+p<-ggplot(base_complet, aes(x=cfa)) + 
+  geom_histogram(color="black", fill="white", binwidth =5,bins = 50)+ geom_vline(aes(xintercept=mean(as.numeric(cfa))))
+
+p
 
 
 
 
+################ Boxplot Age et fertil_preserv 
+
+A <- base_complet %>%drop_na(fertil_preserv,age) 
+
+
+a = ggplot(A) +
+  geom_violin(aes(y = age, x = fertil_preserv ,fill= fertil_preserv), adjust = .8, show.legend=T)+scale_y_continuous(limits=c(22, 45))+theme_minimal()+
+  geom_boxplot(aes(y = age, x = fertil_preserv),width=0.1)+labs(title="Age at BC diagnostic") + xlab("")+ ylab("")
+
+a
+
+
+###################### Tableau parmi les femmes qui ont fait de la fpp, quelles sont les méthodes utilisées ? 
+
+
+
+var_selected<-c("age_young_cl","age", "nb_child_3cl", "bmi_4cl_ord","bmi", "center_curie.2","brca_screen", "brca_mut", "inflammatory_bc","tclin", "ctuicc_3cl","cnuicc_4cl","grade_3cl","subtype4.y", "histo_3cl", "neo_ct", "ct_setting_5cl.2", "pf_discussion")
+
+names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mean)", "Treatment center","Genetic analysis", "Hereditary predisposition", "Inflammatory BC", "Clinical Tumor size (mm)","Clinical T stage (TNM)", "Clinical N stage (TNM)", "SBR grade","BC subtype", "Histological type", "Neoajuvant chemotherapy", "Chemotherapy setting", "Fertility preservation discussion")
+
+
+tab10<-preformatTable1(stratif = "fertil_miv_cos_2", stratif_order = c("IVM","At least one COS"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, data_fertil_preserv, missing = F, perc_by_column = F,n_digits = 0)
+
+
+# There are no pregnancy post reuse frozen cortex
+
+tab10[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Among women who did fertility preservation procedure, what kind of procedure did they choose ?")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+write_csv2(tab10[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table10_pregnancy_csv.xlsx')
+write_xlsx(tab10[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table10_pregnancy.xlsx')
+
+
+
+###########################@  Plot NAC et type de procédure de fertilité réalisée
+
+base_julie_3 = base_rubing_appelee_autrement
+
+
+library(ggsci)
+
+data_fertil_preserv$parcours_surgery_chemio  <- NA
+
+data_fertil_preserv$parcours_surgery_chemio[data_fertil_preserv$neo_ct == "No" ] <- "Surgery followed by CT"
+data_fertil_preserv$parcours_surgery_chemio[data_fertil_preserv$neo_ct=="Yes"] <- "NAC"
+table(data_fertil_preserv$parcours_surgery_chemio)
+
+base_julie_3$fertil_preserv_2 <- NA
+
+base_julie_3$fertil_preserv_2[base_julie_3$fertil_preserv == "Yes" ] <- "Fertility preservation"
+base_julie_3$fertil_preserv_2[base_julie_3$fertil_preserv=="No"] <- "No fertility preservation"
+table(base_julie_3$fertil_preserv_2)
+
+
+
+G <- data_fertil_preserv %>%drop_na(parcours_surgery_chemio,fertil_miv_cos_2) %>% 
+  group_by(parcours_surgery_chemio,fertil_miv_cos_2) %>% 
+  summarise(count = n()) %>%
+  mutate(perc = (count/sum(count)))
+G$perc <- round(G$perc,2)
+G$x <- paste0(paste0(as.character(G$count),sep="\n"),paste(paste0(as.character(100*G$perc),'%',sep= '')))
+G
+
+
+g=ggplot(data=G, aes(fill=fertil_miv_cos_2,y=100*perc,x=parcours_surgery_chemio),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Fertility preservation procedure as a function of Therapy")+
+  xlab("")+ ylab("")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),legend.position="top")+ guides(fill=guide_legend(title="Fertility preservation procedure",reverse=T))+
+  geom_text(aes(x=parcours_surgery_chemio,label=x,size=3), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+g
+
+a<- data_fertil_preserv %>% subset(!is.na(data_fertil_preserv$cfa))
+
+median(a$cfa) 
+
+# cfa median 20 
+
+b<- data_fertil_preserv %>% subset(!is.na(data_fertil_preserv$amh))
+median(b$amh)
+# median amh : 2,85 bizare non ? 
+
+# si on fait des boxplots, comment ca se passe ? 
+
+
+b$amh <-as.numeric(b$amh)
+
+
+
+cf= ggplot(a) +
+  geom_violin(aes(y = cfa, x = parcours_surgery_chemio ,fill= parcours_surgery_chemio), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(0, 70))+theme_minimal()+
+  geom_boxplot(aes(y = cfa, x = parcours_surgery_chemio),width=0.1)+labs(title="Cfa as a function of Therapy") + xlab("")+ ylab("")
+
+cf
+
+
+am= ggplot(a) +
+  geom_violin(aes(y = amh, x = parcours_surgery_chemio ,fill= parcours_surgery_chemio), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(0, 10))+theme_minimal()+
+  geom_boxplot(aes(y = amh, x = parcours_surgery_chemio),width=0.1)+labs(title="Amh as a function of Therapy") + xlab("")+ ylab("")
+
+am
+
+
+############################## Tableau : parmi les femmes qui réutilisent leur frozen material, quel est le résultat (pregnancy, ou uatres)
+
+reuse <- base_complet %>% filter(fertil_preserv=="Yes") %>% filter(reuse_frozen_material=="Yes")
+
+
+var_selected<-c("age_young_cl","age", "nb_child_3cl", "bmi_4cl_ord","bmi", "center_curie.2","brca_screen", "brca_mut", "inflammatory_bc","tclin", "ctuicc_3cl","cnuicc_4cl","grade_3cl","subtype4.y", "histo_3cl", "neo_ct", "ct_setting_5cl.2", "pf_discussion", "preg_outcome_preg_1")
+
+names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mean)", "Treatment center","Genetic analysis", "Hereditary predisposition", "Inflammatory BC", "Clinical Tumor size (mm)","Clinical T stage (TNM)", "Clinical N stage (TNM)", "SBR grade","BC subtype", "Histological type", "Neoajuvant chemotherapy", "Chemotherapy setting", "Fertility preservation discussion","Pregnancy outcome")
+
+
+tab10<-preformatTable1(stratif = NA, stratif_order = NA, stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, reuse, missing = F, perc_by_column = F,n_digits = 0)
+
+
+# There are no pregnancy post reuse frozen cortex
+
+tab10[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Among women who did fertility preservation procedure and reuse their frozen material, what are the pregnancy's outcomes ?")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+write_csv2(tab10[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table10_pregnancy_csv.xlsx')
+write_xlsx(tab10[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table10_pregnancy.xlsx')
 
 
 

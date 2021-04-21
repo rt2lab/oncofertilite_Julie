@@ -230,8 +230,20 @@ explor::MCA_var_plot(res, xax = 1, yax = 2, var_sup = FALSE, var_sup_choice = ,
 
 # les variables qu'on garde 
 
+base_julie$pf_discussion_2  <- NA
+base_julie$pf_discussion_2[base_julie$pf_discussion == "Yes"] <- "Has the discussion"
+base_julie$pf_discussion_2[base_julie$pf_discussion == "No"] <- "No discussion"
+table(base_julie$pf_discussion_2)
 
-data.active.2 <- base_julie %>% select(fertil_preserv, pf_discussion,age_young_acm,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
+
+base_julie$fertil_preserv_2  <- NA
+base_julie$fertil_preserv_2[base_julie$fertil_preserv == "Yes"] <- "Fertility preservation"
+base_julie$fertil_preserv_2[base_julie$fertil_preserv == "No"] <- "No fertility preservation"
+table(base_julie$fertil_preserv_2)
+
+
+
+data.active.2 <- base_julie %>% select(fertil_preserv_2, pf_discussion_2,age_young_acm,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
 
 
 
@@ -384,8 +396,11 @@ fviz_mca_biplot(res.mca.2,col.ind = data.active.2$fertil_preserv, ggtheme = them
 
 ######################################################################################### Figure 3 plot A Age 2 cat 
 
-AAA <- base_julie %>%drop_na(pf_discussion,age_young_acm) %>% 
-  group_by(age_young_acm,pf_discussion) %>% 
+discussion <- base_julie %>% filter(pf_discussion=="Yes")
+
+
+AAA <- discussion %>%drop_na(fertil_preserv,age_young_acm) %>% 
+  group_by(age_young_acm,fertil_preserv) %>% 
   summarise(count = n()) %>%
   mutate(perc = (count/sum(count)))
 AAA$perc <- round(AAA$perc,2)
@@ -393,8 +408,8 @@ AAA$x <- paste0(paste0(as.character(AAA$count),sep="\n"),paste(paste0(as.charact
 AAA
 
 
-aaa=ggplot(data=AAA, aes(fill=pf_discussion,y=100*perc,x=age_young_acm),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Age")+
-  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+aaa=ggplot(data=AAA, aes(fill=fertil_preserv,y=100*perc,x=age_young_acm),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Age")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation",reverse=T))+
   geom_text(aes(x=age_young_acm,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
   theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
 aaa
@@ -403,8 +418,8 @@ aaa
 ################################################################################### Figure 3 children 2 categories 
 
 
-BBB <- base_julie %>%drop_na(pf_discussion,nb_child_2cl) %>% 
-  group_by(nb_child_2cl,pf_discussion) %>% 
+BBB <- discussion %>%drop_na(fertil_preserv,nb_child_2cl) %>% 
+  group_by(nb_child_2cl,fertil_preserv) %>% 
   summarise(count = n()) %>%
   mutate(perc = (count/sum(count)))
 BBB$perc <- round(BBB$perc,2)
@@ -412,8 +427,8 @@ BBB$x <- paste0(paste0(as.character(BBB$count),sep="\n"),paste(paste0(as.charact
 BBB
 
 
-bbb=ggplot(data=BBB, aes(fill=pf_discussion,y=100*perc,x=nb_child_2cl),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Children")+
-  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+bbb=ggplot(data=BBB, aes(fill=fertil_preserv,y=100*perc,x=nb_child_2cl),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Children")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation",reverse=T))+
   geom_text(aes(x=nb_child_2cl,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
   theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
 bbb
@@ -422,8 +437,8 @@ bbb
 ################################################################################## Figure 3 neo_adj
 
 
-CCC <- base_julie %>%drop_na(pf_discussion,neo_ct) %>% 
-  group_by(neo_ct,pf_discussion) %>% 
+CCC <-discussion %>%drop_na(fertil_preserv,neo_ct) %>% 
+  group_by(neo_ct,fertil_preserv) %>% 
   summarise(count = n()) %>%
   mutate(perc = (count/sum(count)))
 CCC$perc <- round(CCC$perc,2)
@@ -431,8 +446,8 @@ CCC$x <- paste0(paste0(as.character(CCC$count),sep="\n"),paste(paste0(as.charact
 CCC
 
 
-ccc=ggplot(data=CCC, aes(fill=pf_discussion,y=100*perc,x=neo_ct),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Neoadjuvant chemotherapy")+
-  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
+ccc=ggplot(data=CCC, aes(fill=fertil_preserv,y=100*perc,x=neo_ct),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Neoadjuvant chemotherapy")+
+  xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation",reverse=T))+
   geom_text(aes(x=neo_ct,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
   theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
 ccc

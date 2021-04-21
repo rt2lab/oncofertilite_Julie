@@ -287,24 +287,7 @@ summary(comparedf(database_preprocessed_labels, base_complet, by = "numdos_curie
 # x         1709378                1343
 # x         1709907                1349
 
-
-
-joined_df <- merge(base_julie, database_preprocessed_labels, by.x = "numdos_curie", 
-                   by.y = "numdos_curie", all.x = TRUE, all.y = FALSE)
-
-# 1357 obs sont unique. on a 7 obsrevations problématiques
-d<-unique(base_complet[,c('numdos_curie')])
-
-
-library(tidyverse)
-duplicated(base_complet)
-base_complet[duplicated(base_complet),]
-
-### donc les observations dupliquées sont : 
-### observations : 14, 342, 743, 1181, 1364
-#### correspond au numéro de dossier : 1312082 (2 fois), 1214943 (2 fois), 1415211(2 fois), 1617828(2 fois), 0990233 (0 fois ??)
-
-
+≈
 
 
 ######################################################################################################
@@ -367,6 +350,27 @@ names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mea
 
 
 ##############################################################################################################
+
+############################ Tableau supplémentaire Anne Sophie  : parmi celle qui ont déjà eu de la fertility preservation 
+
+discussion <- base_complet%>% filter(pf_discussion=="Yes")
+
+var_selected<-c("age_young_cl","age", "nb_child_3cl", "bmi_4cl_ord","bmi", "center_curie.2","year_diag","brca_screen", "brca_mut", "inflammatory_bc","tclin", "ctuicc_3cl","cnuicc_2cl","grade_3cl","subtype4.y", "histo_3cl", "neo_ct", "ct_setting_5cl.2")
+
+names_var_selected <-c("Age","Age (mean)", "Number of children", "BMI","BMI (mean)", "Treatment center","Year BC diagnosis","Genetic analysis", "Hereditary predisposition", "Inflammatory BC", "Clinical Tumor size (mm)","Clinical T stage (TNM)", "Clinical N stage (TNM)", "SBR grade","BC subtype", "Histological type", "Neoajuvant chemotherapy", "Chemotherapy setting")
+
+
+
+tab7<-preformatTable1(stratif = "fertil_preserv", stratif_order = c("Yes", "No"), stratif2=NA, stratif2_order=NA, var_selected, names_var_selected, discussion, missing = F, perc_by_column = TRUE,n_digits = 0)
+
+
+tab7[[1]] %>% kbl("latex", align = "llr", vline = "|", caption = "Patients Characteristics as a function of Fertility Procedure discussion")%>%kable_styling() %>% column_spec(1, bold = F, color = "red")
+write_csv2(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fp_discussion_csv.xlsx')
+write_xlsx(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/table5_fp_discussion_excel_perc_3.xlsx')
+
+write_xlsx(tab7[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Julie/Institut Curie/among fertility discussion, who got fp ?.xls')
+
+
 
 
 
