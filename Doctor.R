@@ -170,9 +170,9 @@ data.active <- base_doctor %>% select(pf_discussion_2, specialty, junior_senior,
 
 # création ACM 
 
-res.mca <- MCA (data.active,ncp = 3, graph = FALSE)
+res.mca.3 <- MCA (data.active,ncp = 3, graph = FALSE)
 
-plot(res.mca, axes = c(1, 2),choix = "ind", invisible = "ind")
+plot(res.mca.3, axes = c(1, 2),choix = "ind", invisible = "ind")
 
 plot(res.mca, axes = c(2, 3),choix = "ind", invisible = "ind")
 
@@ -463,11 +463,11 @@ dd
 
 
 
-ee <-fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank()), axes=c(1,2), title="MCA with Fertility preservation discussion",
+ee <-fviz_mca_biplot(res.mca.3,col.ind = data.active$pf_discussion, ggtheme = theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank()), axes=c(1,2), title="MCA with Fertility preservation discussion",
                      addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation discussion")
 
 
-ff<-fviz_mca_biplot(res.mca,col.ind = data.active$specialty,ggtheme = theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank()), axes=c(1,2), title="MCA with doctors'specialty",
+ff<-fviz_mca_biplot(res.mca.3,col.ind = data.active$specialty,ggtheme = theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank()), axes=c(1,2), title="MCA with doctors'specialty",
                     addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Specialty")
 
 ee
@@ -508,16 +508,14 @@ library(patchwork)
 
 patchwork <- (aa + bb +cc+dd) / (ee+ff)
 patchwork + plot_annotation(
-  tag_levels = 'A',
   title = 'Figure 2 : Factors associated with Fertility preservation discussion and related to patient management',
   subtitle = "These 6 plots describe the relation between patients'management characteristics and the Fertility preservation discussion",
-  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="bottom")
+  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="bottom")&
+  theme(title = element_text(size=11), legend.text = element_text(size=8),legend.title= element_text(size=8),plot.subtitle=element_text(size=10))
 
 
 
-
-
-
+a = read_csv2()
 
 
 

@@ -55,7 +55,14 @@ table(base_julie$age_young_acm )
 
 ################################## ACM FactomineR
 library(tidyr)
-data.active <- base_julie %>% select(pf_discussion,age_young_acm,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
+base_julie$pf_discussion_2  <- NA
+base_julie$pf_discussion_2[base_julie$pf_discussion == "Yes"] <- "Has the discussion"
+base_julie$pf_discussion_2[base_julie$pf_discussion == "No"] <- "No discussion"
+table(base_julie$pf_discussion_2)
+
+
+
+data.active <- base_julie %>% select(pf_discussion_2,age_young_acm,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
                         
 
 #on crée l'ACM 
@@ -486,10 +493,12 @@ library(patchwork)
 
 patchwork <- (aaa + bbb +ccc) / (eee)
 patchwork + plot_annotation(
-  tag_levels = 'A',
   title = "Figure 3 : Factors associated with Fertility preservation procedure and related to patient's characteristics",
   subtitle = "These 6 plots describe the relation between patients'characteristics and the Fertility preservation procedure",
-  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="bottom")
+  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="bottom")&
+  theme(title = element_text(size=10), legend.text = element_text(size=8),legend.title= element_text(size=8),plot.subtitle=element_text(size=10))
+
+
 
 
 

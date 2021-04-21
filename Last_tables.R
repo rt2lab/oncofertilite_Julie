@@ -287,7 +287,7 @@ summary(comparedf(database_preprocessed_labels, base_complet, by = "numdos_curie
 # x         1709378                1343
 # x         1709907                1349
 
-≈
+
 
 
 ######################################################################################################
@@ -649,10 +649,12 @@ library(patchwork)
 
 patchwork <- (a + b) / (c+g) /(e + f) / ddd
 patchwork + plot_annotation(
-  tag_levels = 'A',
   title = 'Figure 1 : Factors associated with Fertility preservation discussion',
   subtitle = "These 7 plots describe the relation between patients'characteristics and the Fertility preservation discussion",
-  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="bottom")
+  caption = '')+ plot_layout(guides="collect")&theme(legend.position ="bottom")&
+  theme(title = element_text(size=10), legend.text = element_text(size=8),legend.title= element_text(size=8),plot.subtitle=element_text(size=10))
+
+
 
 
 
