@@ -5,16 +5,10 @@
 ##########################################################################################################
 
 
-install.packages("readxl")
-devtools::install_github("ropensci/writexl")
 
 library('readxl')
 library(writexl)
 
-install.packages("ggplot2")
-install.packages('table1')
-install.packages('psych')
-install.packages('arsenal')
 
 library(arsenal)
 library(ggplot2)
@@ -522,10 +516,10 @@ B$x <- paste0(paste0(as.character(B$count),sep="\n"),paste(paste0(as.character(1
 B
 
 
-b=ggplot(data=B, aes(fill=pf_discussion,y=100*perc,x=bmi_4cl_ord),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "BMI")+
+b=ggplot(data=B, aes(fill=pf_discussion,y=100*perc,x=bmi_4cl_ord),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "BMI")+
   xlab(" ")+ ylab("  ")+theme(legend.position="none")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
   geom_text(aes(x=bmi_4cl_ord,label=x,size=3), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
-  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.ticks.x=element_blank())
 b
 
 ################# Figure 1 Plot C : Children
@@ -540,10 +534,10 @@ C$x <- paste0(paste0(as.character(C$count),sep="\n"),paste(paste0(as.character(1
 C
 
 
-c<-ggplot(data=C, aes(fill=pf_discussion,y=100*perc,x=nb_child_3cl),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Children")+
+c<-ggplot(data=C, aes(fill=pf_discussion,y=100*perc,x=nb_child_3cl),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Children")+
   xlab(" ")+ ylab("  ")+theme(legend.position="none")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
   geom_text(aes(x=nb_child_3cl,label=x,size=3), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
-  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.ticks.x=element_blank())
 c
 
 
@@ -562,15 +556,21 @@ E
 e=ggplot(data=E, aes(fill=pf_discussion,y=100*perc,x=ctuicc_3cl),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Clinical T stage (TNM)")+
   xlab(" ")+ ylab("  ")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
   geom_text(aes(x=ctuicc_3cl,label=x,size=3), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
-  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.ticks.x=element_blank())
 e
 
 
 ################## Figure 1 Plot F : neo_ct 
 
+base_complet$neo_ct_2  <- NA
+base_complet$neo_ct_2[base_complet$neo_ct == "Yes"] <- "NAC"
+base_complet$neo_ct_2[base_complet$neo_ct == "No"] <- "Surgery followed by CT"
+table(base_complet$neo_ct_2)
 
-FF <- base_complet %>%drop_na(pf_discussion,neo_ct) %>% 
-  group_by(neo_ct,pf_discussion) %>% 
+
+
+FF <- base_complet %>%drop_na(pf_discussion,neo_ct_2) %>% 
+  group_by(neo_ct_2,pf_discussion) %>% 
   summarise(count = n()) %>%
   mutate(perc = (count/sum(count)))
 FF$perc <- round(FF$perc,2)
@@ -578,11 +578,12 @@ FF$x <- paste0(paste0(as.character(FF$count),sep="\n"),paste(paste0(as.character
 FF
 
 
-f=ggplot(data=FF, aes(fill=pf_discussion,y=100*perc,x=neo_ct),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Neoadjuvant chemotherapy")+
+f=ggplot(data=FF, aes(fill=pf_discussion,y=100*perc,x=neo_ct_2),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Neoadjuvant chemotherapy")+
   xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
-  geom_text(aes(x=neo_ct,label=x,size=3), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
-  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+  geom_text(aes(x=neo_ct_2,label=x,size=3), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.ticks.x=element_blank())
 f
+
 
 
 
@@ -593,7 +594,10 @@ A <- base_complet %>%drop_na(pf_discussion,age)
 
 a = ggplot(A) +
   geom_violin(aes(y = age, x = pf_discussion ,fill= pf_discussion), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(22, 45))+theme_minimal()+
-  geom_boxplot(aes(y = age, x = pf_discussion),width=0.1)+labs(title="Age at BC diagnostic") + xlab("")+ ylab("")
+  geom_boxplot(aes(y = age, x = pf_discussion),width=0.1,show.legend=FALSE)+labs(title="Age at BC diagnostis") +theme(axis.title.x=element_blank(), axis.text.x=element_blank(),axis.ticks.x=element_blank())
+
+
+
 
 a
 
@@ -606,7 +610,7 @@ D <- base_complet %>%drop_na(pf_discussion,tclin)
 
 d = ggplot(D) +
   geom_violin(aes(y = tclin, x = pf_discussion ,fill= pf_discussion), adjust = .8, show.legend=F)+scale_y_continuous(limits=c(0, 100))+theme_minimal()+
-  geom_boxplot(aes(y = tclin, x = pf_discussion),width=0.1)+labs(title="Clinical Tumor size (mm)") + xlab("")+ ylab("")
+  geom_boxplot(aes(y = tclin, x = pf_discussion),width=0.1,show.legend = FALSE)+labs(title="Clinical Tumor size (mm)") +theme(axis.title.x=element_blank(), axis.text.x=element_blank(),axis.ticks.x=element_blank())
 
 d
 
@@ -649,8 +653,7 @@ library(patchwork)
 
 patchwork <- (a + b) / (c+g) /(e + f) / ddd
 patchwork + plot_annotation(
-  title = 'Figure 1 : Factors associated with Fertility preservation discussion',
-  subtitle = "These 7 plots describe the relation between patients'characteristics and the Fertility preservation discussion",
+  title = 'Figure 1 : Factors associated with the likelihood of FP discussion',
   caption = '')+ plot_layout(guides="collect")&theme(legend.position ="bottom")&
   theme(title = element_text(size=10), legend.text = element_text(size=8),legend.title= element_text(size=8),plot.subtitle=element_text(size=10))
 
@@ -677,10 +680,10 @@ G$x <- paste0(paste0(as.character(G$count),sep="\n"),paste(paste0(as.character(1
 G
 
 
-g=ggplot(data=G, aes(fill=pf_discussion,y=100*perc,x=year_diag),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Year BC diagnosis")+
+g=ggplot(data=G, aes(fill=pf_discussion,y=100*perc,x=year_diag),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Year of BC diagnosis")+
   xlab("")+ ylab("")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation discussion",reverse=T))+
   geom_text(aes(x=year_diag,label=x,size=3), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
-  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.ticks.x = element_blank())
 g
 
 

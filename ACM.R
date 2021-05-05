@@ -13,11 +13,6 @@
 
 install.packages('devtools')
 
-install.packages('FactoMineR')
-
-install.packages("ade4", dep = TRUE)
-install.packages('factoextra')
-
 library(devtools)
 library(FactoMineR)
 library(ade4)
@@ -61,8 +56,16 @@ base_julie$pf_discussion_2[base_julie$pf_discussion == "No"] <- "No discussion"
 table(base_julie$pf_discussion_2)
 
 
+base_julie$neo_ct_2  <- NA
+base_julie$neo_ct_2[base_julie$neo_ct == "Yes"] <- "NAC"
+base_julie$neo_ct_2[base_julie$neo_ct == "No"] <- "Surgery followed by CT"
+table(base_julie$neo_ct_2)
 
-data.active <- base_julie %>% select(pf_discussion_2,age_young_acm,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
+
+
+
+
+data.active <- base_julie %>% select(pf_discussion_2,age_young_acm,nb_child_2cl,neo_ct_2,grade_2cl) %>% drop_na()
                         
 
 #on crée l'ACM 
@@ -250,7 +253,7 @@ table(base_julie$fertil_preserv_2)
 
 
 
-data.active.2 <- base_julie %>% select(fertil_preserv_2, pf_discussion_2,age_young_acm,nb_child_2cl,neo_ct,grade_2cl) %>% drop_na()
+data.active.2 <- base_julie %>% select(fertil_preserv_2, pf_discussion_2,age_young_acm,nb_child_2cl,neo_ct_2,grade_2cl) %>% drop_na()
 
 
 
@@ -417,8 +420,8 @@ AAA
 
 aaa=ggplot(data=AAA, aes(fill=fertil_preserv,y=100*perc,x=age_young_acm),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Age")+
   xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation",reverse=T))+
-  geom_text(aes(x=age_young_acm,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
-  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+  geom_text(aes(x=age_young_acm,label=x,size=12), position=position_stack(vjust=0.5), hjust=0.4,size=4)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.ticks.x=element_blank(),axis.text.x = element_text(size=12))
 aaa
 
 
@@ -436,8 +439,8 @@ BBB
 
 bbb=ggplot(data=BBB, aes(fill=fertil_preserv,y=100*perc,x=nb_child_2cl),position="fill",stat='identity') +geom_col(show.legend = F,width = 0.6) + ggtitle(label = "Children")+
   xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation",reverse=T))+
-  geom_text(aes(x=nb_child_2cl,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
-  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+  geom_text(aes(x=nb_child_2cl,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=4)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.ticks.x=element_blank(),axis.text.x = element_text(size=12))
 bbb
 
 
@@ -455,8 +458,8 @@ CCC
 
 ccc=ggplot(data=CCC, aes(fill=fertil_preserv,y=100*perc,x=neo_ct),position="fill",stat='identity') +geom_col(show.legend = T,width = 0.6) + ggtitle(label = "Neoadjuvant chemotherapy")+
   xlab(" ")+ ylab("  ")+theme(legend.position="bottom")+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ guides(fill=guide_legend(title="Fertility preservation",reverse=T))+
-  geom_text(aes(x=neo_ct,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=2.5)+
-  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank())
+  geom_text(aes(x=neo_ct,label=x,size=4), position=position_stack(vjust=0.5), hjust=0.4,size=4)+
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.ticks.x=element_blank(),axis.text.x = element_text(size=12))
 ccc
 
 
@@ -466,7 +469,7 @@ ccc
 #################################################################### Figure 3 plot D ACM pf_discussion
 
 
-ddd<-fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),legend.position="None"), axes=c(1,2), title="MCA for fertility preservation discussion",
+ddd<-fviz_mca_biplot(res.mca,col.ind = data.active$pf_discussion, ggtheme = theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),legend.position="None"), axes=c(1,2), title="MCA with FP discussion",
                 addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation discussion")
 
 ddd
@@ -475,7 +478,7 @@ ddd
 
 
 
-eee<-fviz_mca_biplot(res.mca.2,col.ind = data.active.2$fertil_preserv, ggtheme = theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),legend.position=c(0.8, 0)), axes=c(1,2), title="MCA for Fertility preservation procedure",
+eee<-fviz_mca_biplot(res.mca.2,col.ind = data.active.2$fertil_preserv, ggtheme = theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),legend.position=c(0.8, 0)), axes=c(1,2), title="MCA for fertility preservation procedure",
                      addEllipses = TRUE, label = "var", col.var = "black", repel = TRUE, legend.title = "Fertility preservation procedure")
 
 
@@ -494,7 +497,6 @@ library(patchwork)
 patchwork <- (aaa + bbb +ccc) / (eee)
 patchwork + plot_annotation(
   title = "Figure 3 : Factors associated with Fertility preservation procedure and related to patient's characteristics",
-  subtitle = "These 6 plots describe the relation between patients'characteristics and the Fertility preservation procedure",
   caption = '')+ plot_layout(guides="collect")&theme(legend.position ="bottom")&
   theme(title = element_text(size=10), legend.text = element_text(size=8),legend.title= element_text(size=8),plot.subtitle=element_text(size=10))
 
