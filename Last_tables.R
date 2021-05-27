@@ -384,7 +384,7 @@ write_csv2(tab0[[1]] , '/Users/julieborghese/Documents/GitHub/oncofertilite_Juli
 
 ################################################# Table colonne âge##########################################
 library(dplyr)
-a = base_julie %>% subset(is.na(age_young_cl_40_bin))
+
 
 
 var_selected<-c("nb_child_3cl", "bmi_4cl_ord","bmi", "center_curie.2","brca_screen", "brca_mut", "inflammatory_bc","tclin", "ctuicc_3cl","cnuicc_2cl","grade_3cl","subtype4.y", "histo_3cl", "neo_ct", "ct_setting_5cl.2", "pf_discussion")
