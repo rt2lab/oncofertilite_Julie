@@ -1,0 +1,14 @@
+base
+dplyr
+ggplot2
+cowplot
+stringr
+tidyverse
+tibble
+tidyr
+readr
+purrr
+forcats
+readxl
+gtools
+lubridate

@@ -1,0 +1,419 @@
+---
+title: "Physical Activity Saint Louis"
+author: "Caroline Cuvier, Sylvie Giacchetti, Lidia Delrieu"
+date: "`r format(Sys.time(),'%d %B, %Y')`"
+toc-title: "Sommaire"
+output:
+  rmdformats::material:
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: false
+    highlight: tango
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results = "asis", message = FALSE, warning = FALSE)
+```
+
+```{r librairies, echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+library(ggrepel)
+  library(ggsci)
+  library(dplyr)
+  library(ggplot2)
+  library(tableone)
+  library(reshape2)
+  library(cowplot)
+  library(kableExtra)
+  library(tableone)
+  library(RColorBrewer)
+  library(tinytex)
+  library(tidyverse)
+  library(esquisse)
+  library(lubridate)
+  library(readxl)
+  library(prettyR)
+  library(FactoMineR)
+  library(intervals)
+  library(eeptools)
+  library(viridis)
+  library(devtools)
+  library(highcharter)
+  library(widgetframe)
+  library(d3r)
+  library(expss)
+  library(swatches)
+  library(hrbrthemes)
+  library(sunburstR)
+  library(boot) 
+#install.packages("devtools")
+library(devtools)
+#install_github("emwozniak/Table1")
+  library(scales) 
+  library(survival)
+  library(survminer, quietly = TRUE)
+  library(broom, quietly = TRUE)
+  library(GGally, quietly = TRUE)
+```
+
+```{r, echo=FALSE}
+ap<-read.csv2("/Users/lidiadelrieu/Google\ Drive/Analyses_Stat/st_louis/data/base_ap.csv")
+```
+
+```{r, message=FALSE, warning=FALSE, include=FALSE, results="hide"}
+head(ap)
+str(ap)
+names(ap)
+tail(ap)
+```
+
+```{r, message=FALSE, warning=FALSE, include=FALSE, results="hide"}
+#supprimer les 2 dernières lignes du tableau et les 2 colonnes vides
+ap <- ap [-220,]
+ap <- ap [-219,]
+ap <- ap [-218,]
+ap <- ap [-217,]
+ap <- ap [-216,]
+ap <- ap [-215,]
+ap <- ap [-214,]
+```
+
+```{r, message=FALSE, warning=FALSE, include=FALSE, results="hide"}
+#Format date 
+ap$ddn <- lubridate::dmy(ap$ddn)
+ap$date_diag<- lubridate::dmy(ap$date_diag)
+ap$date_chir<- lubridate::dmy(ap$date_chir)
+ap$date_inscription<- lubridate::dmy(ap$date_inscription)
+ap$date_derniere_nouvelles<-lubridate::dmy(ap$date_derniere_nouvelles)
+str(ap)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, results="hide"}
+#Création de la variable age au diagnostic : 
+summary(ap$ddn)
+ap$age<-age_calc(ap$ddn, enddate = ap$date_diag, units = "years", precise = TRUE)
+summary(ap$age)
+```
+
+# 1. Population description
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, results="hide"}
+#recodage des labels
+ap2<-ap
+str(ap2)
+
+ap2$chir <- factor(ap2$chir,
+levels = c(0,1),
+labels = c("No", "Yes"))
+table(ap2$chir)
+Hmisc::label(ap2$chir)<- "Surgery"
+
+ap2$chimio <- factor(ap2$chimio,
+levels = c(0,1),
+labels = c("No", "Yes"))
+table(ap2$chimio)
+Hmisc::label(ap2$chimio)<- "Chemotherapy"
+
+ap2$type_chir <- factor(ap2$type_chimio,
+levels = c(1,2),
+labels = c("Neoadjuvant", "Adjuvant"))
+table(ap2$type_chimio)
+Hmisc::label(ap2$type_chimio)<- "Type of chemotherapy"
+
+ap2$chir_gg <- factor(ap2$chir_gg,
+levels = c(0,1),
+labels = c("No", "Yes"))
+table(ap2$chir_gg)
+Hmisc::label(ap2$chir_gg)<- "Lymph node surgery"
+
+ap2$escrime <- factor(ap2$escrime,
+levels = c(0,1),
+labels = c("No", "Yes"))
+table(ap2$escrime)
+Hmisc::label(ap2$escrime)<- "Fencing"
+
+ap2$tennis <- factor(ap2$tennis,
+levels = c(0,1),
+labels = c("No", "Yes"))
+table(ap2$tennis)
+Hmisc::label(ap2$tennis)<- "Tennis"
+
+ap2$yoga <- factor(ap2$yoga,
+levels = c(0,1),
+labels = c("No", "Yes"))
+table(ap2$yoga)
+Hmisc::label(ap2$yoga)<- "Yoga"
+
+
+ap2$marche_nord <- factor(ap2$marche_nord,
+levels = c(0,1),
+labels = c("No", "Yes"))
+table(ap2$marche_nord)
+Hmisc::label(ap2$marche_nord)<- "Nordic walk"
+
+ap2$recidive<- factor(ap2$recidive,
+levels = c(0,1),
+labels = c("No", "Yes"))
+table(ap2$recidive)
+Hmisc::label(ap2$recidive)<- "Recurrence"
+
+ap2$statut<- factor(ap2$statut,
+levels = c(0,1),
+labels = c("Alive", "Dead"))
+table(ap2$statut)
+Hmisc::label(ap2$statut)<- "Vital status"
+
+Hmisc::label(ap2$age)<- "Age"
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+ap2$type_chimio <- 
+  factor(ap2$type_chimio, 
+         levels=c(1,2),
+         labels=c("Neoadjuvant",
+                  "Adjuvant"))
+
+table1::table1(~age+chir+chimio+statut+recidive+escrime+tennis+yoga+ marche_nord|type_chimio, data=ap2, overall="Total")
+```
+
+# 2. Data visualization
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE,results="hide"}
+str(ap2$type_chimio)
+levels(ap2$type_chimio)
+ap3<-ap2 #pour les figures uniquement
+
+table(ap3$type_chimio)
+ap3 <- ap2[!is.na(ap2$type_chimio), ]
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE,results="hide"}
+#Age en fonction du ttt par chimio
+vio1 <- ggplot(ap3, aes(x=type_chimio, y=age, fill=type_chimio,)) + 
+  geom_violin(trim=FALSE,show.legend=FALSE)+
+  geom_boxplot(width=0.1, fill="white",show.legend=FALSE)+
+  labs(title="Age by type of chemotherapy",x="Type of chemotherapy", y = "Age")+
+    theme_classic()
+vio1 <-vio1 + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE,results="hide"}
+table(ap3$statut)
+prop.table(table(ap3$statut))*100
+
+# Create test data.
+data <- data.frame(
+  category=c("Alive","Dead"),
+  count=c(181,10))
+ 
+# Compute percentages
+data$fraction <- data$count / sum(data$count)
+
+# Compute the cumulative percentages (top of each rectangle)
+data$ymax <- cumsum(data$fraction)
+
+# Compute the bottom of each rectangle
+data$ymin <- c(0, head(data$ymax, n=-1))
+
+# Compute label position
+data$labelPosition <- (data$ymax + data$ymin) / 2
+
+# Compute a good label
+data$label <- paste0(data$category, "\n value: ", data$count)
+data$category<- factor(data$category)
+
+# Make the plot
+status<-ggplot(data, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=category)) +
+  geom_rect() +
+  #geom_label( x=3.5, aes(y=labelPosition, label=label), size=6) +
+  coord_polar(theta="y") +
+  geom_label_repel(aes(label = label,y=labelPosition),x = 4, size=3, nudge_x = 0.8) +
+  scale_fill_manual(values=c("#FF6B68","#00C3C6")) +
+  coord_polar(theta="y") +
+  xlim(c(2, 5)) +
+  theme_void() +
+  ggtitle("Vital status")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(legend.position = "none")
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE,results="hide"}
+table(ap3$type_chimio)
+table(ap3$escrime)
+ap3 <- ap2[!is.na(ap2$escrime), ]
+ap3 <- ap3[!is.na(ap3$type_chimio), ]
+
+ap3_sum <- ap3%>%
+    group_by(type_chimio,escrime)%>%
+    summarise(count = n()) %>%
+    group_by(type_chimio) %>%
+    mutate(percent = 100*count/sum(count),
+           percent_round = round(percent),
+           label = paste0("n = ",count,"\n(",percent_round,"%)"))
+
+#Step 2 : plot
+escrime<-ggplot(data = ap3_sum, aes(x = type_chimio,y = percent,fill = escrime)) +
+  geom_bar(stat= "identity") +
+  geom_text(aes(label = label), position = position_stack(vjust = 0.5))+
+  labs(fill="Fencing")+
+    xlab("Type of chemotherapy")+
+    ylab("Percent")+
+    theme_classic()
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE,results="hide"}
+table(ap3$type_chimio)
+table(ap3$yoga)
+
+ap3 <- ap2[!is.na(ap2$yoga), ]
+ap3 <- ap3[!is.na(ap3$type_chimio), ]
+
+ap4_sum <- ap3%>%
+    group_by(type_chimio,yoga)%>%
+    summarise(count = n()) %>%
+    group_by(type_chimio) %>%
+    mutate(percent = 100*count/sum(count),
+           percent_round = round(percent),
+           label = paste0("n = ",count,"\n(",percent_round,"%)"))
+
+#Step 2 : plot
+yoga<-ggplot(data = ap4_sum, aes(x = type_chimio,y = percent,fill = yoga)) +
+  geom_bar(stat= "identity") +
+  geom_text(aes(label = label), position = position_stack(vjust = 0.5))+
+  labs(fill="Yoga")+
+    xlab("Type of chemotherapy")+
+    ylab("Percent")+
+    theme_classic()
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE,results="hide"}
+table(ap3$type_chimio)
+table(ap3$tennis)
+
+ap3 <- ap2[!is.na(ap2$tennis), ]
+ap3 <- ap3[!is.na(ap3$type_chimio), ]
+
+ap5_sum <- ap3%>%
+    group_by(type_chimio,tennis)%>%
+    summarise(count = n()) %>%
+    group_by(type_chimio) %>%
+    mutate(percent = 100*count/sum(count),
+           percent_round = round(percent),
+           label = paste0("n = ",count,"\n(",percent_round,"%)"))
+
+#Step 2 : plot
+tennis<-ggplot(data = ap5_sum, aes(x = type_chimio,y = percent,fill = tennis)) +
+  geom_bar(stat= "identity") +
+  geom_text(aes(label = label), position = position_stack(vjust = 0.5))+
+  labs(fill="Tennis")+
+    xlab("Type of chemotherapy")+
+    ylab("Percent")+
+    theme_classic()
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE,results="hide"}
+table(ap3$type_chimio)
+table(ap3$marche_nord)
+
+ap3 <- ap2[!is.na(ap2$marche_nord), ]
+ap3 <- ap3[!is.na(ap3$type_chimio), ]
+
+ap6_sum <- ap3%>%
+    group_by(type_chimio,marche_nord)%>%
+    summarise(count = n()) %>%
+    group_by(type_chimio) %>%
+    mutate(percent = 100*count/sum(count),
+           percent_round = round(percent),
+           label = paste0("n = ",count,"\n(",percent_round,"%)"))
+
+#Step 2 : plot
+nord<-ggplot(data = ap6_sum, aes(x = type_chimio,y = percent,fill = marche_nord)) +
+  geom_bar(stat= "identity") +
+  geom_text(aes(label = label), position = position_stack(vjust = 0.5))+
+  labs(fill="Nordic walk")+
+    xlab("Type of chemotherapy")+
+    ylab("Percent")+
+    theme_classic()
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE,results="hide"}
+library(cowplot)
+pdf("rplot.pdf") 
+
+plot_grid(status, vio1,escrime, yoga, tennis, nord, nrow=3,labels=c('','','A','B','C','D'), rel_heights = c(2, 4))
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+plot_grid(status, vio1,escrime, yoga, tennis, nord, nrow=3,labels=c('','','A','B','C','D'), rel_heights = c(2, 4))
+```
+
+# 3. Overall survival
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE,results="hide"}
+table(ap$statut)
+ap$survie<-as.numeric(difftime(ap$date_derniere_nouvelles, ap$date_diag, unit="weeks"))/52.25
+
+summary(ap$survie)
+table(ap$statut)
+sd(ap$survie)
+
+kaplan <- survfit(Surv(survie, statut) ~ 1, data = ap)
+kaplan
+```
+
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE, results="hide"}
+plot1<-ggsurvplot(
+  kaplan, 
+  data =ap,  
+  conf.int = TRUE, 
+  pval = TRUE,   
+  risk.table = TRUE, 
+  risk.table.col="strata",
+  ylab="Overall survival probability",
+  tables.y.text = FALSE,
+  legend="bottom",
+  legend.title="",
+  risk.table.height=0.35,
+  ggtheme = theme_bw() 
+) + guides(colour = guide_legend(nrow = 2))
+plot1$plot <- plot1$plot + labs(title = "A")
+```
+
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE, results="hide"}
+kaplan2 <- survfit(Surv(survie, statut) ~ type_chimio, data = ap)
+kaplan2
+table(ap$type_chimio)
+table(ap2$type_chimio)
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE, results="hide"}
+plot2<-ggsurvplot(
+  kaplan2, 
+  data =ap,  
+  conf.int = TRUE, 
+  pval = TRUE,   
+  risk.table = TRUE, 
+  risk.table.col="strata",
+  ylab="Overall survival probability",
+  legend.labs=c("Neoadjuvant","Adjuvant"),
+  tables.y.text = FALSE,
+  legend="bottom",
+  legend.title="",
+  risk.table.height=0.35,
+  ggtheme = theme_bw() 
+) + guides(colour = guide_legend(nrow = 2))
+plot2$plot <- plot2$plot + labs(title = "B")
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+plot_list <- list(plot1,plot2)
+plot_list  
+pdf("/Users/lidiadelrieu/GitHub/databases/core/18_ap_saint_louis/src/surv.pdf", width = unit(8,"cm"), height = unit(6,"cm"))
+  arrange_ggsurvplots(plot_list, ncol = 2)
+dev.off()
+```
+

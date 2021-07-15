@@ -1,0 +1,741 @@
+---
+title: "Gender effect in medical study and university positions"
+author: "ASHP - EL- FR"
+date: "3/30/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,cache=FALSE,verbose=FALSE,message=FALSE,warning=FALSE,include=FALSE,
+# base.dir=path <- '~/RT2Lab/gender_effect_faculty/',
+autodep = TRUE,
+                      cache.path='cache.html')
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(stringr)
+library(tidyverse)
+```
+
+
+```{r}
+library(readxl)
+Figures_tables_gender_faculty <- read_excel("~/RT2Lab/databases/core/41_gender_faculty/datas/raw/ecn_2004_2019.xlsx", 
+    sheet = "Feuil2")
+
+fig_tab <- Figures_tables_gender_faculty %>% mutate( Suppl_main               = ifelse(Supplemental_or_main == "Supplemental" , "Supp", ""),
+		                                          compil_num_fig_table_num = paste0(Suppl_main,Figure_or_Table,nb),
+		                                          compil_num_fig_table     = paste0(Suppl_main,Figure_or_Table,nb," : ",pretty_name_title))
+```
+
+
+# ECN Data
+Data on ECN ranking were retrieved on the site of the CNG the 30th march 2021, on the following link
+https://www.cng.sante.fr/concours-examens/epreuves-classantes-nationales-ecn
+Menu "Resultats"
+
+Note that year  2005 (not in the site) and 2008 and 2009 are missing, due to inconvenient formatting.
+
+```{r Preprocessing ECN data}
+library(readxl)
+library(gtools)
+library(lubridate)
+
+ecn <- read_excel("~/RT2Lab/databases/core/41_gender_faculty/datas/raw/ecn_2004_2019.xlsx", 
+    col_types = c("numeric", "text", "text", 
+        "text", "text", "text", "numeric", 
+        "text", "text", "text", "text", "text", 
+        "text", "text", "text", "text"))
+head(ecn)
+
+# BEWARE, 2 years missing
+
+ecn <- ecn %>% mutate(name = paste(name1,name2,name3,name4,name5,name6) ) %>% 
+              filter(!is.na(raw_data))
+nrow(ecn) # 95725
+
+ecn$year2 <- as.character(ecn$year)
+  
+# Preprocess name
+ecn$name <- gsub(" NA","",ecn$name)
+ecn$name <- gsub(" NA","",ecn$name)
+ecn$name <- gsub(" NA","",ecn$name)
+ecn$name <- gsub(" NA","",ecn$name)
+ecn$name <- gsub(" NA","",ecn$name)
+ecn$name <- gsub(" NA","",ecn$name)
+ecn$name <- tolower(ecn$name)
+
+duplicated(ecn$name) %>% table()
+# FALSE  TRUE 
+# 50765 44995 
+# Waou! 
+
+# We see that some had several ECN (ex : 2018 - 2019)
+
+# Preprocess first name
+ecn$first_name_short   <- str_split_fixed(ecn$first_name, ", ",2)[,1]
+ecn$first_name_short2  <- str_split_fixed(ecn$first_name_short, "-",2)[,1]
+ecn$first_name_short3  <- tolower(ecn$first_name_short2)
+Unaccent <- function(text) {
+  text <- gsub("['`^~\"]", " ", text)
+  text <- iconv(text, to="ASCII//TRANSLIT//IGNORE")
+  text <- gsub("['`^~\"]", "", text)
+  return(text)
+}
+
+ecn$first_name_short4 <- Unaccent(ecn$first_name_short3)
+
+ecn$name_first_name    <- paste0(ecn$name,"_",ecn$first_name_short4)
+
+## Check 
+ecn %>% filter(first_name_short3 == "lauren")
+ecn %>% filter(first_name_short3 == "enora")
+ecn %>% filter(name == "zaccarini")
+ecn %>% filter(name == "hamy") %>% head()
+ecn %>% filter(name == "lahousse") %>% head()
+ecn %>% filter(name1 == "Colas") %>% head()
+
+# Preprocess gender
+ecn$gender <- ifelse(ecn$title == "M.","male","female")
+ecn$gender <- factor(ecn$gender, levels = c("female","male"))
+ecn %>% group_by(gender) %>% count()
+#   gender     n
+#   <fct>  <int>
+# 1 female 55864
+# 2 male   39861
+
+# Preprocess birth date
+ecn$new_birth_date <- ifelse(!is.na(ecn$ddn_nom_dusage),ecn$ddn_nom_dusage,ecn$birth_date)
+ecn$new_birth_date <- gsub(", ","",ecn$new_birth_date)
+ecn$new_birth_date <- gsub("\\.","",ecn$new_birth_date)
+ecn$new_birth_date <- gsub(";","",ecn$new_birth_date)
+# ecn$new_birth_date <- gsub("é","e",ecn$new_birth_date)
+# ecn$new_birth_date <- gsub("û","u",ecn$new_birth_date)
+
+ecn$new_birth_date2 <- dmy(ecn$new_birth_date)
+ecn %>% filter(is.na(new_birth_date2)) %>% head() # 129 missing
+
+# Preprocess age at ecn
+ecn$date_ecn <- paste0("15-06-",ecn$year2)
+ecn$date_ecn <- dmy(ecn$date_ecn)
+ecn$age_at_ecn <- round(difftime(ecn$date_ecn,ecn$new_birth_date2)/365,1) %>% as.numeric()
+
+# Ranking
+ecn$decile     <- factor(quantcut(ecn$rank_ecn,10), labels= paste0("decile ",c(1:10)))
+ecn$quartile   <- factor(quantcut(ecn$rank_ecn,4), labels= paste0("quartile ",c(1:4)))
+head(ecn)
+
+ecn <- ecn %>% select(#-raw_data_corrected, 
+                      -name_only, -birth_date, - title, -name1, -name2, -name3, -name4, -name5,  -name6,  -nom_dusage,-ddn_nom_dusage,
+                      # -first_name_short,
+                      -first_name_short2, - first_name_short3,-new_birth_date)
+head(ecn)
+
+save(ecn)
+```
+
+## Gender repartition and temporal trends
+
+The number of students competing for ecn increased over time.
+
+```{r}
+   Dat.label <-  ecn %>% 
+      group_by(year2,gender) %>% 
+      dplyr::summarise(count=n()) %>%  
+      # group_by(tmp) %>% 
+      mutate(ypos = cumsum(count) - 0.5*count) %>% 
+      mutate(percent_full = count/sum(count)) %>% 
+      mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>% 
+      mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+      mutate(n_and_perc   = paste0("n=", count,", \n (",percent_format,")" ) )   %>%
+      ungroup() 
+
+Dat.label$gender2 <- factor(Dat.label$gender, levels= rev(levels(as.factor(Dat.label$gender)) ))
+
+caption_p_nb_students_temporal_trends <- fig_tab[match("p_nb_students_temporal_trends", fig_tab$object_title),"compil_num_fig_table"]
+title_p_nb_students_temporal_trends   <- fig_tab[match("p_nb_students_temporal_trends", fig_tab$object_title),"pretty_name_title"]
+
+p_nb_students_temporal_trends <- ggplot(Dat.label, aes(year2, y=count, fill=gender2 )) +
+      geom_bar(stat="identity",  width=0.8) +  guides(colour=FALSE)+
+      geom_text(data= Dat.label, aes( y = ypos ,label=n_and_perc), size=3.5 ) + 
+      # coord_cartesian(ylim = c(0, 110)	) +
+      ylab("% cases") + xlab ("") +
+      theme(  axis.ticks.x = element_blank() ) + #, legend.position = "none")   + 
+      theme_bw()+
+      scale_fill_manual(name = "", values =  c("#00BFC4","#F8766D")) +
+		labs(title= title_p_nb_students_temporal_trends) 
+		     # subtitle="Stromal lymphocytes (%) according to BC subtype",
+		     # # caption="Source: mpg",
+		     # x="BC subtype",
+print(p_nb_students_temporal_trends)
+
+```
+
+0.2% of students passed ECN twice or more.
+
+```{r}
+203/95317
+
+ecn %>% group_by(name_first_name, year) %>% count() %>% 
+        group_by(n) %>% count()
+#       n    nn
+#   <int> <int>
+# 1     1 95317
+# 2     2   201
+# 3     3     2
+
+
+ecn %>% group_by(name_first_name, year,gender) %>% count() %>% 
+        group_by(gender,n) %>% count()
+#   gender     n    nn
+#   <fct>  <int> <int>
+# 1 female     1 55637
+# 2 female     2   112
+# 3 female     3     1
+# 4 male       1 39686
+# 5 male       2    86
+# 6 male       3     1
+
+
+```
+
+
+
+```{r}
+ecn %>% group_by(gender) %>%summarise(count=n()) %>%
+            		  mutate(percent_format = paste0(round(count/sum(count)*100,1), '%'))
+#   gender count percent_format
+#   <fct>  <int> <chr>         
+# 1 female 55864 58.4%         
+# 2 male   39861 41.6%         
+
+   Dat.label <-  ecn %>% 
+      group_by(year2,gender) %>% 
+      dplyr::summarise(count=n()) %>%  
+      # group_by(tmp) %>% 
+      mutate(ypos = cumsum(count) - 0.5*count) %>% 
+      mutate(percent_full = count/sum(count)) %>% 
+      mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>% 
+      mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+      mutate(n_and_perc   = paste0("n=", count,", \n (",percent_format,")" ) )   %>%
+      ungroup() 
+
+   
+Dat.label$gender2 <- factor(Dat.label$gender, levels= rev(levels(as.factor(Dat.label$gender)) ))
+
+caption_p_gender_temporal_trends <- fig_tab[match("p_gender_temporal_trends", fig_tab$object_title),"compil_num_fig_table"]
+title_p_gender_temporal_trends   <- fig_tab[match("p_gender_temporal_trends", fig_tab$object_title),"pretty_name_title"]
+
+p_gender_temporal_trends <- ggplot(Dat.label, aes(year2, y=percent_full*100, fill=gender2 )) +
+      geom_bar(stat="identity",  width=0.8) +  guides(colour=FALSE)+
+      geom_text(data= Dat.label, aes( y = ypos_percent*100 ,label=n_and_perc), size=3.5 ) + 
+      # coord_cartesian(ylim = c(0, 110)	) +
+      ylab("% cases") + xlab ("") +
+      theme(  axis.ticks.x = element_blank() ) + #, legend.position = "none")   + 
+      theme_bw()+
+      scale_fill_manual(name = "", values =  c("#00BFC4","#F8766D")) +
+		labs(title= title_p_gender_temporal_trends) 
+		     # subtitle="Stromal lymphocytes (%) according to BC subtype",
+		     # # caption="Source: mpg",
+		     # x="BC subtype",
+print(p_gender_temporal_trends)
+```
+
+Overall, the gender repartition was predominantly females (n=55864, 58.4%) followed by males (n=39861, 41.6%), and this trend was stable over time.
+
+```{r, include=TRUE, fig.width=12}
+p_gender_temporal_trends
+```
+
+
+```{r}
+t.test(age_at_ecn  ~ gender, data = ecn)
+
+p_gender_age_ecn <- ggplot(ecn, aes(x=gender, y=age_at_ecn, fill=gender )) +
+      geom_boxplot() +
+      theme(  axis.ticks.x = element_blank() ) + #, legend.position = "none")   + 
+      theme_bw()+
+      scale_fill_manual(name = "", values =  c("#00BFC4","#F8766D")) +
+  		labs(title= title_p_gender_temporal_trends) 
+print(p_gender_age_ecn)
+
+caption_p_histogram_gender_age_ecn <- fig_tab[match("p_histogram_gender_age_ecn", fig_tab$object_title),"compil_num_fig_table"]
+title_p_histogram_gender_age_ecn   <- fig_tab[match("p_histogram_gender_age_ecn", fig_tab$object_title),"pretty_name_title"]
+  				
+p_histogram_gender_age_ecn <- ggplot(ecn, aes(x=age_at_ecn, fill=gender )) +
+      geom_histogram(stat="count") +
+      theme(  axis.ticks.x = element_blank() ) + #, legend.position = "none")   + 
+      theme_bw()+
+      scale_fill_manual(name = "", values =  c("#F8766D","#00BFC4")) +
+  		labs(title= title_p_histogram_gender_age_ecn,
+  		     x = "age") 
+print(p_histogram_gender_age_ecn)
+```
+
+```{r, include=TRUE, fig.width=12}
+p_histogram_gender_age_ecn
+```
+
+
+Median age at ECN was 25.2 y.o. and was significantly different by gender (female : 25.0 y.o versus male : 25.4 y.o, p<0.0001)
+
+```{r}
+prenoms_filles <- ecn %>% filter(gender == "female") %>% 
+        group_by(first_name_short4) %>% count() %>% arrange(desc(n)) 
+top_prenoms_filles <- prenoms_filles[1:20,]
+
+prenoms_garcons <- ecn %>% filter(gender == "male") %>% 
+        group_by(first_name_short4) %>% count() %>% arrange(desc(n)) 
+top_prenoms_garcons <- prenoms_garcons[1:20,]
+
+```
+
+Top first names showed little diversity (@ASHP to compare to top first names by year)
+
+```{r, include=TRUE}
+top_prenoms_filles
+top_prenoms_garcons
+```
+
+```{r}
+p_prenom_filles  <- ggplot(prenoms_filles,aes(x=first_name_short4,y = n))+ geom_bar(  stat="identity") +  theme(  axis.ticks.x = element_blank() ) + #, legend.position = "none")   + 
+                    theme_bw()
+```
+
+## Ranking at ecn
+```{r}
+   Dat.label <-  ecn %>% 
+      group_by(decile,gender) %>% 
+      dplyr::summarise(count=n()) %>%  
+      # group_by(tmp) %>% 
+      mutate(ypos = cumsum(count) - 0.5*count) %>% 
+      mutate(percent_full = count/sum(count)) %>% 
+      mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>% 
+      mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+      mutate(n_and_perc   = paste0("n=", count,", \n (",percent_format,")" ) )   %>%
+      ungroup() 
+
+    Dat.label$gender2 <- factor(Dat.label$gender, levels= rev(levels(as.factor(Dat.label$gender)) ))
+    
+caption_p_gender_deciles <- fig_tab[match("p_gender_deciles", fig_tab$object_title),"compil_num_fig_table"]
+title_p_gender_deciles   <- fig_tab[match("p_gender_deciles", fig_tab$object_title),"pretty_name_title"]
+
+    p_gender_deciles <- ggplot(Dat.label, aes(decile, y=percent_full*100, fill=gender2 )) +
+      geom_bar(stat="identity",  width=0.8) +  guides(colour=FALSE)+
+      geom_text(data= Dat.label, aes( y = ypos_percent*100 ,label=n_and_perc), size=3.5 ) +
+      # coord_cartesian(ylim = c(0, 110)	) +
+      ylab("% cases") + xlab ("") +
+      theme(  axis.ticks.x = element_blank() ) + #, legend.position = "none")   + 
+            theme_bw()+
+      scale_fill_manual(name = "", values =  c("#00BFC4","#F8766D")) +
+  		labs(title= title_p_gender_deciles) 
+    print(p_gender_deciles)
+```
+
+```{r}
+   Dat.label <-  ecn %>% 
+      group_by(quartile,gender) %>% 
+      dplyr::summarise(count=n()) %>%  
+      # group_by(tmp) %>% 
+      mutate(ypos = cumsum(count) - 0.5*count) %>% 
+      mutate(percent_full = count/sum(count)) %>% 
+      mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>% 
+      mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+      mutate(n_and_perc   = paste0("n=", count,", \n (",percent_format,")" ) )   %>%
+      ungroup() 
+
+    Dat.label$gender2 <- factor(Dat.label$gender, levels= rev(levels(as.factor(Dat.label$gender)) ))
+
+caption_p_gender_quartiles <- fig_tab[match("p_gender_quartiles", fig_tab$object_title),"compil_num_fig_table"]
+title_p_gender_quartiles   <- fig_tab[match("p_gender_quartiles", fig_tab$object_title),"pretty_name_title"]
+
+    p_gender_quartiles <- ggplot(Dat.label, aes(quartile, y=percent_full*100, fill=gender2 )) +
+      geom_bar(stat="identity",  width=0.8) +  guides(colour=FALSE)+
+      geom_text(data= Dat.label, aes( y = ypos_percent*100 ,label=n_and_perc), size=3.5 ) +
+      # coord_cartesian(ylim = c(0, 110)	) +
+      ylab("% cases") + xlab ("") +
+      theme(  axis.ticks.x = element_blank() ) + theme_bw()+#, legend.position = "none")   + 
+      scale_fill_manual(name = "", values =  c("#00BFC4","#F8766D")) +
+  		labs(title= title_p_gender_quartiles) 
+    print(p_gender_quartiles)
+```
+
+Males were overrepresented in the extremes quantiles when compared with the middle quantiles were females were overrepresented in comparison
+
+```{r, include= TRUE, fig.width=16}
+p_gender_quantiles <- plot_grid(p_gender_deciles,p_gender_quartiles, rel_widths = c(10,6))
+p_gender_quantiles
+```
+
+```{r}
+   Dat.label <-  ecn %>% filter(quartile == "quartile 1") %>%
+      group_by(year2,gender) %>% 
+      dplyr::summarise(count=n()) %>%  
+      # group_by(tmp) %>% 
+      mutate(ypos = cumsum(count) - 0.5*count) %>% 
+      mutate(percent_full = count/sum(count)) %>% 
+      mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>% 
+      mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+      mutate(n_and_perc   = paste0("n=", count,", \n (",percent_format,")" ) )   %>%
+      ungroup() 
+
+    Dat.label$gender2 <- factor(Dat.label$gender, levels= rev(levels(as.factor(Dat.label$gender)) ))
+
+caption_p_gender_1stquartiles_by_year <- fig_tab[match("p_gender_1stquartiles_by_year", fig_tab$object_title),"compil_num_fig_table"]
+title_p_gender_1stquartiles_by_year   <- fig_tab[match("p_gender_1stquartiles_by_year", fig_tab$object_title),"pretty_name_title"]
+
+    p_gender_1stquartiles_by_year <- ggplot(Dat.label, aes(year2, y=percent_full*100, fill=gender2 )) +
+      geom_bar(stat="identity",  width=0.8) +  guides(colour=FALSE)+
+      geom_text(data= Dat.label, aes( y = ypos_percent*100 ,label=n_and_perc), size=3.5 ) +
+      # coord_cartesian(ylim = c(0, 110)	) +
+      ylab("% cases") + xlab ("") +
+      theme(  axis.ticks.x = element_blank() ) + theme_bw()+#, legend.position = "none")   + 
+      scale_fill_manual(name = "", values =  c("#00BFC4","#F8766D")) +
+  		labs(title= title_p_gender_1stquartiles_by_year) 
+    print(p_gender_1stquartiles_by_year)
+```
+
+Trend analysis showed that the proportion of male in the first quartile increased slightly over time.
+
+```{r, include = TRUE, fig.width=12}
+p_gender_1stquartiles_by_year
+```
+
+# Hospitalo universitary file
+File found of the site of the CNG by Fabien
+https://www.cng.sante.fr/sites/default/files/Fichiers/Personnels%20enseignants%20et%20hospitaliers/HU-Liste%20electorale%20au%20%2020%20juin%202019%20final%20publi%C3%A9%20au%2024%20juin%202019.pdf
+downloaded the 30 march.
+This lists persons voting for the commission statutaire nationale (CSN) at the date of 24 june 2019.
+
+```{r}
+library(readxl)
+HU_Liste_electorale_au_20_juin_2019_final_publie_au_24_juin_2019 <- read_excel("~/RT2Lab/databases/core/41_gender_faculty/datas/raw/HU-Liste electorale au 20 juin 2019 final publié au 24 juin 2019.xlsx")
+head(HU_Liste_electorale_au_20_juin_2019_final_publie_au_24_juin_2019)
+hu <- HU_Liste_electorale_au_20_juin_2019_final_publie_au_24_juin_2019 %>% as.data.frame()
+head(hu)
+nrow(hu) # 6164
+
+hu$name   <- tolower(hu$`Nom de naissance`)
+hu$gender <- ifelse(hu$Civilité == "M.","male","female")
+
+# Preprocess first name
+hu$first_name   <- tolower(hu$Prénom)
+hu$first_name_short2 <- str_split_fixed(hu$first_name, "-",2)[,1]
+hu$first_name_short3 <- str_split_fixed(hu$first_name_short2, " ",2)[,1]
+hu$first_name_short4 <- Unaccent(hu$first_name_short3)
+hu$name_first_name <- paste0(hu$name,"_",hu$first_name_short4)
+
+duplicated(hu$name) %>% table() # 889 duplicated
+
+ecn$name_is_in_hu            <- ifelse(ecn$name %in% hu$name, "yes", "no")
+ecn$name_first_name_is_in_hu <- ifelse(ecn$name_first_name %in% hu$name_first_name, "yes", "no")
+ecn$admitted_hu              <- ifelse(ecn$name_first_name %in% hu$name_first_name, "HU", "not HU")
+
+```
+
+Overall, 6164 persons were present in the list.
+
+```{r}
+hu %>% group_by(gender) %>%summarise(count=n()) %>%
+            		  mutate(percent_format = paste0(round(count/sum(count)*100,1), '%'))
+#   gender count percent_format
+#   <chr>  <int> <chr>         
+# 1 female  1844 29.9%         
+# 2 male    4320 70.1%     
+```
+
+Gender balance favored males in a 70.1/29.9% ratio.
+
+```{r}
+
+   Dat.label <-  hu %>% 
+      group_by(gender) %>% 
+      dplyr::summarise(count=n()) %>%  
+      # group_by(tmp) %>% 
+      mutate(ypos = cumsum(count) - 0.5*count) %>% 
+      mutate(percent_full = count/sum(count)) %>% 
+      mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>% 
+      mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+      mutate(n_and_perc   = paste0("n=", count,", \n (",percent_format,")" ) )   %>%
+      ungroup() 
+
+    Dat.label$gender2 <- factor(Dat.label$gender, levels= rev(levels(as.factor(Dat.label$gender)) ))
+
+    p_gender_hu <- ggplot(Dat.label, aes(gender, y=percent_full*100, fill=gender2 )) +
+      geom_bar(stat="identity",  width=0.8) +  guides(colour=FALSE)+
+      geom_text(data= Dat.label, aes( y = ypos_percent*100 ,label=n_and_perc), size=3.5 ) +
+      # coord_cartesian(ylim = c(0, 110)	) +
+      ylab("% cases") + xlab ("") +
+      theme(  axis.ticks.x = element_blank() ) + theme_bw()+#, legend.position = "none")   + 
+      scale_fill_manual(name = "", values =  c("#00BFC4","#F8766D")) # +
+  		# labs(title= title_p_gender_1stquartiles_by_year) 
+    print(p_gender_hu)
+```
+
+
+```{r, include = TRUE}
+p_gender_hu
+```
+
+
+Out of 6164 persons in the HU list, 533 were found in the ecn list from 2004 to 2019 (representing 7.3% of the total)
+
+```{r}
+ecn %>% group_by(name_first_name_is_in_hu) %>% count()
+#   name_first_name_is_in_hu     n
+#   <chr>                    <int>
+# 1 no                       95192
+# 2 yes                        533
+
+list_name_first_name_is_in_hu <- ecn %>% filter(name_first_name_is_in_hu == "yes")  %>% select(name_first_name)  %>% as.matrix() %>% as.character()
+
+hu$is_in_ecn_2004_2019 <- ifelse(hu$name_first_name %in% list_name_first_name_is_in_hu, "yes","no" ) 
+
+hu %>% group_by(is_in_ecn_2004_2019) %>%summarise(count=n()) %>%
+            		  mutate(percent_format = paste0(round(count/sum(count)*100,1), '%'))
+#   is_in_ecn_2004_2019 count percent_format
+#   <chr>               <int> <chr>         
+# 1 no                   5714 92.7%         
+# 2 yes                   450 7.3%          
+```
+
+
+```{r}
+   Dat.label <-  ecn %>% 
+      group_by(gender,name_first_name_is_in_hu) %>% 
+      dplyr::summarise(count=n()) %>%  
+      # group_by(tmp) %>% 
+      mutate(ypos = cumsum(count) - 0.5*count) %>% 
+      mutate(percent_full = count/sum(count)) %>% 
+      mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>% 
+      mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+      mutate(n_and_perc   = paste0("n=", count,", (",percent_format,")" ) )   %>%
+      ungroup() 
+
+#   gender name_first_name_is_in_hu count   ypos percent_full percent_format ypos_percent n_and_perc     
+#   <fct>  <chr>                    <int>  <dbl>        <dbl> <chr>                 <dbl> <chr>          
+# 1 female no                       55705 27852.      0.997   100%                  0.499 n=55705, (100%)
+# 2 female yes                        159 55784.      0.00285 0%                    0.999 n=159, (0%)    
+# 3 male   no                       39487 19744.      0.991   99%                   0.495 n=39487, (99%) 
+# 4 male   yes                        374 39674       0.00938 1%                    0.995 n=374, (1%)  
+   
+tab <- table(ecn$name_first_name_is_in_hu,ecn$gender, exclude = NULL)   
+chisq.test(tab)
+   
+```
+
+```{r}
+ecn %>% filter(name_first_name_is_in_hu == "yes") %>% group_by(gender) %>%summarise(count=n()) %>%
+            		  mutate(percent_format = paste0(round(count/sum(count)*100,1), '%'))
+#   gender count percent_format
+#   <fct>  <int> <chr>         
+# 1 female   159 29.8%         
+# 2 male     374 70.2%         
+```
+
+```{r}
+# ICI FAIRE LE PLOT GLOBAL
+```
+
+
+
+Though women represented 58% of the total of ECN candidates between 2004 and 2019, they represented only 29.8% of those who were admitted to university in this time period.
+
+```{r}
+ecn %>% filter(name_first_name_is_in_hu == "yes") %>% group_by(gender) %>%summarise(count=n()) %>%
+            		  mutate(percent_format = paste0(round(count/sum(count)*100,1), '%'))
+ecn %>% #filter(name_first_name_is_in_hu == "yes") %>%
+              group_by(gender) %>%summarise(count=n()) %>%
+            		  mutate(percent_format = paste0(round(count/sum(count)*100,1), '%'))
+
+ecn %>% group_by(admitted_hu,gender) %>%summarise(median=median(rank_ecn)) 
+wilcox.test(rank_ecn ~ admitted_hu, data = ecn) # 10 -16
+wilcox.test(rank_ecn ~ gender, data = ecn) # NS
+t.test(rank_ecn ~ gender, data = ecn) # NS
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2004")) # very signif
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2006")) # very signif
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2007")) # very signif
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2010")) # no longer signif
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2011")) # very signif
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2012")) # no signif
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2013")) # no signif
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2014")) # no signif
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2015")) # no signif
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2016")) # no signif
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2017")) # no signif
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2018")) # very signif
+t.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2019")) # little signif
+
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2004")) # very signif
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2006")) # very signif
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2007")) # very signif
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2010")) # no longer signif
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2011")) # very signif
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2012")) # no signif
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2013")) # no signif
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2014")) # no signif
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2015")) # no signif
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2016")) # no signif
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2017")) # no signif
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2018")) # very signif Males better
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(year == "2019")) # little signif Males better
+
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(admitted_hu == "HU")) # NS p = 0.23
+wilcox.test(rank_ecn ~ gender, data = ecn %>% filter(admitted_hu == "not HU")) # NS p = 0.60
+
+   Dat.label <-  ecn %>% 
+      group_by(admitted_hu,gender) %>% 
+      dplyr::summarise(count=n()) %>%  
+      # group_by(tmp) %>% 
+      mutate(ypos = cumsum(count) - 0.5*count) %>% 
+      mutate(percent_full = count/sum(count)) %>% 
+      mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>% 
+      mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+      mutate(n_and_perc   = paste0("n=", count,", \n (",percent_format,")" ) )   %>%
+      ungroup() 
+
+    Dat.label$gender2 <- factor(Dat.label$gender, levels= rev(levels(as.factor(Dat.label$gender)) ))
+
+caption_p_gender_hu_or_not <- fig_tab[match("p_gender_hu_or_not", fig_tab$object_title),"compil_num_fig_table"]
+title_p_gender_hu_or_not   <- fig_tab[match("p_gender_hu_or_not", fig_tab$object_title),"pretty_name_title"]
+
+    p_gender_hu_or_not <- ggplot(Dat.label, aes(admitted_hu, y=percent_full*100, fill=gender2 )) +
+      geom_bar(stat="identity",  width=0.8) +  guides(colour=FALSE)+
+      geom_text(data= Dat.label, aes( y = ypos_percent*100 ,label=n_and_perc), size=3.5 ) +
+      # coord_cartesian(ylim = c(0, 110)	) +
+      # facet_grid(~ admitted_hu) +
+      ylab("% cases") + xlab ("") +
+      theme(  axis.ticks.x = element_blank() ) + theme_bw()+#, legend.position = "none")   + 
+      scale_fill_manual(name = "", values =  c("#00BFC4","#F8766D")) # +
+  		labs(title= title_p_gender_hu_or_not) 
+    print(p_gender_hu_or_not)
+```
+
+```{r, include=TRUE}
+p_gender_hu_or_not
+```
+
+```{r}
+# plot rank ECN among HU
+head(ecn)
+
+ecn  %>% filter(name_first_name_is_in_hu == "yes") %>% ggplot(.) +
+  geom_boxplot( aes (x = gender ,y = rank_enc, fill = gender)) + 
+        facet_grid(~year)
+
+ecn  %>% filter(name_first_name_is_in_hu == "yes") %>% ggplot(aes (x = gender ,y = rank_enc, fill = gender)) +
+  geom_boxplot() + 
+        facet_grid(~year) +
+		  stat_compare_means( # method = "wilcoxon",
+		                       label = "p.format", label.x.npc="center")
+
+```
+
+
+
+
+```{r}
+
+   Dat.label <-  ecn %>% filter(name_first_name_is_in_hu == "yes") %>% 
+      group_by(year2,gender) %>% 
+      dplyr::summarise(count=n()) %>%  
+      # group_by(tmp) %>% 
+      mutate(ypos = cumsum(count) - 0.5*count) %>% 
+      mutate(percent_full = count/sum(count)) %>% 
+      mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>% 
+      mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+      mutate(n_and_perc   = paste0("n=", count,", \n (",percent_format,")" ) )   %>%
+      ungroup() 
+
+    Dat.label$gender2 <- factor(Dat.label$gender, levels= rev(levels(as.factor(Dat.label$gender)) ))
+
+caption_p_gender_admitted_HU_by_year <- fig_tab[match("p_gender_admitted_HU_by_year", fig_tab$object_title),"compil_num_fig_table"]
+title_p_gender_admitted_HU_by_year   <- fig_tab[match("p_gender_admitted_HU_by_year", fig_tab$object_title),"pretty_name_title"]
+
+    p_gender_admitted_HU_by_year <- ggplot(Dat.label, aes(year2, y=percent_full*100, fill=gender2 )) +
+      geom_bar(stat="identity",  width=0.8) +  guides(colour=FALSE)+
+      geom_text(data= Dat.label, aes( y = ypos_percent*100 ,label=n_and_perc), size=3.5 ) +
+      # coord_cartesian(ylim = c(0, 110)	) +
+      ylab("% cases") + xlab ("") +
+      theme(  axis.ticks.x = element_blank() ) + theme_bw()+#, legend.position = "none")   + 
+      scale_fill_manual(name = "", values =  c("#00BFC4","#F8766D")) +
+  		labs(title= title_p_gender_admitted_HU_by_year) 
+    print(p_gender_admitted_HU_by_year)
+
+```
+
+Analysis by year did not show a clear trend accross years.
+
+```{r, include=TRUE}
+p_gender_admitted_HU_by_year
+```
+
+Among those who were admitted in HU position, the quantiles at ECN were represented similarly in males and females, with an overrepresentation of the 3 first deciles admitted in HU positions.
+
+```{r}
+
+   Dat.label1<-  ecn %>% filter(year < 2015,name_first_name_is_in_hu == "yes") %>% 
+      group_by(decile) %>% 
+      dplyr::summarise(count=n()) %>%  
+      # group_by(tmp) %>% 
+      mutate(ypos = cumsum(count) - 0.5*count) %>% 
+      mutate(percent_full = count/sum(count)) %>% 
+      mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>% 
+      mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+      mutate(n_and_perc   = paste0("n=", count,", \n (",percent_format,")" ) )   %>% mutate(all = "all") %>% 
+      ungroup() 
+    Dat.label1$decile2 <- factor(Dat.label1$decile, levels= rev(levels(as.factor(Dat.label1$decile)) ))
+
+      Dat.label2 <-  ecn %>% filter(year < 2015,name_first_name_is_in_hu == "yes") %>% 
+      group_by(decile, gender) %>% 
+      dplyr::summarise(count=n()) %>%  
+      group_by(gender) %>% 
+      mutate(ypos = cumsum(count) - 0.5*count) %>% 
+      mutate(percent_full = count/sum(count)) %>% 
+      mutate(percent_format = paste0(round(count/sum(count)*100), '%')) %>% 
+      mutate(ypos_percent = cumsum(percent_full) - 0.5*percent_full)  %>%
+      mutate(n_and_perc   = paste0("n=", count,", \n (",percent_format,")" ) )   %>%
+      ungroup() 
+    Dat.label2$decile2 <- factor(Dat.label2$decile, levels= rev(levels(as.factor(Dat.label2$decile)) ))
+
+    p_deciles_ecn_HU_wp <- ggplot(Dat.label1, aes(decile2, y=percent_full*100), fill="lightgrey" ) +
+      geom_bar(stat="identity",  width=0.8) +  guides(colour=FALSE)+
+      coord_flip(ylim = c(0,40))+
+            facet_grid(~all)+
+      geom_text(data= Dat.label1, aes( label=n_and_perc),  size=3.5, hjust =  - 0.5 ) +
+      # coord_cartesian(ylim = c(0, 110)	) +
+      ylab("% cases") + xlab ("") +
+      theme(  axis.ticks.x = element_blank() ) + theme_bw()#, legend.position = "none")   + 
+  #     scale_fill_manual(name = "", values =  c("#00BFC4","#F8766D")) +
+  # 		labs(title= title_p_gender_1stquartiles_by_year) 
+    print(p_deciles_ecn_HU_wp)
+
+    p_deciles_ecn_HU_gender <- ggplot(Dat.label2, aes(decile2, y=percent_full*100, fill=gender )) +
+      geom_bar(stat="identity",  width=0.8) +  guides(colour=FALSE)+
+      coord_flip(ylim = c(0,40))+
+      facet_grid(~gender)+
+      geom_text(data= Dat.label2, aes( label=n_and_perc),  size=3.5 , hjust =  - 0.5 ) +
+      # coord_cartesian(ylim = c(0, 110)	) +
+      ylab("% cases") + xlab ("") + theme_bw()+
+      theme(  axis.ticks.x = element_blank(), legend.position = "none" ) #)   + 
+  #     scale_fill_manual(name = "", values =  c("#00BFC4","#F8766D")) +
+  # 		labs(title= title_p_gender_1stquartiles_by_year) 
+    print(p_deciles_ecn_HU_gender)
+```
+
+
+```{r}
+p_deciles_ecn_HU_wp_and_gender <- plot_grid(p_deciles_ecn_HU_wp,p_deciles_ecn_HU_gender, rel_widths = c(6,12))
+p_deciles_ecn_HU_wp_and_gender
+```
+
+```{r, include=TRUE}
+p_deciles_ecn_HU_wp_and_gender
+```
+
+

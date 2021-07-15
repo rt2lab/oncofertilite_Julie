@@ -1,0 +1,3327 @@
+---
+title: "CANTO - preprocessing"
+editor_options:
+  chunk_output_type: console
+date: "Mai 13, 2021"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '3'
+  html_notebook:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r include=F}
+#======================= Load R libraries ===========================
+library("xlsx")
+library("dplyr")
+library(rmarkdown)
+library(ggplot2)
+library(plyr)
+library("reshape2")
+library("data.table")
+library("ggsci")
+library("RColorBrewer")
+library("corrplot")
+library("tidyr")
+library(tableone)
+library(haven)
+library(rmarkdown)
+library(parallel)
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+source('/Users/nadir/Desktop/projects/postdoc/RT2Lab/Rcode-general/functions.R')
+```
+
+```{r echo=FALSE,message=FALSE}
+
+#======================= Load data ===========================
+data.workBI = read_sas("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Data/Projet\ 020\ -\ COMBIMMUNO\ -\ AS\ HAMY\ -\ 20-12-2019/bi.sas7bdat", NULL)
+
+site_ID <- read.xlsx("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Data/Site_ID.xlsx", header = TRUE, sheetName = "Sheet1")
+
+#======================= Recoding patients characteristics variables ====================
+```
+
+Correction des erreurs, equipe de Dijon
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+l = c("01-00804" = "15/11/2012","01-04576" = "14/05/2014","01-06521" = "17/02/2015","01-09201" = "31/05/2016","03-03207" = "13/10/2013","03-03668" = "24/12/2013","03-03688" = "24/12/2013","03-05214" = "13/08/2014","03-06390" = "31/10/2014","06-06064" = "04/12/2014","06-06945" = "05/01/2015","06-08560" = "09/02/2016","06-08837" = "24/03/2016","07-00148" = "14/05/2012","07-00774" = "15/09/2012","07-01402" = "14/09/2012","07-02768" = "29/11/2012","07-06661" = "22/01/2015","07-07170" = "25/03/2015","08-04172" = "24/02/2014","09-03735" = "03/10/2013","10-00676" = "13/09/2012","10-04212" = "19/02/2014","10-04599" = "09/04/2014","10-06792" = "06/02/2015","10-07176" = "20/05/2015","10-08705" = "11/02/2016","10-09294" = "11/03/2016","11-02872" = "16/09/2013","13-00784" = "01/01/2012","13-02946" = "10/05/2013","13-09279" = "15/03/2016","14-00950" = "18/10/2012","14-02207" = "04/06/2013","14-06122" = "19/11/2014","14-08200" = "23/11/2015")
+
+for(i in 1:length(l)){
+  v = which(data.workBI$SUBJID == names(l)[i])
+  data.workBI$DTDIAG[v] = as.character(l[i])
+}
+
+
+data.workBI$DTGANGLS_D[which(data.workBI$SUBJID=="07-01550" & data.workBI$DTGANGLS_D=="28/03/3013")] = "28/03/2013"
+data.workBI$DTBILANHEMATO_BI[which(data.workBI$SUBJID=="16-07457" & data.workBI$DTBILANHEMATO_BI=="09/07/0201")] = "09/07/2001"
+data.workBI$DTBILANOVAR_BI[which(data.workBI$SUBJID=="02-03470" & data.workBI$DTBILANOVAR_BI=="08/01/0214")] = "08/01/2014"
+data.workBI$DTBILANRENAL_BI[which(data.workBI$SUBJID=="16-06848" & data.workBI$DTBILANRENAL_BI=="07/04/0201")] ="07/04/2001"
+data.workBI$DTDEBFACTCROISS_ADJ[which(data.workBI$SUBJID=="02-02565" & data.workBI$DTDEBFACTCROISS_ADJ=="NK/112013")] = "NK/11/2013"
+data.workBI$DTDEBHORM1[which(data.workBI$SUBJID=="01-08595" & data.workBI$DTDEBHORM1=="31/11/2016")] = "30/11/2016";
+data.workBI$DTDEBHORM3[which(data.workBI$SUBJID=="05-03696" & data.workBI$DTDEBHORM3=="31/04/2018")] = "30/04/2018"
+data.workBI$DTFEVG_BI[which(data.workBI$SUBJID=="06-08603" & data.workBI$DTFEVG_BI=="25/02/1016")] = "25/02/2016"
+data.workBI$DTFINFACTCROISS_ADJ[which(data.workBI$SUBJID=="03-01851" & data.workBI$DTFINFACTCROISS_ADJ=="2511/2013")] = "25/11/2013"
+data.workBI$DTFINHORM2[which(data.workBI$SUBJID=="05-03696" & data.workBI$DTFINHORM2=="31/04/2018")] = "30/04/2018"
+data.workBI$DTFINHORM2[which(data.workBI$SUBJID=="07-00085" & data.workBI$DTFINHORM2=="DECES")] = "17/12/2017"
+data.workBI$DTFINHORM2[which(data.workBI$SUBJID=="07-07541" & data.workBI$DTFINHORM2=="31/04/2017")] = "30/04/2017"
+data.workBI$DTSIGN[which(data.workBI$SUBJID=="07-09381" & data.workBI$DTSIGN=="12/08/0216")] = "12/08/2016"
+
+
+data.workBI$LOC[which(data.workBI$SUBJID=="07-00762")] = 2
+data.workBI$LOC[which(data.workBI$SUBJID=="14-00196")] = 2
+data.workBI$LOC[which(data.workBI$SUBJID=="17-03501")] = 2
+data.workBI$LOC[which(data.workBI$SUBJID=="20-03280")] = 3
+
+
+# 2.9 Autres corrections 
+data.workBI$SEQCHIMIO_ADJ[which(data.workBI$SUBJID=="09-06326")] = 1
+data.workBI$SEQCHIMIO_ADJ[which(data.workBI$SUBJID=="09-08282")] = 2
+data.workBI$DROGUE5_ADJ[which(data.workBI$SUBJID=="01-01201")] = ''
+
+# taille
+data.workBI$TAILLE[which(data.workBI$SUBJID=='16-06901')] = 160
+data.workBI$TAILLE[which(data.workBI$SUBJID=='16-07261')] = 170
+
+
+```
+
+
+The original dataset in BI contains `r nrow(data.workBI)` samples and `r ncol(data.workBI)` columns.
+
+# Clinical variables 
+
+## Bilateral
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$bilat <- factor(NA, levels = c("no","yes"))
+data.workBI$bilat[which(data.workBI$LOC %in% c("1","2"))] <- "no"
+data.workBI$bilat[which(data.workBI$LOC %in% c("3"))] <- "yes"
+data.workBI$bilat <- addNA(data.workBI$bilat)
+table(data.workBI$bilat, exclude = NULL)
+```
+
+We remove `r as.numeric(table(data.workBI$bilat)[2])` bilateral cases and  `r as.numeric(table(data.workBI$bilat)[3])`  NAs
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+###REMOVE BILATERAL
+nobilat = which(data.workBI$bilat=="no")
+data.workBI = data.workBI %>% filter(bilat=="no")
+data.workBI$side <- unlist(lapply(data.workBI$LOC, function(x){if(x==1) "L" else "R"}))
+table(data.workBI$side)
+```
+
+We obtain `r nrow(data.workBI)` samples.
+
+## Bifocal
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$bifocal <- factor(NA, levels = c("no","yes"))
+data.workBI$bifocal[which(data.workBI$LOC %in% c("1") & data.workBI$FORME_G %in% c("1"))] <- "no"
+data.workBI$bifocal[which(data.workBI$LOC %in% c("1") & data.workBI$FORME_G %in% c("2"))] <- "yes"
+data.workBI$bifocal[which(data.workBI$LOC %in% c("2") & data.workBI$FORME_D %in% c("1"))] <- "no"
+data.workBI$bifocal[which(data.workBI$LOC %in% c("2") & data.workBI$FORME_D %in% c("2"))] <- "yes"
+table(data.workBI$bifocal)
+```
+
+We keep bifocal patients.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+# Center : Curie/Other
+colnames(site_ID) <- c("SITEID","Center","City")
+data.workBI$SITEID = as.numeric(data.workBI$SITEID)
+data.workBI$Center = unlist(lapply(data.workBI$SITEID, function(x){if(x%in%site_ID$SITEID)return(as.character(site_ID$Center[which(site_ID$SITEID==x)]))else{return(NA)}}))
+
+# Date of Birth
+data.workBI <- mutate(data.workBI, DT_Birth = as.Date(DTNAISS, "%d/%m/%Y"))
+
+# Date of Creation
+data.workBI <- mutate(data.workBI, DT_Creation = as.Date(DTCREATION, "%d/%m/%Y"))
+```
+
+
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+imputeDate = function(data, variable){
+  v = c()
+  new_var_name = paste0(variable, '_raw')
+  data[, new_var_name] = NA
+  data[, new_var_name] = data[,variable]
+  
+  vec = c(grep("ND",data[,variable]), grep("NK",data[,variable]), grep("NA/",data[,variable]))
+  look = which(!vec %in%  c(grep("NKNKNK",data[,variable]), grep("ND/ND",data[,variable]), grep("NK/NK",data[,variable]),grep("NA/NA",data[,variable])))
+  vec = vec[look]
+  data[vec,variable] =  paste("15/",substr(data[vec,variable],4,10),sep="")
+ 
+  data[, paste0(variable, '_IMPUTED_DAY')] = rep(0, nrow(data))
+  data[vec, paste0(variable, '_IMPUTED_DAY')] = 1
+  
+   v = vec
+  
+  vec = c(grep("ND/ND",data[,variable]), grep("NK/NK",data[,variable]),grep("NA/NA",data[,variable]))
+  data[vec,variable] =  paste("15/07/",substr(data[vec,variable],7,10),sep="")
+  
+  data[, paste0(variable, '_IMPUTED_DAY_MONTH')] = rep(0, nrow(data))
+  data[vec, paste0(variable, '_IMPUTED_DAY_MONTH')] = 1
+  
+  v = c(v, vec)
+  
+  data[, paste0(variable, '_IMPUTED')] = rep(0, nrow(data))
+  data[v, paste0(variable, '_IMPUTED')] = 1
+  
+  return(data)
+}
+
+
+```
+
+
+
+## Date of diagnosis
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+vec = c(grep("ND",data.workBI$DTDIAG), grep("NK",data.workBI$DTDIAG), grep("NA/",data.workBI$DTDIAG))
+look = which(!vec %in%  c(grep("NKNKNK",data.workBI$DTDIAG), grep("ND/ND",data.workBI$DTDIAG), grep("NK/NK",data.workBI$DTDIAG),grep("NA/NA",data.workBI$DTDIAG)))
+vec = vec[look]
+length(vec)
+```
+
+We have `r length(vec)` patients with dates as NK/mm/yyyy. 
+
+We set for them the diagnosis at 15 of the month. We still have dates like:
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+ind = which(data.workBI$DTDIAG=="02092013")
+if(length(ind)>0)
+  data.workBI$DTDIAG[which(data.workBI$DTDIAG=="02092013")] = "02/09/2013"
+
+data.workBI$DTDIAG[vec] =  paste("15/",substr(data.workBI$DTDIAG[vec],4,10),sep="")
+data.workBI <- mutate(data.workBI, DT_Diagnosis = as.Date(DTDIAG, "%d/%m/%Y"))
+t=which(is.na(as.Date(data.workBI$DTDIAG)))
+data.workBI$DTDIAG[t]
+```
+
+
+Take the date of consentment for dates not known
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$DTDIAG[t] = data.workBI$DTCONS[t]
+t=which(is.na(as.Date(data.workBI$DTDIAG)))
+```
+
+There are no more NA in diagnosis date.
+
+## Number of family history of breast cancer
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$NB_Hist_Breast_Cancer1 <- as.numeric(data.workBI$NBANTECSEIN1)
+
+#========== Create composite variable of family history just for first degree family
+data.workBI$fam_hist_bc <- factor(NA, levels = c("no","yes"))
+data.workBI$fam_hist_bc[which(data.workBI$NB_Hist_Breast_Cancer1==0)] <- "no"
+data.workBI$fam_hist_bc[which(data.workBI$NB_Hist_Breast_Cancer1>0)] <- "yes"
+table(data.workBI$fam_hist_bc)
+```
+
+
+# Clinical tumor characteristics
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+source("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Code_and_RMarkdown/preprocessing/Rcode/clinical_left.R")
+source("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Code_and_RMarkdown/preprocessing/Rcode/clinical_right.R")
+```
+
+## Clinical size
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$tailleclin <- NA
+data.workBI$tailleclin[which(data.workBI$side %in% c("L"))] <- data.workBI$tclin_L[which(data.workBI$side %in% c("L"))]
+data.workBI$tailleclin[which(data.workBI$side %in% c("R"))] <- data.workBI$tclin_R[which(data.workBI$side %in% c("R"))]
+table(data.workBI$tailleclin, exclude = NULL)
+```
+
+## Tumor form
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$form <- factor(NA, levels = c("unifocal", "multifocal"))
+data.workBI$form[which(data.workBI$side %in% c("L"))] <- data.workBI$form_L[which(data.workBI$side %in% c("L"))]
+data.workBI$form[which(data.workBI$side %in% c("R"))] <- data.workBI$form_R[which(data.workBI$side %in% c("R"))]
+table(data.workBI$form, exclude = NULL)
+```
+
+## ctuicc_5cl
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$ctuicc_5cl <- factor(NA,levels = c("T0", "T1", "T2", "T3","T4"))
+data.workBI$ctuicc_5cl[which(data.workBI$side %in%c("L"))] <- data.workBI$tuicc_5cl_L[which(data.workBI$side %in%c("L"))]
+data.workBI$ctuicc_5cl[which(data.workBI$side %in%c("R"))] <- data.workBI$tuicc_5cl_R[which(data.workBI$side %in%c("R"))]
+table(data.workBI$ctuicc_5cl, exclude = NULL)
+```
+
+## Clinical nodal status (4 classes)
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$cnuicc_4cl <- factor(NA, levels = c("N0","N1","N2","N3"))
+data.workBI$cnuicc_4cl[which(data.workBI$side %in%c("L"))] <- data.workBI$nuicc_4cl_L[which(data.workBI$side %in%c("L"))]
+data.workBI$cnuicc_4cl[which(data.workBI$side %in%c("R"))] <- data.workBI$nuicc_4cl_R[which(data.workBI$side %in%c("R"))]
+table(data.workBI$cnuicc_4cl, exclude = NULL)
+```
+
+
+
+# Tumor characteristics - biopsy
+```{r echo=F, message=FALSE, warning=FALSE, results='markup'}
+source("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Code_and_RMarkdown/preprocessing/Rcode/biop_left.R")
+source("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Code_and_RMarkdown/preprocessing/Rcode/biop_right.R")
+```
+
+## Individuals with unilateral cancer, but with informations for both sides
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+##### Function for marking individuals with unilateral cancer, but with informations for both left and right breast
+incompability2 <- function(data, var_left, var_right){
+
+  warning <- rep(0,nrow(data))
+  for (i in 1:nrow(data)) {
+    for (c in 1:length(var_left)) {
+      if(warning[i]==0){
+        warning[i] <- ifelse(!is.na(data[i,which(colnames(data)==var_left[c])]) & !is.na(data[i,which(colnames(data)==var_right[c])]),1,0)
+        #if(warning[i]==1)print(paste(i,c,var_left[c],var_right[c]))
+      }
+    }
+  }
+
+  return(warning)
+}
+
+var_right_biop=c("mat_type_R","invasive_biop_R","histo_4cl_biop_R","histo_3cl_biop_R",
+            "index_mitotic_biop_R","dcis_biop_R","grade_3cl_biop_R","grade_2cl_biop_R",
+            "biopsy_R","er_biop_R","perc_er_biop_R","inte_er_biop_R",
+            "pr_biop_R","perc_pr_biop_R","inte_pr_biop_R",
+            "her2_biop_R","her2_ihc_biop_R","Ki67_biop_bi_R","Ki67_biop_R","genom_biop_bi_R")
+
+var_left_biop=c("mat_type_L","invasive_biop_L","histo_4cl_biop_L","histo_3cl_biop_L",
+           "index_mitotic_biop_L","dcis_biop_L","grade_3cl_biop_L","grade_2cl_biop_L",
+           "biopsy_L","er_biop_L","perc_er_biop_L","inte_er_biop_L",
+           "pr_biop_L","perc_pr_biop_L","inte_pr_biop_L",
+           "her2_biop_L","her2_ihc_biop_L","Ki67_biop_bi_L","Ki67_biop_L","genom_biop_bi_L")
+
+incomp <- incompability2(data.workBI,
+                        var_right=var_right_biop,
+                        var_left=var_left_biop)
+
+data.workBI$warning_biop <- incomp
+table(data.workBI$warning_biop, exclude = NULL)
+```
+
+We have `r table(data.workBI$warning_biop)[2]` patients with unilateral cancer but with data for both left and right breast (we have `r length(var_left_biop)` columns for biopsy for each breast).
+Here the table for biopsy related variables for these patients. Every patient has 2 rows: one for left and one for right breast side.
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+columns = which(data.workBI$warning_biop == 1)
+rr = as.data.frame(matrix(NA, nrow = 2*length(columns), ncol=length(var_left_biop)+4))
+rr[,3] = rep(c("L","R"),length(columns))
+colnames(rr) = c("ID", "OFFICIAL SIDE", "INSPECTED SIDE", "# NOT NA", unlist(lapply(var_left_biop, function(x){substr(x,0,nchar(x)-2)})))
+i = 1
+for(c in columns){
+  rr[i,1] = c
+  rr[i+1,1] = c
+  rr[i,2] = if(data.workBI$LOC[c]==1) "L" else "R"
+  rr[i+1,2] = if(data.workBI$LOC[c]==1) "L" else "R"
+  rr[i,4] = length(which(!is.na(data.workBI[c,var_left_biop])))
+  rr[i+1,4] = length(which(!is.na(data.workBI[c,var_right_biop])))
+  rr[i,5:ncol(rr)] = data.workBI[c,var_left_biop]
+  rr[i+1,5:ncol(rr)] = data.workBI[c,var_right_biop]
+  i = i + 2
+}
+rr
+```
+
+We need to pay attention to some patient? The data is mostly present in the correct side.
+
+## Define biopsy side based on left or right breast biopsy:
+Is it consistent with breast side?
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+#### Define all variables based on left or right breast tumor
+left_right <- function(data, var_left, var_right){
+
+  side <- rep(NA,nrow(data))
+  for (i in 1:nrow(data)) {
+    for (l in var_left) {
+      if(data[i,"bilat"]=="no" & data[i,"warning_biop"]==0){
+          side[i] <- ifelse(!is.na(data[i,l]), "L", side[i])
+      }
+      if(data[i,"bilat"]=="no" & data[i,"warning_biop"]==1){
+        side[i] <- NA
+      }
+      if(data[i,"bilat"]=="yes"){
+        side[i] <- NA
+      }
+    }
+    for (r in var_right) {
+      if(data[i,"bilat"]=="no" & data[i,"warning_biop"]==0){
+        side[i] <- ifelse(!is.na(data[i,r]), "R", side[i])
+      }
+      if(data[i,"bilat"]=="no" & data[i,"warning_biop"]==1){
+        side[i] <- NA
+      }
+      if(data[i,"bilat"]=="yes"){
+        side[i] <- NA
+      }
+    }
+  }
+
+  return(side)
+
+}
+
+side <- left_right(data.workBI,
+                   var_right=var_right_biop,
+                   var_left=var_left_biop)
+
+data.workBI$breast_biop <- as.factor(side)
+
+table(data.workBI$breast_biop, data.workBI$warning_biop, exclude = NULL, dnn = c("Biopsy", "Info both L/R"))
+
+```
+We also have `r table(data.workBI$breast_biop,data.workBI$warning_biop, exclude = NULL)[3,1]` individuals with no information on right or left side.
+
+We keep the side for biopsy as the one saved in variable LOC.
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$breast_biop <- as.factor(data.workBI$side)
+```
+
+
+## Biopsy performed
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$breast_biop <- as.factor(data.workBI$side)
+                        
+data.workBI$biopsy <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$biopsy_L), as.character(data.workBI$biopsy_R)))
+table(data.workBI$biopsy, exclude = NULL)
+```
+
+## Check NA values
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$biop_info <- rep(NA, nrow(data.workBI))
+data.workBI$biop_info <- apply(data.workBI[,c(var_right_biop, var_right_biop)],
+                           1,function(x) sum(!is.na(x)))
+table(biop_variables_not_na = data.workBI$biop_info , biop_performed = data.workBI$biopsy , exclude = NULL)
+```
+
+We have `r as.numeric(table(data.workBI$biopsy, exclude = NULL)[3])` patients with NA as biopsy. 
+
+`r length(which(is.na(data.workBI$biopsy)  & data.workBI$biop_info > 1))` of them have information on biopsy variables. 
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+v = which(is.na(data.workBI$biopsy) & data.workBI$biop_info > 0)
+
+columns = v
+rr = as.data.frame(matrix(NA, nrow = 2*length(columns), ncol=length(var_left_biop)+4))
+rr[,3] = rep(c("L","R"),length(columns))
+colnames(rr) = c("ID", "OFFICIAL SIDE", "INSPECTED SIDE", "# NOT NA", unlist(lapply(var_left_biop, function(x){substr(x,0,nchar(x)-2)})))
+i = 1
+for(c in columns){
+  rr[i,1] = c
+  rr[i+1,1] = c
+  rr[i,2] = if(data.workBI$LOC[c]==1) "L" else "R"
+  rr[i+1,2] = if(data.workBI$LOC[c]==1) "L" else "R"
+  rr[i,4] = length(which(!is.na(data.workBI[c,var_left_biop])))
+  rr[i+1,4] = length(which(!is.na(data.workBI[c,var_right_biop])))
+  rr[i,5:ncol(rr)] = data.workBI[c,var_left_biop]
+  rr[i+1,5:ncol(rr)] = data.workBI[c,var_right_biop]
+  i = i + 2
+}
+rr
+```
+
+We put them as having had biopsy, other NAs as not having has biopsy.
+
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$biopsy[v] = 'yes'
+data.workBI$biopsy[which(is.na(data.workBI$biopsy))] = 'no'
+```
+
+The new data distribution is:
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+table(data.workBI$biopsy, exclude = NULL)
+```
+
+<!-- ## Check NO values -->
+
+<!-- ```{r echo=T, message=FALSE, warning=FALSE, results='markup'} -->
+<!-- v = which(data.workBI$biopsy == 'no' & data.workBI$biop_info > 0) -->
+<!-- ``` -->
+
+<!-- `r length(v)` of them has information on biopsy variables. -->
+
+<!-- ```{r echo=T, message=FALSE, warning=FALSE, results='markup'} -->
+<!-- columns = v -->
+<!-- rr = as.data.frame(matrix(NA, nrow = 2*length(columns), ncol=length(var_left_biop)+4)) -->
+<!-- rr[,3] = rep(c("L","R"),length(columns)) -->
+<!-- colnames(rr) = c("ID", "OFFICIAL SIDE", "INSPECTED SIDE", "# NOT NA", unlist(lapply(var_left_biop, function(x){substr(x,0,nchar(x)-2)}))) -->
+<!-- i = 1 -->
+<!-- for(c in columns){ -->
+<!--   rr[i,1] = c -->
+<!--   rr[i+1,1] = c -->
+<!--   rr[i,2] = if(data.workBI$LOC[c]==1) "L" else "R" -->
+<!--   rr[i+1,2] = if(data.workBI$LOC[c]==1) "L" else "R" -->
+<!--   rr[i,4] = length(which(!is.na(data.workBI[c,var_left_biop]))) -->
+<!--   rr[i+1,4] = length(which(!is.na(data.workBI[c,var_right_biop]))) -->
+<!--   rr[i,5:ncol(rr)] = data.workBI[c,var_left_biop] -->
+<!--   rr[i+1,5:ncol(rr)] = data.workBI[c,var_right_biop] -->
+<!--   i = i + 2 -->
+<!-- } -->
+<!-- rr -->
+<!-- ``` -->
+
+<!-- What to do with these patients? -->
+
+
+
+
+## Histological type (3 classes)
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+#================ Invasive cancer =================
+data.workBI$invasive_biop <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$invasive_biop_L), as.character(data.workBI$invasive_biop_R)))
+
+# histological type (4 classes)
+data.workBI$histo_4cl_biop <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$histo_4cl_biop_L), as.character(data.workBI$histo_4cl_biop_R)))
+table(data.workBI$histo_4cl_biop, exclude = NULL)
+
+# histological type (3 classes)
+data.workBI$histo_3cl_biop <- data.workBI$histo_4cl_biop
+levels(data.workBI$histo_3cl_biop) <- c("lobular","others","NST","others")
+table(data.workBI$histo_3cl_biop, exclude = NULL)
+```
+
+## Mitotic index biopsy
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$index_mitotic_biop <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.numeric(data.workBI$index_mitotic_biop_L), as.numeric(data.workBI$index_mitotic_biop_R)))
+table(data.workBI$index_mitotic_biop, exclude = NULL)
+```
+
+## Dcis component biopsy
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# In situ
+data.workBI$dcis_biop <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$dcis_biop_L), as.character(data.workBI$dcis_biop_R)))
+table(data.workBI$dcis_biop, exclude = NULL)
+```
+
+## Invasive or dcis biopsy
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# Invasive or in situ
+data.workBI <- data.workBI %>% mutate(inv_or_insitu_biop = case_when(
+                          invasive_biop == 'yes' & dcis_biop == 'no' ~ 'invasive',
+                          invasive_biop == 'no' & dcis_biop == 'yes' ~ 'dcis'))
+table(data.workBI$inv_or_insitu_biop, exclude = NULL)
+```                        
+
+## Grade 3cl biopsy
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# Grade (3 classes)
+data.workBI$grade_3cl_biop <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$grade_3cl_biop_L), as.character(data.workBI$grade_3cl_biop_R)))
+table(data.workBI$grade_3cl_biop, exclude = NULL)
+
+```
+
+## ER biopsy
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$er_biop <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$er_biop_L), as.character(data.workBI$er_biop_R)))
+table(data.workBI$er_biop, exclude = NULL)
+
+# Percentage
+data.workBI$perc_er_biop <- (ifelse(data.workBI$breast_biop %in% c("L"), as.numeric(data.workBI$perc_er_biop_L), as.numeric(data.workBI$perc_er_biop_R)))
+
+# Intensity
+data.workBI$inte_er_biop <- (ifelse(data.workBI$breast_biop %in% c("L"), as.numeric(data.workBI$inte_er_biop_L), as.numeric(data.workBI$inte_er_biop_R)))
+```
+
+## PR biopsy
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$pr_biop <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$pr_biop_L), as.character(data.workBI$pr_biop_R)))
+table(data.workBI$pr_biop, exclude = NULL)
+
+# Percentage
+data.workBI$perc_pr_biop <- (ifelse(data.workBI$breast_biop %in% c("L"), as.numeric(data.workBI$perc_pr_biop_L), as.numeric(data.workBI$perc_pr_biop_R)))
+
+# Intensity
+data.workBI$inte_pr_biop <- (ifelse(data.workBI$breast_biop %in% c("L"), as.numeric(data.workBI$inte_pr_biop_L), as.numeric(data.workBI$inte_pr_biop_R)))
+```
+
+
+## HER2 biopsy -> inconsistency between CANTO1 data and rules by DIJON
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$her2_biop <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$her2_biop_L), as.character(data.workBI$her2_biop_R)))
+table(data.workBI$her2_biop, exclude = NULL)
+
+data.workBI$her2_ihc_biop <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$her2_ihc_biop_L), as.character(data.workBI$her2_ihc_biop_R)))
+
+data.workBI$fish_bi <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$fish_bi_L), as.character(data.workBI$fish_bi_R)))
+
+data.workBI$her2_biop2 = factor(NA, levels = c("positive","negative"))
+data.workBI$her2_biop2[which(data.workBI$her2_ihc_biop == '3+' | data.workBI$fish_bi == 'positive')] = 'positive'
+data.workBI$her2_biop2[which(data.workBI$her2_ihc_biop == '0' | data.workBI$her2_ihc_biop == '1+' | ( data.workBI$her2_ihc_biop == '2+' &  (data.workBI$fish_bi == 'negative' | is.na(data.workBI$fish_bi))))] = 'negative'
+
+data.workBI$her2_biop2[which(is.na(data.workBI$her2_biop2))] = data.workBI$her2_biop[which(is.na(data.workBI$her2_biop2))]
+
+table(her2_canto = data.workBI$her2_biop , her2_Dijon = data.workBI$her2_biop2 )
+```
+
+Take new rulkes by Dijon
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$her2_biop = data.workBI$her2_biop2
+```
+
+## Ki67 percentage biopsy
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+
+data.workBI$Ki67_biop_bi <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$Ki67_biop_bi_L), as.character(data.workBI$Ki67_biop_bi_R)))
+
+data.workBI$Ki67_biop <- ifelse(data.workBI$breast_biop %in% c("L"), as.numeric(data.workBI$Ki67_biop_L), as.numeric(data.workBI$Ki67_biop_R))
+
+data.workBI$Ki67_cl_biop <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$Ki67_cl_biop_L), as.character(data.workBI$Ki67_cl_biop_R)))
+
+data.workBI$Ki67PERC <- as.numeric(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$POURCKI67_G_BI), as.character(data.workBI$POURCKI67_D_BI)))
+hist(data.workBI$Ki67PERC, main = 'ki67_perc')
+```
+
+## Genomic test biopsy
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# Genomic test
+data.workBI$genom_biop_bi <- factor(ifelse(data.workBI$breast_biop %in% c("L"), as.character(data.workBI$genom_biop_bi_L), as.character(data.workBI$genom_biop_bi_R)))
+
+table(data.workBI$genom_biop_bi, exclude = NULL)
+```
+
+
+# Surgery
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+data.workM0 = read_sas("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Data/Projet\ 020\ -\ COMBIMMUNO\ -\ AS\ HAMY\ -\ 20-12-2019/m0.sas7bdat", NULL)
+data.workM0 = data.workM0[nobilat,]
+```
+
+Correction erreurs equipe Dijon
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workM0$DTBILANRENAL_M[which(data.workM0$SUBJID=="16-10081" & data.workM0$DTBILANRENAL_M=="19/12/0217")] = "19/12/2017"
+data.workM0$DTDERNTT_M0[which(data.workM0$SUBJID=="01-07259" & data.workM0$DTDERNTT_M0=="08/72/015")] = "08/07/2015"
+data.workM0$DTDERNTT_M0[which(data.workM0$SUBJID=="01-09652" & data.workM0$DTDERNTT_M0=="11/10/1201")] = "11/10/2011"
+data.workM0$DTDERNTT_M0[which(data.workM0$SUBJID=="07-06813" & data.workM0$DTDERNTT_M0=="00/11/2015")] = "15/11/2015"
+data.workM0$DTDERNTT_M0[which(data.workM0$SUBJID=="20-08642" & data.workM0$DTDERNTT_M0=="17/06/1016")] = "17/06/2016"
+data.workM0$DTDERNREGL_M0[which(data.workM0$SUBJID=="01-09821" & data.workM0$DTDERNREGL_M0=="KN/KN/NK")] = "NK/NK/NK";
+data.workM0$DTDERNREGL_M0[which(data.workM0$SUBJID=="12-02818" & data.workM0$DTDERNREGL_M0=="NK06/2014")] = "NK/06/2014"
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+data.workM0 = data.workM0[, -which(colnames(data.workM0) %in% c("SOMME", "SOMME1", "RECNUM"))] 
+colnames(data.workM0)[colnames(data.workM0) == 'SITEID'] <- 'SITEID_SURG'
+
+data.work = plyr::join(data.workBI, data.workM0, type = "inner", by='SUBJID')
+
+source("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Code_and_RMarkdown/preprocessing/Rcode/surg_left.R")
+source("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Code_and_RMarkdown/preprocessing/Rcode/surg_right.R")
+```
+
+Check variables different from NAs
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$surg_info <- rep(NA, nrow(data.work))
+
+var_right_surg=c("pT_R","pN_R","nbggpos_R","taillehisto_R","multifocal_R","infiltrant_cancer_surg_R",
+                                    "histo_4cl_surg_R","histo_3cl_surg_R","grade_3cl_surg_R","grade_2cl_surg_R",
+                                    "index_mitotic_surg_R","dcis_surg_R","surgery_R","breast_surgery_R",
+                                    "axillary_surgery_R","comp_post_surg_R","er_surg_R","perc_er_surg_R",
+                                    "inte_er_surg_R","pr_surg_R","perc_pr_surg_R","inte_pr_surg_R","her2_surg_R",
+                                    "her2_ihc_surg_R","Ki67_surg_bi_R","Ki67_surg_R","Ki67_cl_surg_R","genom_surg_bi_R")
+                        
+var_left_surg=c("pT_L","pN_L","nbggpos_L","taillehisto_L","multifocal_L","infiltrant_cancer_surg_L",
+           "histo_4cl_surg_L","histo_3cl_surg_L","grade_3cl_surg_L","grade_2cl_surg_L",
+           "index_mitotic_surg_L","dcis_surg_L","surgery_L","breast_surgery_L",
+           "axillary_surgery_L","comp_post_surg_L","er_surg_L","perc_er_surg_L",
+           "inte_er_surg_L","pr_surg_L","perc_pr_surg_L","inte_pr_surg_L","her2_surg_L",
+           "her2_ihc_surg_L","Ki67_surg_bi_L","Ki67_surg_L","Ki67_cl_surg_L","genom_surg_bi_L")
+
+data.work$surg_info <- apply(data.work[,c(var_left_surg,var_right_surg)],
+                           1,function(x) sum(!is.na(x)))
+```
+
+
+## Individuals with unilateral cancer, but with informations for both sides
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+incompability2 <- function(data, var_left, var_right){
+
+  warning <- rep(0,nrow(data))
+  for (i in 1:nrow(data)) {
+    for (c in 1:length(var_left)) {
+      if(warning[i]==0){
+        warning[i] <- ifelse(!is.na(data[i,which(colnames(data)==var_left[c])]) & !is.na(data[i,which(colnames(data)==var_right[c])]),1,0)
+        #if(warning[i]==1){
+          #print(paste(i,var_left[c], data[i,which(colnames(data)==var_left[c])], data[i,which(colnames(data)==var_right[c])]))
+        #}
+      }
+
+    }
+  }
+
+  return(warning)
+}
+
+
+
+incomp <- incompability2(data.work,
+
+                        var_right = var_right_surg,
+                        var_left = var_left_surg)
+
+
+data.work$warning_surg <- incomp
+table(data.work$warning_surg, exclude = NULL)
+```
+
+We have `r length(which(data.work$warning_surg==1))` patients with informations on both sides but with unilateral cancer.  Here the table for surgery related variables for these patients. Every patient has 2 rows: one for left and one for right breast side.
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+columns = which(data.work$warning_surg == 1)
+rr = as.data.frame(matrix(NA, nrow = 2*length(columns), ncol=length(var_left_surg)+4))
+rr[,3] = rep(c("L","R"),length(columns))
+colnames(rr) = c("ID", "OFFICIAL SIDE", "INSPECTED SIDE", "# NOT NA", unlist(lapply(var_left_surg, function(x){substr(x,0,nchar(x)-2)})))
+i = 1
+for(c in columns){
+  rr[i,1] = c
+  rr[i+1,1] = c
+  rr[i,2] = if(data.work$LOC[c]==1) "L" else "R"
+  rr[i+1,2] = if(data.work$LOC[c]==1) "L" else "R"
+  rr[i,4] = length(which(!is.na(data.work[c,var_left_surg])))
+  rr[i+1,4] = length(which(!is.na(data.work[c,var_right_surg])))
+  rr[i,5:ncol(rr)] = data.work[c,var_left_surg]
+  rr[i+1,5:ncol(rr)] = data.work[c,var_right_surg]
+  i = i + 2
+}
+rr
+
+```
+
+As you can see from the table, we can assign surgery side to the correct side reported as variable "LOC", the few wrong side columns are probably filled as an error.
+
+
+## Define surgery side  based on left or right breast surgery:
+Is it consistent with breast side?
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+left_right <- function(data, var_left, var_right){
+
+  side <- rep(NA,nrow(data))
+  for (i in 1:nrow(data)) {
+    for (l in var_left) {
+      if(data[i,"warning_surg"]==0){
+        side[i] <- ifelse(!is.na(data[i,l]), "L", side[i])
+      }
+      if(data[i,"warning_surg"]==1){
+        side[i] <- NA
+      }
+    }
+    for (r in var_right) {
+      if(data[i,"warning_surg"]==0){
+        side[i] <- ifelse(!is.na(data[i,r]), "R", side[i])
+      }
+      if(data[i,"warning_surg"]==1){
+        side[i] <- NA
+      }
+    }
+  }
+
+  return(side)
+
+}
+
+side <- left_right(data.work,
+                   var_right=var_right_surg,
+                   var_left=var_left_surg)
+
+data.work$breast_surg_side <- as.factor(side)
+
+table(data.work$breast_surg_side,data.work$warning_surg, exclude = NULL, dnn = c("SIDE", "Info both L/R"))
+```
+
+We have `r table(data.work$breast_surg_side,data.work$warning_surg, exclude = NULL)[3,1]` individuals with unilateral cancer with no information on left or right breast and `r table(data.work$breast_surg_side,data.work$warning_surg, exclude = NULL)[3,2]` individuals with informations on both sides but with unilateral cancer.
+
+
+# We keep the side for surgery as the one saved in variable LOC.
+```{r echo=F, message=FALSE, warning=FALSE, results='markup'}
+data.work$breast_surg_side <- as.factor(data.work$side)
+```
+
+## Surgery performed
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$surgery <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$surgery_L), as.character(data.work$surgery_R)))
+table(data.work$surgery, exclude = NULL)
+```
+
+
+## Check NA values
+We have `r as.numeric(table(data.work$surgery, exclude = NULL)[3])` patients with NA as surgery. 
+
+`r length(which(is.na(data.work$surgery) & data.work$surg_info >1))` of them have information on surgery variables. 
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+v = which(is.na(data.work$surgery) & data.work$surg_info >1)
+columns = v
+rr = as.data.frame(matrix(NA, nrow = 2*length(columns), ncol=length(var_left_surg)+4))
+rr[,3] = rep(c("L","R"),length(columns))
+colnames(rr) = c("ID", "OFFICIAL SIDE", "INSPECTED SIDE", "# NOT NA", unlist(lapply(var_left_surg, function(x){substr(x,0,nchar(x)-2)})))
+i = 1
+for(c in columns){
+  rr[i,1] = c
+  rr[i+1,1] = c
+  rr[i,2] = if(data.work$LOC[c]==1) "L" else "R"
+  rr[i+1,2] = if(data.work$LOC[c]==1) "L" else "R"
+  rr[i,4] = length(which(!is.na(data.work[c,var_left_surg])))
+  rr[i+1,4] = length(which(!is.na(data.work[c,var_right_surg])))
+  rr[i,5:ncol(rr)] = data.work[c,var_left_surg]
+  rr[i+1,5:ncol(rr)] = data.work[c,var_right_surg]
+  i = i + 2
+}
+rr
+```
+
+
+Set them as having had surgery, all other NAs as not having has surgery
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$surgery[v] = 'yes'
+data.work$surgery[which(is.na(data.work$surgery))] = 'no'
+```
+
+The new data distribution is:
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+table(data.work$surgery, exclude = NULL)
+```
+
+<!-- ## Check NO values -->
+
+<!-- ```{r echo=T, message=FALSE, warning=FALSE, results='markup'} -->
+<!-- v = which(data.workBI$biopsy == 'no' & data.workBI$biop_info > 0) -->
+<!-- columns = v -->
+<!-- rr = as.data.frame(matrix(NA, nrow = 2*length(columns), ncol=length(var_left_surg)+4)) -->
+<!-- rr[,3] = rep(c("L","R"),length(columns)) -->
+<!-- colnames(rr) = c("ID", "OFFICIAL SIDE", "INSPECTED SIDE", "# NOT NA", unlist(lapply(var_left_surg, function(x){substr(x,0,nchar(x)-2)}))) -->
+<!-- i = 1 -->
+<!-- for(c in columns){ -->
+<!--   rr[i,1] = c -->
+<!--   rr[i+1,1] = c -->
+<!--   rr[i,2] = if(data.work$LOC[c]==1) "L" else "R" -->
+<!--   rr[i+1,2] = if(data.work$LOC[c]==1) "L" else "R" -->
+<!--   rr[i,4] = length(which(!is.na(data.work[c,var_left_surg]))) -->
+<!--   rr[i+1,4] = length(which(!is.na(data.work[c,var_right_surg]))) -->
+<!--   rr[i,5:ncol(rr)] = data.work[c,var_left_surg] -->
+<!--   rr[i+1,5:ncol(rr)] = data.work[c,var_right_surg] -->
+<!--   i = i + 2 -->
+<!-- } -->
+<!-- rr -->
+<!-- ``` -->
+
+<!-- What to do with these patients? -->
+
+
+
+
+
+## pT
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$pT <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.numeric(data.work$pT_L), as.numeric(data.work$pT_R)))
+table(data.work$pT, exclude = NULL)
+```
+
+## pN
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$pN <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.numeric(data.work$pN_L), as.numeric(data.work$pN_R)))
+table(data.work$pN, exclude = NULL)
+```
+
+## nbggpos
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$nbggpos <- ifelse(data.work$breast_surg_side %in% c("L"), as.numeric(data.work$nbggpos_L), as.numeric(data.work$nbggpos_R))
+table(data.work$nbggpos, exclude = NULL)
+```
+
+## taillehisto
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$taillehisto <- ifelse(data.work$breast_surg_side %in% c("L"), as.numeric(data.work$taillehisto_L), as.numeric(data.work$taillehisto_R))
+table(data.work$taillehisto, exclude = NULL)
+```
+
+## multifocal_surg
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$multifocal_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$multifocal_L), as.character(data.work$multifocal_R)))
+table(data.work$multifocal_surg, exclude = NULL)
+```
+
+## breast_surgery_cl
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$breast_surgery_cl <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$breast_surgery_L), as.character(data.work$breast_surgery_R)))
+table(data.work$multifocal_surg, exclude = NULL)
+```
+
+## Axillary surgery
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$axillary_surgery <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$axillary_surgery_L), as.character(data.work$axillary_surgery_R)))
+table(data.work$axillary_surgery, exclude = NULL)
+```
+
+## Complications post surgery
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$comp_post_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$comp_post_surg_L), as.character(data.work$comp_post_surg_R)))
+table(data.work$comp_post_surg, exclude = NULL)
+```
+
+## infiltrant_cancer_surg  surgery
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$infiltrant_cancer_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), 
+                                                    as.character(data.work$infiltrant_cancer_surg_L), as.character(data.work$infiltrant_cancer_surg_R)))
+table(data.work$infiltrant_cancer_surg, exclude = NULL)
+```
+
+## histo_4cl surgery
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$histo_4cl_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$histo_4cl_surg_L), as.character(data.work$histo_4cl_surg_R)))
+table(data.work$histo_4cl_surg, exclude = NULL)
+
+```
+
+## histo_3cl surgery
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# histological type (3 classes)
+data.work$histo_3cl_surg <- data.work$histo_4cl_surg
+levels(data.work$histo_3cl_surg) <- c("NST","lobular","others","others")
+table(data.work$histo_3cl_surg, exclude = NULL)
+```
+
+## Mitotic index surgery
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# Mitotic index
+data.work$index_mitotic_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.numeric(data.work$index_mitotic_surg_L), as.numeric(data.work$index_mitotic_surg_R)))
+table(data.work$index_mitotic_surg, exclude = NULL)
+```
+
+## dcis_surg
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# In situ
+data.work$dcis_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$dcis_surg_L), as.character(data.work$dcis_surg_R)))
+table(data.work$dcis_surg, exclude = NULL)
+```
+
+## Grade 3cl surgery
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$grade_3cl_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$grade_3cl_surg_L), as.character(data.work$grade_3cl_surg_R)))
+table(data.work$grade_3cl_surg, exclude = NULL)
+```
+
+
+## ER status
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$er_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$er_surg_L), as.character(data.work$er_surg_R)))
+table(data.work$er_surg, exclude = NULL)
+
+# Percentage
+data.work$perc_er_surg <- ifelse(data.work$breast_surg_side %in% c("L"), as.numeric(data.work$perc_er_surg_L), as.numeric(data.work$perc_er_surg_R))
+
+# Intensity
+data.work$inte_er_surg <- ifelse(data.work$breast_surg_side %in% c("L"), as.numeric(data.work$inte_er_surg_L), as.numeric(data.work$inte_er_surg_R))
+```
+
+## PR status surgery
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# PR status
+data.work$pr_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$pr_surg_L), as.character(data.work$pr_surg_R)))
+table(data.work$pr_surg, exclude = NULL)
+
+# Percentage
+data.work$perc_pr_surg <- ifelse(data.work$breast_surg_side %in% c("L"), as.numeric(data.work$perc_pr_surg_L), as.numeric(data.work$perc_pr_surg_R))
+
+# Intensity
+data.work$inte_pr_surg <- ifelse(data.work$breast_surg_side %in% c("L"), as.numeric(data.work$inte_pr_surg_L), as.numeric(data.work$inte_pr_surg_R))
+```
+
+## HER2 status surgery -> inconsistency between CANTO1 data and rules by DIJON
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$her2_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$her2_surg_L), as.character(data.work$her2_surg_R)))
+
+table(data.work$her2_surg, exclude = NULL)
+
+data.work$her2_ihc_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$her2_ihc_surg_L), as.character(data.work$her2_ihc_surg_R)))
+
+data.work$fish_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$fish_surg_L), as.character(data.work$fish_surg_R)))
+
+
+data.work$her2_surg2 = factor(NA, levels = c("positive","negative"))
+data.work$her2_surg2[which(data.work$her2_ihc_surg == '3+' | data.work$fish_surg == 'positive')] = 'positive'
+data.work$her2_surg2[which(data.work$her2_ihc_surg == '0' | data.work$her2_ihc_surg == '1+' | ( data.work$her2_ihc_surg == '2+' &  (data.work$fish_surg == 'negative' | is.na(data.work$fish_surg))))] = 'negative'
+
+data.work$her2_surg2[which(is.na(data.work$her2_surg2))] = data.work$her2_surg[which(is.na(data.work$her2_surg2))]
+
+table(her2_canto = data.work$her2_surg , her2_Dijon = data.work$her2_surg2, exclude = NULL)
+
+
+```
+
+Take new rules by Dijon
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$her2_surg = data.work$her2_surg2
+```
+
+## KI67 status surgery
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# Ki67 status
+data.work$Ki67_surg_bi <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$Ki67_surg_bi_L), as.character(data.work$Ki67_surg_bi_R)))
+
+data.work$Ki67_surg <- ifelse(data.work$breast_surg_side %in% c("L"), as.numeric(data.work$Ki67_surg_L), as.numeric(data.work$Ki67_surg_R))
+
+data.work$Ki67_cl_surg <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$Ki67_cl_surg_L), as.character(data.work$Ki67_cl_surg_R)))
+table(data.work$Ki67_cl_surg, exclude = NULL)
+```
+
+## Genomic test surgery
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# Genomic test
+data.work$genom_surg_bi <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$genom_surg_bi_L), as.character(data.work$genom_surg_bi_R)))
+table(data.work$genom_surg_bi, exclude = NULL)
+```
+
+
+# Chemotherapy
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+#================================== chimio ====================================
+data.work$OTHSEQ1_ADJ[which(data.work$OTHSEQ1_ADJ %in% c(""))] <- NA
+data.work$OTHSEQ2_ADJ[which(data.work$OTHSEQ2_ADJ %in% c(""))] <- NA
+
+data.work$OTHSEQ1_NEO[which(data.work$OTHSEQ1_NEO %in% c(""))] <- NA
+data.work$OTHSEQ2_NEO[which(data.work$OTHSEQ2_NEO %in% c(""))] <- NA
+data.work$SATALOFF1_G_M0[which(data.work$SATALOFF1_G_M0 %in% c("","NK"))] <- NA
+data.work$SATALOFF2_G_M0[which(data.work$SATALOFF2_G_M0 %in% c("","NK"))] <- NA
+data.work$SATALOFF1_D_M0[which(data.work$SATALOFF1_D_M0 %in% c("","NK"))] <- NA
+data.work$SATALOFF2_D_M0[which(data.work$SATALOFF2_D_M0 %in% c("","NK"))] <- NA
+
+
+data.work$CT_info <- rep(NA, nrow(data.work))
+data.work$CT_info <- apply(cbind(data.work[,c("SEQCHIMIO_ADJ","SEQ1_ADJ","SEQ2_ADJ",
+                                        "OTHSEQ1_ADJ","OTHSEQ2_ADJ","REDUCDOSE_ADJ","FACTCROISS_ADJ",
+                                        "SEQCHIMIO_NEO","SEQ1_NEO","SEQ2_NEO",
+                                        "OTHSEQ1_NEO","OTHSEQ2_NEO","REDUCDOSE_NEO","FACTCROISS_NEO")],
+                                   data.work[c("SATALOFF1_G_M0","SATALOFF2_G_M0","SATALOFF1_D_M0","SATALOFF2_D_M0"
+                                        )]),
+                           1,function(x) sum(!is.na(x)))
+
+
+
+data.work$CT_neo_info <- rep(NA, nrow(data.work))
+data.work$CT_neo_info <- apply(cbind(data.work[,c("SEQCHIMIO_NEO","SEQ1_NEO","SEQ2_NEO",
+                                            "OTHSEQ1_NEO","OTHSEQ2_NEO","REDUCDOSE_NEO","FACTCROISS_NEO")],
+                                   data.work[c("SATALOFF1_G_M0","SATALOFF2_G_M0","SATALOFF1_D_M0","SATALOFF2_D_M0")]),
+                               1,function(x) sum(!is.na(x)))
+
+
+```
+
+## Chemiotherapy status
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+
+data.work$CT <- factor(NA, levels = c("no","yes"))
+data.work$CT[which(data.work$CHIMIO==0)] <- "no"
+data.work$CT[which(data.work$CHIMIO==1)] <- "yes"
+
+table(data.work$CT, exclude = NULL)
+```
+
+## Check NAs
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+cols_chemo = c("CHIMIOADJ","SEQCHIMIO_ADJ","SEQ1_ADJ","SEQ2_ADJ",
+               "OTHSEQ1_ADJ","OTHSEQ2_ADJ","REDUCDOSE_ADJ","FACTCROISS_ADJ",
+               "CHIMIONEO","SEQCHIMIO_NEO","SEQ1_NEO","SEQ2_NEO",
+               "OTHSEQ1_NEO","OTHSEQ2_NEO","REDUCDOSE_NEO","FACTCROISS_NEO", "SATALOFF1_G_M0","SATALOFF2_G_M0",
+               "SATALOFF1_D_M0","SATALOFF2_D_M0")
+
+cols_chemo_neo = c("CHIMIONEO","SEQCHIMIO_NEO","SEQ1_NEO","SEQ2_NEO",
+               "OTHSEQ1_NEO","OTHSEQ2_NEO","REDUCDOSE_NEO","FACTCROISS_NEO", "SATALOFF1_G_M0","SATALOFF2_G_M0",
+               "SATALOFF1_D_M0","SATALOFF2_D_M0")
+
+cols_chemo_adj = c("CHIMIOADJ","SEQCHIMIO_ADJ","SEQ1_ADJ","SEQ2_ADJ",
+               "OTHSEQ1_ADJ","OTHSEQ2_ADJ","REDUCDOSE_ADJ","FACTCROISS_ADJ")
+```
+
+We have `r as.numeric(table(data.work$CT, exclude = NULL)[3])` patients with NA as chemotherapy status, counting both neoadj and adj. `r length(which(data.work[which(is.na(data.work$CT)),]$CT_info ==1))` of them has information on chemotherapy variables: 
+
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+rr= cbind(data.work[which(is.na(data.work$CT) & data.work$CT_info!=0),cols_chemo])     
+rr
+```
+
+There are `r length(which(!is.na(rr[1,])))` column different from NA -> we can set chemotherapy to no for all NAs.
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+## set CT = 0 for people with no CT information
+data.work$CT[which(is.na(data.work$CT))] = "no"
+```
+
+We now have:
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+table(data.work$CT, exclude = NULL)
+```
+
+
+## CT set to no, but neoadjuvant chemotherapy set to yes
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+v = which(data.work$CHIMIO == 0 & data.work$CHIMIONEO==1)
+rr = cbind(data.work[v,cols_chemo])
+
+rr
+
+```
+
+We set chemotherapy to yes for these patients
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$CT[v] <- 'yes'
+data.work$CHIMIO[v] <- 1
+```
+
+
+
+## CT set to no, but adjuvant chemotherapy set to yes
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+v = which(data.work$CHIMIO == 0 & data.work$CHIMIOADJ==1)
+rr = cbind(data.work[v,cols_chemo])
+
+rr
+```
+
+We set chemotherapy to yes for this patient
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$CT[v] <- 'yes'
+data.work$CHIMIO[v] <- 1
+```
+
+
+## CT or neoadj CT set to no, but sataloff (neoadj) is known
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# table(chemo_variables_not_na=data.work$CT_info,chemotherapy = data.work$CT)
+v = which((data.work$CT %in% c("no") | data.work$CHIMIONEO %in% c(0)) & (!is.na(data.work$SATALOFF1_G_M0) |  !is.na(data.work$SATALOFF1_D_M0) ))
+
+rr = data.work[v,cols_chemo]
+rr
+```
+
+We have `r length(v)` for which SATALOFF1 is defined. We set chemotherapy and neoadjuvant chemotherapy to yes.
+
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$CHIMIONEO[v] <- 1
+data.work$CHIMIO[v] <- 1
+data.work$CT[v] <- "yes"
+```
+
+
+<!-- ## CT or adjuvant CT set to no, but adjuvant sequence 1 or 2 known -->
+<!-- ```{r echo=T, message=FALSE, warning=FALSE, results='markup'} -->
+<!-- v =which((data.work$CT %in% c("no") | data.work$CHIMIOADJ %in% c(0) ) & (!is.na(data.work$SEQ1_ADJ) | !is.na(data.work$SEQ2_ADJ))) -->
+<!-- rr2 = cbind(data.work[v,cols_chemo]) -->
+<!-- rr2 -->
+<!-- ``` -->
+
+We have `r length(v)` patient with defined SEQ2_ADJ but CT set to no. We set chemotherapy and adjuvant chemotherapy to yes
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$CHIMIOADJ[v] <- 1
+data.work$CT[v] <- "yes"
+```
+
+## Check all other cases where we have information on chemotherapy variables and CT = no
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+table(chemo_variables_not_na=data.work$CT_info,chemotherapy = data.work$CT)
+
+rr = cbind(data.work[which(data.work$CT %in% c("no") & data.work$CT_info>0),cols_chemo])
+rr
+```
+
+What to do with Other sequence taxol?
+
+## Neo-adjuvant chemotherapy
+
+### Neo-adjuvant chemotherapy status
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$NAC_bin <- factor(NA, levels = c("no","yes"))
+data.work$NAC_bin[which(data.work$CHIMIONEO==0)] <- "no"
+data.work$NAC_bin[which(data.work$CHIMIONEO==1)] <- "yes"
+data.work$NAC_bin[which(data.work$CT %in% c("no"))] <- "no"
+data.work$NAC_bin[which(data.work$CT %in% c("yes") & !is.na(data.work$SATALOFF1_G_M0))] <- "yes"
+
+summary(data.work$NAC_bin)
+```
+
+We have no NAs for neo-adjuvant chemotherapy
+
+### Check patients with neo-adjuvant chemotherapy set to no
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+table(chemo_variables_not_na=data.work$CT_neo_info ,neoadj_chemotherapy = data.work$NAC_bin)
+
+rr = cbind(data.work[which(data.work$NAC_bin %in% c("no") & data.work$CT_neo_info>0),cols_chemo_neo])
+rr
+```
+
+What to do with the patient with information on neo-adjuvant chemotherapy? For the moment we left them set to no
+
+### Neo-adjuvant chemotherapy regimen
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+
+chemo_types = read.xlsx('/Users/nadir/Desktop/projects/postdoc/DATABASES/databases/core/04_canto/src/Chemotherapy.xlsx', sheetIndex = 1)
+chemo_types$TYPE = trim(as.character(chemo_types$TYPE ))
+anthra = as.character((chemo_types %>% filter(TYPE=='anthra') %>% select(NAME))[,1])
+taxanes = as.character((chemo_types %>% filter(TYPE=='taxanes') %>% select(NAME))[,1])
+anthra_taxanes = as.character((chemo_types %>% filter(TYPE=='anthra-taxanes') %>% select(NAME))[,1])
+others = as.character((chemo_types %>% filter(TYPE=='others') %>% select(NAME))[,1])
+
+data.work$NAC_regimen <- factor(NA, levels = c("anthra-taxans", "anthra", "taxanes", "others"))
+
+# mono sequential
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==1 & data.work$SEQ1_NEO %in% c(1,2,3))] <- "anthra"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==1 & data.work$SEQ1_NEO %in% c(4))] <- "anthra-taxans"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==1 & data.work$SEQ1_NEO %in% c(5))] <- "taxanes"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==1 & data.work$SEQ1_NEO %in% c(6) &
+          data.work$OTHSEQ1_NEO %in% taxanes)] <- "taxanes"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==1 & data.work$SEQ1_NEO %in% c(6) &
+          data.work$OTHSEQ1_NEO %in% anthra)] <- "anthra"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==1 & data.work$SEQ1_NEO %in% c(6) &
+          data.work$OTHSEQ1_NEO %in% anthra_taxanes)] <- "anthra-taxans"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==1 & data.work$SEQ1_NEO %in% c(6) &
+          data.work$OTHSEQ1_NEO %in% others)] <- "others"
+
+
+
+# bi-sequential
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(1,2,3) &
+          data.work$SEQ2_NEO %in% c(1,2,3))] <- "anthra"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(1,2,3) &
+          data.work$SEQ2_NEO %in% c(5))] <- "anthra-taxans"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ2_NEO %in% c(1,2,3) &
+          data.work$SEQ1_NEO %in% c(5))] <- "anthra-taxans"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(1,2,3) &
+          data.work$SEQ2_NEO %in% c(4)) ] <- "anthra-taxans"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ2_NEO %in% c(1,2,3) &
+          data.work$SEQ1_NEO %in% c(4)) ] <- "anthra-taxans"
+
+
+
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(1,2,3) &
+          data.work$SEQ2_NEO %in% c(6) & data.work$OTHSEQ2_NEO %in% anthra) ] <- "anthra"
+
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(1,2,3) &
+          data.work$SEQ2_NEO %in% c(6) & 
+          data.work$OTHSEQ2_NEO %in% taxanes)] <- "anthra-taxans"
+
+## case 6 and 1,2,3
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(6) &
+          data.work$SEQ2_NEO %in% c(1,2,3) & data.work$OTHSEQ1_NEO %in% anthra) ] <- "anthra"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(6) &
+          data.work$SEQ2_NEO %in% c(1,2,3) & data.work$OTHSEQ1_NEO %in% taxanes) ] <- "anthra-taxans"
+
+## case 6 and 5
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(6) &
+          data.work$SEQ2_NEO %in% c(5) & data.work$OTHSEQ1_NEO %in% taxanes) ] <- "taxanes"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(5) &
+          data.work$SEQ2_NEO %in% c(6) & data.work$OTHSEQ2_NEO %in% taxanes) ] <- "taxanes"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(6) &
+          data.work$SEQ2_NEO %in% c(5) & data.work$OTHSEQ1_NEO %in% c(anthra, anthra_taxanes)) ] <- "anthra-taxans"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ2_NEO %in% c(6) &
+          data.work$SEQ1_NEO %in% c(5) & data.work$OTHSEQ2_NEO %in% c(anthra, anthra_taxanes)) ] <- "anthra-taxans"
+
+## case 6 and 6
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(6) &
+          data.work$SEQ2_NEO %in% c(6) & data.work$OTHSEQ1_NEO %in% anthra & data.work$OTHSEQ2_NEO %in% anthra) ] <- "anthra"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(6) &
+          data.work$SEQ2_NEO %in% c(6) & data.work$OTHSEQ1_NEO %in% c(anthra, anthra_taxanes) & data.work$OTHSEQ2_NEO %in% taxanes) ] <- "anthra-taxans"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(6) &
+          data.work$SEQ2_NEO %in% c(6) & data.work$OTHSEQ2_NEO %in% c(anthra, anthra_taxanes) & data.work$OTHSEQ1_NEO %in% taxanes) ] <- "anthra-taxans"
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(6) &
+          data.work$SEQ2_NEO %in% c(6) & data.work$OTHSEQ1_NEO %in% taxanes & data.work$OTHSEQ2_NEO %in% taxanes) ] <- "taxanes"
+
+
+# others
+data.work$NAC_regimen[
+  which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & 
+          (data.work$OTHSEQ1_NEO %in% others | data.work$OTHSEQ2_NEO %in% others)) ] <- "others"
+
+# data.work$NAC_regimen[
+#   which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(1,2,3) &
+#           data.work$SEQ2_NEO %in% c(1,2,3,4))] <- "others"
+# data.work$NAC_regimen[
+#   which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ2_NEO %in% c(1,2,3) &
+#           data.work$SEQ1_NEO %in% c(1,2,3,4))] <- "others"
+# data.work$NAC_regimen[
+#   which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ2_NEO %in% c(1,2,3) &
+#           data.work$SEQ1_NEO %in% c(6) & 
+#           data.work$OTHSEQ1_NEO %!in% c("TAXOL"))] <- "others"
+# data.work$NAC_regimen[
+#   which(data.work$NAC_bin %in% c("yes") & data.work$SEQCHIMIO_NEO==2 & data.work$SEQ1_NEO %in% c(1,2,3) &
+#           data.work$SEQ2_NEO %in% c(6) & 
+#           data.work$OTHSEQ2_NEO %!in% c("PACLITAXEL HEBDO", "TAXOTERE + 1 TAXOL (PACLITAXEL)","TAXOL","TAXOL - CAPECITABINE",
+#                                         "TAXOL HEBDO","TAXOL HEBDOMADAIRE","TAXOL SUITE INTOLERANCE TAXOTERE",
+#                                         "TAXOTERE - TAXOL HEBDOMADAIRE","TAXOTERE PUIS TAXOL"))] <- "others"
+
+
+summary(data.work$NAC_regimen[which(data.work$NAC_bin=="yes")])
+```
+
+See the values for patients with neoadj_regimen = NA
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+rr= data.work[which(is.na(data.work$NAC_regimen) & data.work$CT %in% c("yes") & data.work$NAC_bin %in% c("yes")),
+              c("NAC_bin","SEQCHIMIO_NEO","SEQ1_NEO","SEQ2_NEO",
+               "OTHSEQ1_NEO","OTHSEQ2_NEO","REDUCDOSE_NEO","FACTCROISS_NEO")]
+rr
+```
+
+### Dose reduction neoadjuvant
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+# Dose reduction during one or multiple cycles
+data.work$reduc_dos_neo <- factor(NA, levels = c("no","yes"))
+data.work$reduc_dos_neo[which(data.work$NAC_bin %in% c("yes") & data.work$REDUCDOSE_NEO==0)] <- "no"
+data.work$reduc_dos_neo[which(data.work$NAC_bin %in% c("yes") & data.work$REDUCDOSE_NEO==1)] <- "yes"
+table(data.work$reduc_dos_neo, exclude = NULL)
+```
+
+### Granulocyte growth factor neoadjuvant
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+data.work$gcsf_neo <- factor(NA, levels = c("no","yes"))
+data.work$gcsf_neo[which(data.work$NAC_bin %in% c("yes") & data.work$FACTCROISS_NEO %in%c("0"))] <- "no"
+data.work$gcsf_neo[which(data.work$NAC_bin %in% c("yes") & data.work$FACTCROISS_NEO %in%c("1"))] <- "yes"
+table(data.work$gcsf_neo, exclude = NULL)
+```
+
+## Adjuvant chemotherapy
+
+### Adjuvant chemotherapy status:
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$adj_bin <- factor(NA, levels = c("no","yes"))
+data.work$adj_bin[which(data.work$CHIMIOADJ==0)] <- "no"
+data.work$adj_bin[which(data.work$CHIMIOADJ==1)] <- "yes"
+data.work$adj_bin[which(data.work$CT %in% c("no"))] <- "no"
+data.work$CHIMIOADJ[which(data.work$CT %in% c("no"))] <- 0
+# data.work$adj_bin[which(data.work$adj_bin %in% c("no") & !is.na(data.work$SEQ2_ADJ))] <- "yes"
+
+summary(data.work$adj_bin)
+```
+We have `r as.numeric(summary(data.work$adj_bin)[3])` patients with NAs on adjuvant chemotherapy status.
+
+The adjuvant chemotherapy variables for these patients are:
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup' }
+rr= data.work[which(data.work$CT %in% c("yes") & is.na(data.work$adj_bin)),cols_chemo_adj]
+rr
+```
+
+We can impute NO ADJ chemotherapy for these patients.
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+#All variables are NA, set no ADJ chemo for these 2 patients
+v =which(data.work$CT %in% c("yes") & is.na(data.work$adj_bin))
+data.work$adj_bin[v] = "no"
+data.work$CHIMIOADJ[v] = 0
+```
+
+We now have:
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+summary(data.work$adj_bin)
+```
+
+
+### Check patients with adjuvant chemotherapy set to no
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$CT_adj_info <- rep(NA, nrow(data.work))
+data.work$CT_adj_info <- apply(cbind(data.work[,c("SEQCHIMIO_ADJ","SEQ1_ADJ","SEQ2_ADJ",
+                                        "OTHSEQ1_ADJ","OTHSEQ2_ADJ","REDUCDOSE_ADJ","FACTCROISS_ADJ")]),
+                               1,function(x) sum(!is.na(x)))
+
+table(chemo_variables_not_na=data.work$CT_adj_info,adj_chemotherapy = data.work$adj_bin)
+rr = cbind(data.work[which(data.work$adj_bin %in% c("no") & data.work$CT_adj_info>0),cols_chemo_adj])
+
+rr
+```
+
+<!-- Set adjuvant chemotherapy status for patients with adj chemo other sequence to 'yes' (`r length(which(data.work$adj_bin %in% c("no") & (!is.na(data.work$OTHSEQ1_ADJ) | !is.na(data.work$OTHSEQ2_ADJ))))` patients) -->
+<!-- ```{r echo=T, message=FALSE, warning=FALSE, results='markup'} -->
+<!-- v = which(data.work$adj_bin %in% c("no") & (!is.na(data.work$OTHSEQ1_ADJ) | !is.na(data.work$OTHSEQ2_ADJ))) -->
+<!-- data.work$CHIMIOADJ[v] <- 1 -->
+<!-- data.work$adj_bin[v] <- 'yes' -->
+<!-- data.work$CT[v] <- "yes" -->
+<!-- ``` -->
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$CT_adj_info <- rep(NA, nrow(data.work))
+data.work$CT_adj_info <- apply(cbind(data.work[,c("SEQCHIMIO_ADJ","SEQ1_ADJ","SEQ2_ADJ",
+                                        "OTHSEQ1_ADJ","OTHSEQ2_ADJ","REDUCDOSE_ADJ","FACTCROISS_ADJ")]),
+                               1,function(x) sum(!is.na(x)))
+
+table(chemo_variables_not_na=data.work$CT_adj_info,adj_chemotherapy = data.work$adj_bin)
+
+rr = cbind(data.work[which(data.work$adj_bin %in% c("no") & data.work$CT_adj_info>0),cols_chemo_adj])
+rr
+```
+
+Ok, leave these patients as having adjuvant chemotherapy set to 'no'
+
+### Adjuvant chemotherapy regimen
+```{r echo=F, message=FALSE, warning=FALSE, results='markup'}
+#Type of Chimiotherapie
+# # monosequentielle
+# data.work$adj_regimen <- factor(NA, levels = c("anthra-taxans", "anthra", "taxanes", "others"))
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==1 & data.work$SEQ1_ADJ %in% c(1,2,3))] <- "anthra"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==1 & data.work$SEQ1_ADJ %in% c(5))] <- "taxanes"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==1 & data.work$SEQ1_ADJ %in% c(4))] <- "anthra-taxans"
+# 
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==1 & data.work$SEQ1_ADJ %in% c(6) &
+#           data.work$OTHSEQ1_ADJ %in% c("CARBOPLATINE -TAXOL","TAXOL","TAXOL + ENDOXAN"))] <- "taxanes"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==1 & data.work$SEQ1_ADJ %in% c(6) &
+#           data.work$OTHSEQ1_ADJ %!in% c("CARBOPLATINE -TAXOL","TAXOL","TAXOL + ENDOXAN"))] <- "others"
+# 
+# # bi sequentielle
+# # first and second
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(1,2,3) &
+#           data.work$SEQ2_ADJ %in% c(1,2,3))] <- "anthra"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(1,2,3) &
+#           data.work$SEQ2_ADJ %in% c(4,5))] <- "anthra-taxanes"
+# 
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(1,2,3) &
+#           data.work$SEQ2_ADJ %in% c(5))] <- "anthra-taxans"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(1,2,3) &
+#           is.na(data.work$SEQ2_ADJ))] <- "taxanes"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(1,2,3) &
+#           data.work$SEQ2_ADJ %in% c(6) & 
+#           data.work$OTHSEQ2_ADJ %in% c("1 TAXOTERE - 4 TAXOL HEBDOMADAIRE","1 TAXOTERE PUIS 2 TAXOL HEBDOMADAIRE",
+#                                        "1 TAXOTERE PUIS SWITCH POUR TAXOL (TOXICITE AVEC LE TAXOTERE)",
+#                                        "TAXOL","TAXOL HEBDO","TAXOL HEBDOMADAIRE","TAXOL PACLITAXEL",
+#                                        "TAXOL X12","TAXOTERE - TAXOL HEBDOMADAIRE","TAXOTERE + TAXOL",
+#                                        "TAXOTERE PUIS SWITCH PAR TAXOL","TAXOTERE PUIS TAXOL"))] <- "anthra-taxans"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(5) &
+#           data.work$SEQ2_ADJ %in% c(6) & !
+#           data.work$OTHSEQ2_ADJ %in% c("1 TAXOTERE - 4 TAXOL HEBDOMADAIRE","1 TAXOTERE PUIS 2 TAXOL HEBDOMADAIRE",
+#                                        "1 TAXOTERE PUIS SWITCH POUR TAXOL (TOXICITE AVEC LE TAXOTERE)",
+#                                        "TAXOL","TAXOL HEBDO","TAXOL HEBDOMADAIRE","TAXOL PACLITAXEL",
+#                                        "TAXOL X12","TAXOTERE - TAXOL HEBDOMADAIRE","TAXOTERE + TAXOL",
+#                                        "TAXOTERE PUIS SWITCH PAR TAXOL","TAXOTERE PUIS TAXOL"))] <- "others"
+# # second and first
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ2_ADJ %in% c(1,2,3) &
+#           data.work$SEQ1_ADJ %in% c(5))] <- "anthra-taxans"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ2_ADJ %in% c(1,2,3) &
+#           data.work$SEQ1_ADJ %in% c(6) & 
+#           data.work$OTHSEQ1_ADJ %in% c("CARBOPLATINE -TAXOL","TAXOL","TAXOL + ENDOXAN"))] <- "anthra-taxans"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(5) &
+#           is.na(data.work$SEQ2_ADJ))] <- "taxanes"
+# 
+# 
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+#           data.work$OTHSEQ1_ADJ %!in% c("CARBOPLATINE -TAXOL","TAXOL","TAXOL + ENDOXAN") &
+#           is.na(data.work$SEQ2_ADJ))] <- "others"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+#           data.work$OTHSEQ1_ADJ %in% c("CARBOPLATINE -TAXOL","TAXOL","TAXOL + ENDOXAN") &
+#           is.na(data.work$SEQ2_ADJ))] <- "taxanes"
+# 
+# # data.work$adj_regimen[
+# #   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(1,2,3) &
+# #           data.work$SEQ2_ADJ %in% c(1,2,3,4))] <- "others"
+# 
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(1,2,3) &
+#           data.work$SEQ2_ADJ %in% c(6) & 
+#           data.work$OTHSEQ2_ADJ %!in% c("1 TAXOTERE - 4 TAXOL HEBDOMADAIRE","1 TAXOTERE PUIS 2 TAXOL HEBDOMADAIRE",
+#                                         "1 TAXOTERE PUIS SWITCH POUR TAXOL (TOXICITE AVEC LE TAXOTERE)",
+#                                         "TAXOL","TAXOL HEBDO","TAXOL HEBDOMADAIRE","TAXOL PACLITAXEL",
+#                                         "TAXOL X12","TAXOTERE - TAXOL HEBDOMADAIRE","TAXOTERE + TAXOL",
+#                                         "TAXOTERE PUIS SWITCH PAR TAXOL","TAXOTERE PUIS TAXOL"))] <- "others"
+# 
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+#           data.work$OTHSEQ1_ADJ %!in% c("CARBOPLATINE -TAXOL","TAXOL","TAXOL + ENDOXAN") &
+#           data.work$SEQ2_ADJ %in% c(6) & 
+#           data.work$OTHSEQ2_ADJ %in% c("1 TAXOTERE - 4 TAXOL HEBDOMADAIRE","1 TAXOTERE PUIS 2 TAXOL HEBDOMADAIRE",
+#                                         "1 TAXOTERE PUIS SWITCH POUR TAXOL (TOXICITE AVEC LE TAXOTERE)",
+#                                         "TAXOL","TAXOL HEBDO","TAXOL HEBDOMADAIRE","TAXOL PACLITAXEL",
+#                                         "TAXOL X12","TAXOTERE - TAXOL HEBDOMADAIRE","TAXOTERE + TAXOL",
+#                                         "TAXOTERE PUIS SWITCH PAR TAXOL","TAXOTERE PUIS TAXOL"))] <- "others"
+# 
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+#           data.work$OTHSEQ1_ADJ %!in% c("CARBOPLATINE -TAXOL","TAXOL","TAXOL + ENDOXAN") &
+#           is.na(data.work$SEQ2_ADJ))] <- "others"
+# 
+# # data.work$adj_regimen[
+# #   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ2_ADJ %in% c(1,2,3) &
+# #           data.work$SEQ1_ADJ %in% c(1,2,3,4))] <- "others"
+# 
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ2_ADJ %in% c(1,2,3) &
+#           data.work$SEQ1_ADJ %in% c(6) & 
+#           data.work$OTHSEQ1_ADJ %!in% c("CARBOPLATINE -TAXOL","TAXOL","TAXOL + ENDOXAN"))] <- "others"
+# 
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ2_ADJ %in% c(5) &
+#           data.work$SEQ1_ADJ %in% c(6) & 
+#           data.work$OTHSEQ1_ADJ %!in% c("CARBOPLATINE -TAXOL","TAXOL","TAXOL + ENDOXAN"))] <- "others"
+# 
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+#           data.work$OTHSEQ1_ADJ %!in% c("CARBOPLATINE -TAXOL","TAXOL","TAXOL + ENDOXAN") &
+#           data.work$SEQ2_ADJ %in% c(6) & 
+#           data.work$OTHSEQ2_ADJ %!in% c("1 TAXOTERE - 4 TAXOL HEBDOMADAIRE","1 TAXOTERE PUIS 2 TAXOL HEBDOMADAIRE",
+#                                        "1 TAXOTERE PUIS SWITCH POUR TAXOL (TOXICITE AVEC LE TAXOTERE)",
+#                                        "TAXOL","TAXOL HEBDO","TAXOL HEBDOMADAIRE","TAXOL PACLITAXEL",
+#                                        "TAXOL X12","TAXOTERE - TAXOL HEBDOMADAIRE","TAXOTERE + TAXOL",
+#                                        "TAXOTERE PUIS SWITCH PAR TAXOL","TAXOTERE PUIS TAXOL"))] <- "others"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(4) &
+#           data.work$SEQ2_ADJ %in% c(6) & 
+#           data.work$OTHSEQ2_ADJ %in% c("1 TAXOTERE - 4 TAXOL HEBDOMADAIRE","1 TAXOTERE PUIS 2 TAXOL HEBDOMADAIRE",
+#                                         "1 TAXOTERE PUIS SWITCH POUR TAXOL (TOXICITE AVEC LE TAXOTERE)",
+#                                         "TAXOL","TAXOL HEBDO","TAXOL HEBDOMADAIRE","TAXOL PACLITAXEL",
+#                                         "TAXOL X12","TAXOTERE - TAXOL HEBDOMADAIRE","TAXOTERE + TAXOL",
+#                                         "TAXOTERE PUIS SWITCH PAR TAXOL","TAXOTERE PUIS TAXOL"))] <- "others"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(5) &
+#           data.work$SEQ2_ADJ %in% c(6) & 
+#           data.work$OTHSEQ2_ADJ %in% c("1 TAXOTERE - 4 TAXOL HEBDOMADAIRE","1 TAXOTERE PUIS 2 TAXOL HEBDOMADAIRE",
+#                                         "1 TAXOTERE PUIS SWITCH POUR TAXOL (TOXICITE AVEC LE TAXOTERE)",
+#                                         "TAXOL","TAXOL HEBDO","TAXOL HEBDOMADAIRE","TAXOL PACLITAXEL",
+#                                         "TAXOL X12","TAXOTERE - TAXOL HEBDOMADAIRE","TAXOTERE + TAXOL",
+#                                         "TAXOTERE PUIS SWITCH PAR TAXOL","TAXOTERE PUIS TAXOL"))] <- "taxanes"
+# 
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & is.na(data.work$SEQ1_ADJ) &
+#           data.work$SEQ2_ADJ %in% c(5))] <- "taxanes"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(4) &
+#           data.work$SEQ2_ADJ %in% c(5))] <- "anthra-taxans"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & is.na(data.work$SEQ1_ADJ) &
+#           data.work$SEQ2_ADJ %in% c(5))] <- "taxanes"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & is.na(data.work$SEQCHIMIO_ADJ) & is.na(data.work$SEQ1_ADJ) &
+#           data.work$SEQ2_ADJ %in% c(5))] <- "taxanes"
+# data.work$adj_regimen[
+#   which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+#           data.work$OTHSEQ1_ADJ %in% c("CARBOPLATINE -TAXOL","TAXOL","TAXOL + ENDOXAN") &
+#           is.na(data.work$SEQ2_ADJ))] <- "taxanes"
+
+
+```
+
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+#Type of Chimiotherapie
+# monosequentielle
+data.work$adj_regimen <- factor(NA, levels = c("anthra-taxans", "anthra", "taxanes", "others"))
+```
+
+For sequences = NA, set to  bisequential if first and second sequences are both known
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+v = which(is.na(data.work$SEQCHIMIO_ADJ) & !is.na(data.work$SEQ1_ADJ) & !is.na(data.work$SEQ2_ADJ))
+data.work$SEQCHIMIO_ADJ[v] = 2
+```
+
+For sequences = NA, set to mono sequential if first sequence is known and second is NA
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+v = which(is.na(data.work$SEQCHIMIO_ADJ) & !is.na(data.work$SEQ1_ADJ) & is.na(data.work$SEQ2_ADJ))
+data.work$SEQCHIMIO_ADJ[v] = 1
+```
+
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# mono sequential
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==1 & data.work$SEQ1_ADJ %in% c(1,2,3))] <- "anthra"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==1 & data.work$SEQ1_ADJ %in% c(4))] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==1 & data.work$SEQ1_ADJ %in% c(5))] <- "taxanes"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==1 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$OTHSEQ1_ADJ %in% taxanes)] <- "taxanes"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==1 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$OTHSEQ1_ADJ %in% anthra)] <- "anthra"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==1 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$OTHSEQ1_ADJ %in% anthra_taxanes)] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==1 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$OTHSEQ1_ADJ %in% others)] <- "others"
+
+
+
+# bi-sequential
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(1,2,3) &
+          data.work$SEQ2_ADJ %in% c(1,2,3))] <- "anthra"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(1,2,3) &
+          data.work$SEQ2_ADJ %in% c(5))] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ2_ADJ %in% c(1,2,3) &
+          data.work$SEQ1_ADJ %in% c(5))] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(1,2,3) &
+          data.work$SEQ2_ADJ %in% c(4)) ] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ2_ADJ %in% c(1,2,3) &
+          data.work$SEQ1_ADJ %in% c(4)) ] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(4) &
+          data.work$SEQ2_ADJ %in% c(5))] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ2_ADJ %in% c(4) &
+          data.work$SEQ1_ADJ %in% c(5))] <- "anthra-taxans"
+
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(1,2,3) &
+          data.work$SEQ2_ADJ %in% c(6) & data.work$OTHSEQ2_ADJ %in% anthra) ] <- "anthra"
+
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(1,2,3) &
+          data.work$SEQ2_ADJ %in% c(6) & 
+          data.work$OTHSEQ2_ADJ %in% c(anthra_taxanes, taxanes))] <- "anthra-taxans"
+
+## case 6 and 1,2,3
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$SEQ2_ADJ %in% c(1,2,3) & data.work$OTHSEQ1_ADJ %in% anthra) ] <- "anthra"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$SEQ2_ADJ %in% c(1,2,3) & data.work$OTHSEQ1_ADJ %in% taxanes) ] <- "anthra-taxans"
+
+## case 6 and 4
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$SEQ2_ADJ %in% c(4) & data.work$OTHSEQ1_ADJ %in% anthra) ] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$SEQ2_ADJ %in% c(4) & data.work$OTHSEQ1_ADJ %in% taxanes) ] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ2_ADJ %in% c(6) &
+          data.work$SEQ1_ADJ %in% c(4) & data.work$OTHSEQ2_ADJ %in% anthra) ] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ2_ADJ %in% c(6) &
+          data.work$SEQ1_ADJ %in% c(4) & data.work$OTHSEQ2_ADJ %in% taxanes) ] <- "anthra-taxans"
+
+## case 6 and 5
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$SEQ2_ADJ %in% c(5) & data.work$OTHSEQ1_ADJ %in% taxanes) ] <- "taxanes"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(5) &
+          data.work$SEQ2_ADJ %in% c(6) & data.work$OTHSEQ2_ADJ %in% taxanes) ] <- "taxanes"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$SEQ2_ADJ %in% c(5) & data.work$OTHSEQ1_ADJ %in% c(anthra, anthra_taxanes)) ] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ2_ADJ %in% c(6) &
+          data.work$SEQ1_ADJ %in% c(5) & data.work$OTHSEQ2_ADJ %in% c(anthra, anthra_taxanes)) ] <- "anthra-taxans"
+
+## case 6 and 6
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$SEQ2_ADJ %in% c(6) & data.work$OTHSEQ1_ADJ %in% anthra & data.work$OTHSEQ2_ADJ %in% anthra) ] <- "anthra"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$SEQ2_ADJ %in% c(6) & data.work$OTHSEQ1_ADJ %in% c(anthra, anthra_taxanes) & data.work$OTHSEQ2_ADJ %in% taxanes) ] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$SEQ2_ADJ %in% c(6) & data.work$OTHSEQ2_ADJ %in% c(anthra, anthra_taxanes) & data.work$OTHSEQ1_ADJ %in% taxanes) ] <- "anthra-taxans"
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & data.work$SEQ1_ADJ %in% c(6) &
+          data.work$SEQ2_ADJ %in% c(6) & data.work$OTHSEQ1_ADJ %in% taxanes & data.work$OTHSEQ2_ADJ %in% taxanes) ] <- "taxanes"
+
+
+# others
+data.work$adj_regimen[
+  which(data.work$adj_bin %in% c("yes") & data.work$SEQCHIMIO_ADJ==2 & 
+          (data.work$OTHSEQ1_ADJ %in% others | data.work$OTHSEQ2_ADJ %in% others)) ] <- "others"
+
+summary(data.work$adj_regimen[which(data.work$adj_bin=="yes")])
+```
+
+See the values for patients with adj_regimen = NA
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+rr= data.work[which(is.na(data.work$adj_regimen) & data.work$CT %in% c("yes") & data.work$adj_bin %in% c("yes")),c("adj_bin","CHIMIOADJ","SEQCHIMIO_ADJ","SEQ1_ADJ","SEQ2_ADJ",
+                                                "OTHSEQ1_ADJ","OTHSEQ2_ADJ","REDUCDOSE_ADJ","FACTCROISS_ADJ")]
+rr
+```
+
+
+<!-- We move the NAs to regimens = "others". Here the new distribution of adjuvant chemotherapy regimen: -->
+
+<!-- ```{r echo=T, message=FALSE, warning=FALSE, results='markup'} -->
+<!-- ### See the values of patients with adj_regimen = NA -->
+<!-- v = which(is.na(data.work$adj_regimen) & data.work$CT %in% c("yes") & data.work$adj_bin %in% ("yes")) -->
+<!-- data.work$adj_regimen[v] = "others" -->
+
+<!-- summary(data.work$adj_regimen[which(data.work$adj_bin=="yes")]) -->
+<!-- ### 61 missing type of adjuvant chimio -->
+<!-- ``` -->
+
+
+
+
+
+
+
+### Dose reduction adjuvant
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$reduc_dos_adj <- factor(NA, levels = c("no","yes"))
+data.work$reduc_dos_adj[which(data.work$adj_bin %in% c("yes") & data.work$REDUCDOSE_ADJ==0)] <- "no"
+data.work$reduc_dos_adj[which(data.work$adj_bin %in% c("yes") & data.work$REDUCDOSE_ADJ==1)] <- "yes"
+table(data.work$reduc_dos_adj, exclude = NULL)
+```
+
+### Granulocyte growth factor adjuvant
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$gcsf_adj <- factor(NA, levels = c("no","yes"))
+data.work$gcsf_adj[which(data.work$adj_bin %in% c("yes") & data.work$FACTCROISS_ADJ %in%c("0"))] <- "no"
+data.work$gcsf_adj[which(data.work$adj_bin %in% c("yes") & data.work$FACTCROISS_ADJ %in%c("1"))] <- "yes"
+table(data.work$gcsf_adj, exclude = NULL)
+```
+
+
+## Neoadjuvant vs adjuvant chemotherapy
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+table(data.work$NAC_bin,data.work$adj_bin, dnn = c("NAC","ADJ"))
+```
+
+
+
+
+## Neoadjuvant results - check consistency
+
+### Information on both sides
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+############## Left breast ################
+
+
+data.work$breast_residu_L <- factor(NA, levels = c("no","yes"))
+data.work$breast_residu_L[which(data.work$NAC_bin %in% c("yes") & data.work$RESIDU1_G_M0 %in% c("0"))] <- "no"
+data.work$breast_residu_L[which(data.work$NAC_bin %in% c("yes") & data.work$RESIDU1_G_M0 %in% c("1"))] <- "yes"
+
+data.work$breast_res_infiltr_L <- factor(NA, levels = c("no","yes"))
+data.work$breast_res_infiltr_L[which(data.work$NAC_bin %in% c("yes") & (data.work$INFILTR_G_M0 %in% c("0")  | data.work$INFILTR_G_BI %in% c("0")))] <- "no"
+data.work$breast_res_infiltr_L[which(data.work$NAC_bin %in% c("yes") & (data.work$INFILTR_G_M0 %in% c("1") | data.work$INFILTR_G_BI %in% c("1")))] <- "yes"
+
+data.work$gang_post_chimio_L <- factor(NA, levels = c("no","yes"))
+data.work$gang_post_chimio_L[which(data.work$NAC_bin %in% c("yes") & data.work$ENVAHIPOST_G_M0 %in% c("0"))] <- "no"
+data.work$gang_post_chimio_L[which(data.work$NAC_bin %in% c("yes") & data.work$ENVAHIPOST_G_M0 %in% c("1"))] <- "yes"
+
+data.work$breast_res_insitu_L <- factor(NA, levels = c("no","yes"))
+data.work$breast_res_insitu_L[which(data.work$CONTING_G_M0 %in% c("0"))] <- "no"
+data.work$breast_res_insitu_L[which(data.work$CONTING_G_M0 %in% c("1"))] <- "yes"
+
+data.work$nb_nodes_pos_L <- data.work$ENVAHI_G_M0
+data.work$nb_nodes_pos_L <- as.numeric(data.work$nb_nodes_pos_L)
+
+############## Right breast ################
+
+
+data.work$breast_residu_R <- factor(NA, levels = c("no","yes"))
+data.work$breast_residu_R[which(data.work$NAC_bin %in% c("yes") & data.work$RESIDU1_D_M0 %in% c("0"))] <- "no"
+data.work$breast_residu_R[which(data.work$NAC_bin %in% c("yes") & data.work$RESIDU1_D_M0 %in% c("1"))] <- "yes"
+
+data.work$breast_res_infiltr_R <- factor(NA, levels = c("no","yes"))
+data.work$breast_res_infiltr_R[which(data.work$NAC_bin %in% c("yes") & (data.work$INFILTR_D_M0 %in% c("0")  | data.work$INFILTR_D_BI %in% c("0")))] <- "no"
+data.work$breast_res_infiltr_R[which(data.work$NAC_bin %in% c("yes") & (data.work$INFILTR_D_M0 %in% c("1") | data.work$INFILTR_D_BI %in% c("1")))] <- "yes"
+
+data.work$gang_post_chimio_R <- factor(NA, levels = c("no","yes"))
+data.work$gang_post_chimio_R[which(data.work$NAC_bin %in% c("yes") & data.work$ENVAHIPOST_D_M0 %in% c("0"))] <- "no"
+data.work$gang_post_chimio_R[which(data.work$NAC_bin %in% c("yes") & data.work$ENVAHIPOST_D_M0 %in% c("1"))] <- "yes"
+
+data.work$breast_res_insitu_R <- factor(NA, levels = c("no","yes"))
+data.work$breast_res_insitu_R[which(data.work$CONTING_D_M0 %in% c("0"))] <- "no"
+data.work$breast_res_insitu_R[which(data.work$CONTING_D_M0 %in% c("1"))] <- "yes"
+
+data.work$nb_nodes_pos_R <- data.work$ENVAHI_D_M0
+data.work$nb_nodes_pos_R <- as.numeric(data.work$nb_nodes_pos_R)
+
+################### compability between results of left and right breast #######################
+
+incompability <- function(data, var_left, var_right){
+
+  warning <- rep(0,nrow(data))
+  for (i in 1:nrow(data)) {
+    for (l in var_left) {
+      for (r in var_right) {
+        if(warning[i]==0){
+          warning[i] <- ifelse(!is.na(data[i,l]) & !is.na(data[i,r]),1,0)
+        }
+      }
+    }
+  }
+
+  return(warning)
+
+}
+
+var_right_result_surgery=c("breast_res_insitu_R","breast_res_infiltr_R","nb_nodes_pos_R")
+var_left_result_surgery=c("breast_res_insitu_L","breast_res_infiltr_L","nb_nodes_pos_L")
+
+incomp <- incompability(data.work,
+                        var_right = var_right_result_surgery,
+                        var_left = var_left_result_surgery)
+
+
+data.work$warning_result_surgery <- incomp
+```
+
+Here the ditribution of incopatible breast sides on "breast_res_insitu","breast_res_infiltr" and "nb_nodes_pos".
+
+There are `r length(which(data.work$warning_result_surgery==1))` patients with information on both right/left breasts for neoadjuvant chemotherapy results.
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+table(data.work$warning_result_surgery)
+
+
+v = which(data.work$warning_result_surgery==1)
+columns = v
+rr = as.data.frame(matrix(NA, nrow = 2*length(columns), ncol=length(var_left_result_surgery)+4))
+rr[,3] = rep(c("L","R"),length(columns))
+colnames(rr) = c("ID", "OFFICIAL SIDE", "INSPECTED SIDE", "# NOT NA", unlist(lapply(var_left_result_surgery, function(x){substr(x,0,nchar(x)-2)})))
+i = 1
+for(c in columns){
+  rr[i,1] = c
+  rr[i+1,1] = c
+  rr[i,2] = if(data.work$LOC[c]==1) "L" else "R"
+  rr[i+1,2] = if(data.work$LOC[c]==1) "L" else "R"
+  rr[i,4] = length(which(!is.na(data.work[c,var_left_result_surgery])))
+  rr[i+1,4] = length(which(!is.na(data.work[c,var_right_result_surgery])))
+  rr[i,5:ncol(rr)] = data.work[c,var_left_result_surgery]
+  rr[i+1,5:ncol(rr)] = data.work[c,var_right_result_surgery]
+  i = i + 2
+}
+rr
+
+# rr = data.work[which(data.work$warning_result_surgery==1),c("side", var_left_result_surgery,var_right_result_surgery)]  
+# rr
+```
+
+
+### No information
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+
+left_right <- function(data, var_left, var_right){
+  
+  side <- rep(NA,nrow(data))
+  for (i in 1:nrow(data)) {
+    for (l in var_left) {
+      if(data[i,"warning_result_surgery"]==0){
+        side[i] <- ifelse(!is.na(data[i,l]), "L", side[i])
+      }
+      if(data[i,"warning_result_surgery"]==1){
+        side[i] <- NA
+      }
+    }
+    for (r in var_right) {
+      if(data[i,"warning_result_surgery"]==0){
+        side[i] <- ifelse(!is.na(data[i,r]), "R", side[i])
+      }
+      if(data[i,"warning_result_surgery"]==1){
+        side[i] <- NA
+      }
+    }
+  }
+  
+  return(side)
+  
+}
+
+side <- left_right(data.work,
+                   var_right=var_right_result_surgery,
+                   var_left=var_left_result_surgery)
+
+data.work$breast_result_surgery <- as.factor(side)
+```
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+table(data.work$breast_result_surgery[which(data.work$NAC_bin == "yes")], exclude = NULL)
+```
+We have `r as.numeric(summary(data.work$breast_result_surgery[which(data.work$NAC_bin == "yes")])[3])` patients with missing information on their relative side on variables regarding "breast_res_insitu", "breast_res_infiltr" and "nb_nodes_pos"
+
+
+We keep the side for biopsy as the one saved in variable LOC.
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.workBI$breast_surg_side <- as.factor(data.workBI$side)
+```
+
+### Brest result insitu
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$breast_res_insitu <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$breast_res_insitu_L), as.character(data.work$breast_res_insitu_R)))
+table(data.work$breast_res_insitu, exclude = NULL)
+```
+
+### Brest result infiltrant
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$breast_res_infiltr_tmp <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$breast_res_infiltr_L), as.character(data.work$breast_res_infiltr_R)))
+
+table(data.work$breast_res_infiltr_tmp, exclude = NULL)
+```
+
+### Brest tumor residu infiltrant
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$breast_residu_invasif <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$breast_residu_L), as.character(data.work$breast_residu_R)))
+
+table(data.work$breast_residu, exclude = NULL)
+```
+
+
+### gang post NAC 
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$gang_post_chimio <- factor(ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$gang_post_chimio_L), as.character(data.work$gang_post_chimio_R)))
+table(data.work$gang_post_chimio, exclude = NULL)
+```
+
+### number of nodes post NAC
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$nb_nodes_pos <- ifelse(data.work$breast_surg_side %in% c("L"), as.numeric(data.work$nb_nodes_pos_L), as.numeric(data.work$nb_nodes_pos_R))
+
+data.work$nb_nodes_pos_NAC = data.work$nb_nodes_pos
+data.work$nb_nodes_pos_NAC[which(data.work$NAC_bin=='no')] = NA
+table(data.work$nb_nodes_pos_NAC, exclude = NULL)
+```
+
+### Modify gang_post_chimio to match nb_nodes_pos_NAC
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+## modify gang_post_chimio to match with nb_nodes_pos_nac
+data.work$gang_post_chimio[which(data.work$nb_nodes_pos_NAC > 0)] = "yes"
+```
+
+### mitotic index post_neo
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$mitotic_index_postneo <- ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$mitotic_index_postneo_L), as.character(data.work$mitotic_index_postneo_R))
+data.work$mitotic_index_postneo[which(data.work$NAC_bin=='no')] = NA
+table(data.work$mitotic_index_postneo, exclude = NULL)
+```
+
+
+### Inconsistency in results post chemotherapy for pCR analysis
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+table(Nombre_total_ganglions_envahis = data.work$nb_nodes_pos, Presence_envahissement_ganglionnaire_post_chimiotherapie = data.work$gang_post_chimio)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+# Radiotherapy
+Distribution of radiotherapy:
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+data.work$rt_L <- factor(NA, levels = c("no","yes"))
+data.work$rt_L[which(data.work$RADIO_G %in% c("0"))] <- "no"
+data.work$rt_L[which(data.work$RADIO_G %in% c("1"))] <- "yes"
+
+data.work$rt_R <- factor(NA, levels = c("no","yes"))
+data.work$rt_R[which(data.work$RADIO_D %in% c("0"))] <- "no"
+data.work$rt_R[which(data.work$RADIO_D %in% c("1"))] <- "yes"
+
+data.work$rt <- factor(ifelse(data.work$side %in% c("L"), as.character(data.work$rt_L), as.character(data.work$rt_R)))
+summary(data.work$rt)
+```
+
+### Information on both sides
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+incompability <- function(data, var_left, var_right){
+
+  warning <- rep(0,nrow(data))
+  for (i in 1:nrow(data)) {
+    for (l in var_left) {
+      for (r in var_right) {
+        if(warning[i]==0){
+          warning[i] <- ifelse(!is.na(data[i,l]) & !is.na(data[i,r]),1,0)
+        }
+      }
+    }
+  }
+
+  return(warning)
+
+}
+
+data.work$DTDEBRADIO_D[which(data.work$DTDEBRADIO_D=='')]= NA
+data.work$DTDEBRADIO_G[which(data.work$DTDEBRADIO_G=='')]= NA
+data.work$DTFINRADIO_D[which(data.work$DTFINRADIO_D=='')]= NA
+data.work$DTFINRADIO_G[which(data.work$DTFINRADIO_G=='')]= NA
+
+var_right_result_radio=c("TECHRADIO_D","DTDEBRADIO_D", "DTFINRADIO_D", "DOSE1RADIO_D", 'DOSE2RADIO_D', 'NBJOURSRADIO_D', 'BOOST_D')
+var_left_result_radio=c("TECHRADIO_G","DTDEBRADIO_G", "DTFINRADIO_G","DOSE1RADIO_G", 'DOSE2RADIO_G', 'NBJOURSRADIO_G', 'BOOST_G')
+
+incomp <- incompability(data.work,
+                        var_right = var_right_result_radio,
+                        var_left = var_left_result_radio)
+
+
+data.work$warning_result_radio <- incomp
+table(data.work$warning_result_radio)
+```
+
+There are `r length(which(data.work$warning_result_radio==1))` patients with information on both right/left breasts for radiotherapy.
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+rr = data.work[which(data.work$warning_result_radio==1),c("side", var_left_result_radio,var_right_result_radio)]
+rr
+```
+
+Some patient has starting dates on left and right breasts.
+
+
+### Check patients with radiotherapy set to NA
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$radio_info <- rep(NA, nrow(data.work))
+data.work$radio_info <- apply(cbind(data.work[,c(var_left_result_radio,var_right_result_radio)]),
+                               1,function(x) sum(!is.na(x)))
+
+table(radio_variables_not_na=data.work$radio_info,radiotherapy = data.work$rt, exclude = NULL)
+
+v = which(is.na(data.work$rt) & data.work$radio_info>0)
+rr = cbind(data.work[v,c(var_left_result_radio,var_right_result_radio)])
+
+rr
+```
+
+Set this patient as having received radiotherapy, and all other patient with no information as no radiotherapy
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$rt[v] = 'yes'
+data.work$RADIO_G[v] = 1
+
+data.work$rt[which(is.na(data.work$rt))] = 'no'
+```
+
+The new data distribution is:
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+summary(data.work$rt)
+```
+
+### Check patients with radiotherapy set to NO
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$radio_info <- rep(NA, nrow(data.work))
+data.work$radio_info <- apply(cbind(data.work[,c(var_left_result_radio,var_right_result_radio)]),
+                               1,function(x) sum(!is.na(x)))
+
+table(chemo_variables_not_na=data.work$radio_info,adj_chemotherapy = data.work$rt, exclude = NULL)
+
+rr = cbind(data.work[which(data.work$rt == 'no' & data.work$radio_info>0),c(var_left_result_radio,var_right_result_radio)])
+
+rr
+```
+
+Leave them set to NO
+
+
+
+
+
+
+Date first radiotherapy
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+
+data.work$dat_first_rt = NA
+data.work$dat_first_rt[which(data.work$rt %in% c('yes') & data.work$side %in% c('L'))] <- 
+                      data.work$DTDEBRADIO_G[which(data.work$rt %in% c('yes') & data.work$side %in% c('L'))]
+data.work$dat_first_rt[which(data.work$rt %in% c('yes') & data.work$side %in% c('R'))] <- 
+                      data.work$DTDEBRADIO_D[which(data.work$rt %in% c('yes') & data.work$side %in% c('R'))]
+
+data.work = imputeDate(data.work, 'dat_first_rt')
+data.work$dat_first_rt = as.Date(data.work$dat_first_rt, format = "%d/%m/%Y")
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+save.image("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Data/2019/preprocessing_before_comedications_part.Rdata", version = 2)
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+load("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Data/2019/preprocessing_before_comedications_part.Rdata")
+```
+
+
+
+# Hormonotherapy
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$ht_info <- rep(NA, nrow(data.work))
+data.work$ht_info <- apply(data.work[,c(paste0("HORM",seq(1:7)))],
+                           1,function(x) sum(!is.na(x)))
+
+data.work$ht <- factor(NA, levels = c("no","yes"))
+data.work$ht[which(data.work$HORMONO %in% c("0"))] <- "no"
+data.work$ht[which(data.work$HORMONO %in% c("1"))] <- "yes"
+
+summary(data.work$ht)
+```
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+table(data.work$ht_info, data.work$ht, exclude = NULL)
+```
+
+## Check NA values
+
+We have `r as.numeric(summary(data.work$ht)[3])` patients with hormonotherapy status set to NA. Only `r as.numeric(table(data.work[which(is.na(data.work$ht)),]$ht_info)[2])` patients have information on hormonotherapy variables:
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+rr= data.work[which(is.na(data.work$ht) & data.work$ht_info!=0),c(paste0("HORM",seq(1:7)),
+                                                              paste0("DTDEBHORM",seq(1:7)))]
+rr
+```
+
+We set the hormonotherapy status of patients with starting date not NA to yes,  hormonotherapy status for other NAs is set to no
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$ht[which(is.na(data.work$ht) & data.work$ht_info!=0)] <- "yes"
+
+data.work$ht[which(is.na(data.work$ht) & data.work$ht_info==0)] <- "no"
+```
+
+The hormonotherapy status is now distributed as:
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+summary(data.work$ht)
+```
+
+## Check NO values
+Here a table for patients with information on hormonotherapy variables and the corresponding hormonotherapy status (to check for patients with hormonotherapy status = no but information on hormonotherapy):
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+table(data.work$ht_info,data.work$ht, exclude = NULL)
+# 4 individual with information on hormonotherapy with declared no hormonotherapy
+```
+
+We have `r length(which(data.work$ht %in% c("no") & data.work$ht_info!=0))` patients with information on hormonotherapy with declared no hormonotherapy
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+rr= data.work[which(data.work$ht %in% c("no") & data.work$ht_info!=0),c(paste0("HORM",seq(1:7)),
+                                                              paste0("DTDEBHORM",seq(1:7)))]
+rr
+```
+
+Leave them set to NO
+
+<!-- The hormonotherapy status is now distributed as: -->
+# ```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+# data.work$ht[which(data.work$ht %in% c("no") & data.work$ht_info!=0)] <- "yes"
+# 
+# summary(data.work$ht)
+# ```
+
+Here check if we need the month for finding the type of hormonotherapy (combinations)
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+cols = c('horm_1', 'horm_2', 'horm_3', 'horm_4', 'horm_5', 'horm_6', 'horm_7')
+cols2 = c('HORM1', 'HORM2', 'HORM3', 'HORM4', 'HORM5', 'HORM6', 'HORM7')
+
+for(i in 1:length(cols)){
+  data.work[,cols[i]] <- factor(NA, levels = c("tamoxifen","aromatase inhibitor", "agonist","others"))
+  data.work[,cols[i]][which(data.work$ht %in% c("yes") & data.work[,cols2[i]] %in% c("1"))] <- "tamoxifen"
+  data.work[,cols[i]][which(data.work$ht %in% c("yes") & data.work[,cols2[i]] %in% c("2","3","4"))] <- "aromatase inhibitor"
+  data.work[,cols[i]][which(data.work$ht %in% c("yes") & data.work[,cols2[i]] %in% c("5"))] <- "agonist"
+  data.work[,cols[i]][which(data.work$ht %in% c("yes") & data.work[,cols2[i]] %in% c("6"))] <- "others"
+}
+
+
+# All dates with missing day were replaced by the first day of that month
+# Attention: some dates for cycle 2 are before in time than cycle 1!
+
+cols = c('date_horm1', 'date_horm2', 'date_horm3', 'date_horm4', 'date_horm5', 'date_horm6', 'date_horm7')
+cols2 = c('DTDEBHORM1', 'DTDEBHORM2', 'DTDEBHORM3', 'DTDEBHORM4', 'DTDEBHORM5', 'DTDEBHORM6', 'DTDEBHORM7')
+
+
+
+for(i in 1:length(cols)){
+  data.work[,cols[i]] <- data.work[,cols2[i]]
+  
+  data.work = imputeDate(data.work, cols[i])
+  
+  # data.work[,cols[i]][
+  #   which(data.work$ht %in% c("yes") & substr(data.work[,cols[i]],start = 1, stop = 2) %in% 
+  #           c("NA","NK","ND","UK"))] <- paste0("01",substr(data.work[,cols[i]][
+  #             which(data.work$ht %in% c("yes") & substr(data.work[,cols[i]],start = 1, stop = 2) %in% 
+  #                     c("NA","NK","ND","UK"))], start = 3, stop = 10))
+  # 
+  data.work[,cols[i]] <- as.Date(data.work[,cols[i]], "%d/%m/%Y")
+}
+
+
+# find minimum date
+data.work$min_date_hormono <- pmin(data.work$date_horm1,data.work$date_horm2,
+                                   data.work$date_horm3,data.work$date_horm4,
+                                   data.work$date_horm5,data.work$date_horm6,
+                                   data.work$date_horm7,na.rm = TRUE)
+data.work$min_month_hormono <- as.numeric(substr(data.work$min_date_hormono, start = 6, stop = 7))
+
+# find hormono therapy that corresponds to the minimum date
+cols = c('date_horm1', 'date_horm2', 'date_horm3', 'date_horm4', 'date_horm5', 'date_horm6', 'date_horm7')
+cols2 = c('horm_1', 'horm_2', 'horm_3', 'horm_4', 'horm_5', 'horm_6', 'horm_7')
+
+data.work$hormono_first <- factor(NA, levels = c("tamoxifen","aromatase inhibitor","agonist","others"))
+for(i in 1:length(cols)){
+  data.work$hormono_first[which(data.work$ht %in% c("yes") & data.work$min_date_hormono==data.work[,cols[i]])] <- 
+          data.work[,cols2[i]][which(data.work$ht %in% c("yes") & data.work$min_date_hormono==data.work[,cols[i]])]
+}
+```
+
+If we have no dates and only one cycle, then take the hormonotherapy type of this cycle
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+v = which(is.na(data.work$min_date_hormono) & !is.na(data.work$horm_1) & is.na(data.work$date_horm1) & is.na(data.work$horm_2) & is.na(data.work$horm_3))
+data.work$hormono_first[v] = data.work$horm_1[v]
+```
+
+## Hormonotherapy type
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$ht_type <- factor(NA, levels = c("tamoxifen","aromatase inhibitor", "others"))
+data.work$ht_type[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("tamoxifen"))] <- "tamoxifen"
+data.work$ht_type[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("aromatase inhibitor"))] <- "aromatase inhibitor"
+data.work$ht_type[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("agonist","others"))] <- "others"
+
+summary(data.work$ht_type[which(data.work$ht == "yes")])
+```
+
+Find combination (first hormon therapy + another therapy within 1 month after the first one)
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'} 
+data.work$month_horm1 <- as.numeric(substr(data.work$date_horm1, start = 6, stop = 7))
+data.work$month_horm2 <- as.numeric(substr(data.work$date_horm2, start = 6, stop = 7))
+data.work$month_horm3 <- as.numeric(substr(data.work$date_horm3, start = 6, stop = 7))
+data.work$month_horm4 <- as.numeric(substr(data.work$date_horm4, start = 6, stop = 7))
+data.work$month_horm5 <- as.numeric(substr(data.work$date_horm5, start = 6, stop = 7))
+data.work$month_horm6 <- as.numeric(substr(data.work$date_horm6, start = 6, stop = 7))
+data.work$month_horm7 <- as.numeric(substr(data.work$date_horm7, start = 6, stop = 7))
+
+
+data.work$sec_date_hormono <- rep(NA, nrow(data.work))
+data.work$sec_date_hormono[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm1 &
+                                   abs(data.work$min_month_hormono-data.work$month_horm1)<=1)] <- 
+                as.character(data.work$date_horm1[which(data.work$ht %in% c("yes") & 
+                                                          data.work$min_date_hormono!=data.work$date_horm1 &                                                                                                                                  abs(data.work$min_month_hormono-data.work$month_horm1)<=1)])
+
+data.work$sec_date_hormono[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm2 &
+                                   abs(data.work$min_month_hormono-data.work$month_horm2)<=1)] <- as.character(data.work$date_horm2[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm2 &
+                                  abs(data.work$min_month_hormono-data.work$month_horm2)<=1)])
+
+data.work$sec_date_hormono[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm3 &
+                                   abs(data.work$min_month_hormono-data.work$month_horm3)<=1)] <- as.character(data.work$date_horm1[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm3 &                                                                                                                                        abs(data.work$min_month_hormono-data.work$month_horm3)<=1)])
+data.work$sec_date_hormono[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm4 &
+                                   abs(data.work$min_month_hormono-data.work$month_horm4)<=1)] <- as.character(data.work$date_horm1[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm4 &
+                                                                                                                                            abs(data.work$min_month_hormono-data.work$month_horm4)<=1)])
+data.work$sec_date_hormono[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm5 &
+                                   abs(data.work$min_month_hormono-data.work$month_horm5)<=1)] <- as.character(data.work$date_horm1[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm5 &
+                                                                                                                                            abs(data.work$min_month_hormono-data.work$month_horm5)<=1)])
+data.work$sec_date_hormono[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm6 &
+                                   abs(data.work$min_month_hormono-data.work$month_horm6)<=1)] <- as.character(data.work$date_horm1[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm6 &
+                                                                                                                                            abs(data.work$min_month_hormono-data.work$month_horm6)<=1)])
+data.work$sec_date_hormono[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm7 &
+                                   abs(data.work$min_month_hormono-data.work$month_horm7)<=1)] <- as.character(data.work$date_horm1[which(data.work$ht %in% c("yes") & data.work$min_date_hormono!=data.work$date_horm7 &
+                                                                                                                                            abs(data.work$min_month_hormono-data.work$month_horm7)<=1)])
+
+
+# find hormono therapy of the second date
+data.work$hormono_second <- factor(NA, levels = c("tamoxifen","aromatase inhibitor","agonist","others"))
+data.work$hormono_second[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm1)] <- 
+  data.work$horm_1[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm1)]
+
+data.work$hormono_second[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm2)] <- 
+  data.work$horm_2[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm2)]
+
+data.work$hormono_second[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm3)] <- 
+  data.work$horm_3[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm3)]
+
+data.work$hormono_second[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm4)] <- 
+  data.work$horm_4[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm4)]
+
+data.work$hormono_second[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm5)] <- 
+  data.work$horm_5[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm5)]
+
+data.work$hormono_second[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm6)] <- 
+  data.work$horm_6[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm6)]
+
+data.work$hormono_second[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm7)] <- 
+  data.work$horm_7[which(data.work$ht %in% c("yes") & data.work$sec_date_hormono==data.work$date_horm7)]
+
+
+# first_ second hormono therapy
+data.work$ht_type_5cl <- factor(NA, levels = c("tamoxifen","aromatase inhibitor",
+                                              "tamoxifen + agonist","aromatase inhibitor + agonist",
+                                              "others"))
+
+data.work$ht_type_5cl[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("tamoxifen") &
+          is.na(data.work$hormono_second))] <- "tamoxifen"
+
+data.work$ht_type_5cl[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("tamoxifen") &
+          data.work$hormono_second %in% c("tamoxifen","aromatase inhibitor","others"))] <- "tamoxifen"
+
+data.work$ht_type_5cl[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("tamoxifen") &
+          data.work$hormono_second %in% c("agonist"))] <- "tamoxifen + agonist"
+
+data.work$ht_type_5cl[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("agonist") &
+          data.work$hormono_second %in% c("tamoxifen"))] <- "tamoxifen + agonist"
+
+data.work$ht_type_5cl[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("aromatase inhibitor") &
+          is.na(data.work$hormono_second))] <- "aromatase inhibitor"
+
+data.work$ht_type_5cl[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("aromatase inhibitor") &
+          data.work$hormono_second %in% c("aromatase inhibitor","tamoxifen","others"))] <- "aromatase inhibitor"
+
+data.work$ht_type_5cl[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("aromatase inhibitor") &
+          data.work$hormono_second %in% c("agonist"))] <- "aromatase inhibitor + agonist"
+
+data.work$ht_type_5cl[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("agonist") &
+          data.work$hormono_second %in% c("aromatase inhibitor"))] <- "aromatase inhibitor + agonist"
+
+data.work$ht_type_5cl[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("agonist") &
+          is.na(data.work$hormono_second))] <- "others"
+
+data.work$ht_type_5cl[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("agonist") &
+          data.work$hormono_second %in% c("agonist"))] <- "others"
+
+data.work$ht_type_5cl[which(data.work$ht %in% c("yes") & data.work$hormono_first %in% c("others"))] <- "others"
+
+table(data.work$ht_type_5cl[which(data.work$ht=='yes')], exclude = NULL)
+```
+
+
+See the values for patients with ht_type_5cl = NA
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+rr= data.work[which(is.na(data.work$ht_type_5cl) & data.work$ht %in% c("yes")),c('ht_type',"hormono_first","hormono_second", "date_horm1", 'horm_1', "date_horm2", 'horm_2', 'horm_3', 'horm_4', 'horm_5', 'horm_6', 'horm_7')]
+rr
+```
+
+If only tamoxifen or only aromatase, assign to their class. If mixed, assign to others
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+df_horm = data.work[,c('horm_1', 'horm_2', 'horm_3', 'horm_4', 'horm_5', 'horm_6', 'horm_7')]
+df_horm = apply(df_horm,2,as.character)
+
+l = unlist(lapply(1:nrow(df_horm), function(i){if(is.na(data.work$ht_type_5cl[i]) & length(na.omit(unique(df_horm[i,]))) > 0){if(paste(na.omit(unique(df_horm[i,])),collapse = ',') == "aromatase inhibitor") 'aromatase inhibitor' else NA} else NA }))
+v = which(l=='aromatase inhibitor')
+data.work$ht_type_5cl[v] <- "aromatase inhibitor"
+
+l = unlist(lapply(1:nrow(df_horm), function(i){if(is.na(data.work$ht_type_5cl[i]) & length(na.omit(unique(df_horm[i,]))) > 0){if(paste(na.omit(unique(df_horm[i,])),collapse = ',') == "tamoxifen") 'tamoxifen' else NA} else NA }))
+v = which(l=='tamoxifen')
+data.work$ht_type_5cl[v] <- "tamoxifen"
+
+
+l = unlist(lapply(1:nrow(df_horm), function(i){if(is.na(data.work$ht_type_5cl[i]) & length(na.omit(unique(df_horm[i,]))) > 0){if(paste(na.omit(unique(df_horm[i,])),collapse = ',') == c("tamoxifen,aromatase inhibitor")  | paste(na.omit(unique(df_horm[i,])),collapse = ',') == c("aromatase inhibitor,tamoxifen") ) 'others' else NA} else NA }))
+v = which(l=='others')
+data.work$ht_type_5cl[v] <- "others"
+
+table(data.work$ht_type_5cl[which(data.work$ht=='yes')], exclude = NULL)
+
+```
+
+See the values for patients with ht_type_5cl = NA
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+rr= data.work[which(is.na(data.work$ht_type_5cl) & data.work$ht %in% c("yes")),c('ht_type',"hormono_first","hormono_second", "date_horm1", 'horm_1', "date_horm2", 'horm_2', 'horm_3', 'horm_4', 'horm_5', 'horm_6', 'horm_7')]
+rr
+```
+
+# Target therapy
+
+## Herceptine
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$DTDEBHERCEP[which(data.work$DTDEBHERCEP=='')] = NA
+data.work$DTFINHERCEP[which(data.work$DTFINHERCEP=='')] = NA
+
+data.work$TC_info <- rep(NA, nrow(data.work))
+vars_hercep = c("MODIFHERCEP","INTHERCEP","DTDEBHERCEP","NBCYCLHERCEP", "SCHEMAHERCEP", "VOIEHERCEP", "DOSE1HERCEP")
+data.work$TC_info <- apply(data.work[,vars_hercep],1,function(x) sum(!is.na(x)))
+
+data.work = imputeDate(data.work, 'DTDEBHERCEP')
+data.work = imputeDate(data.work, 'DTFINHERCEP')
+
+# Herceptin (Trastuzumab)
+data.work$HERCEP[which(is.na(data.work$HERCEP))] = 0
+
+data.work$trastu <- factor(NA, levels = c("no","yes"))
+data.work$trastu[which(data.work$HERCEP %in% c("0"))] <- "no"
+data.work$trastu[which(data.work$HERCEP %in% c("1"))] <- "yes"
+
+table(variables_not_NA_hercep = data.work$TC_info, trastu = data.work$trastu, exclude = NULL)
+```
+There are no NAs for herceptine status.
+
+We have to check the information with the one present in the chemotherapy variables, some herceptine is reported there
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+v = c(grep('HERCEPT',data.work$OTHSEQ1_ADJ ), grep('HERCEPT',data.work$OTHSEQ2_ADJ ), grep('HERCEPT',data.work$OTHSEQ1_NEO ), grep('HERCEPT',data.work$OTHSEQ2_NEO ))
+data.work$trastu[v]
+```
+All of them are alredy to yes, nothing to do.
+
+### Check NO values
+
+Here a table representing the variables regarding herceptine for people having herceptine set to no but information on herceptine (test the correctness of no herceptine):
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+table(data.work$TC_info,data.work$trastu)
+
+rr = data.work[which(data.work$trastu %in% c("no") & data.work$TC_info>0),vars_hercep]
+rr
+
+v=which(data.work$trastu %in% c("no") & data.work$TC_info>0 & (!is.na(data.work$DTDEBHERCEP) | !is.na(data.work$NBCYCLHERCEP)))
+
+```
+
+Leave them set to NO
+
+<!-- with a known date (`r length(v)`) to yes and leave the no herceptine as the correct status for the others. We now have: -->
+<!-- ```{r echo=T, message=FALSE, warning=FALSE, results='markup'} -->
+<!-- data.work$trastu[v] = "yes" -->
+<!-- summary(data.work$trastu) -->
+<!-- ``` -->
+
+
+## modification dose of herceptin
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$reduc_dos_tz <- factor(NA, levels = c("no","yes"))
+data.work$reduc_dos_tz[which(data.work$trastu %in% c("yes") & data.work$MODIFHERCEP %in% c("0"))] <- "no"
+data.work$reduc_dos_tz[which(data.work$trastu %in% c("yes") & data.work$MODIFHERCEP %in% c("1"))] <- "yes"
+table(data.work$reduc_dos_tz, exclude = NULL)
+```
+
+## premature stop trastu
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$stop_tz <- factor(NA, levels = c("no","yes"))
+data.work$stop_tz[which(data.work$trastu %in% c("yes") & data.work$INTHERCEP %in% c("0"))] <- "no"
+data.work$stop_tz[which(data.work$trastu %in% c("yes") & data.work$INTHERCEP %in% c("1"))] <- "yes"
+table(data.work$stop_tz, exclude = NULL)
+```
+
+# Other targeted therapy
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$other_target_therapy <- factor(NA, levels = c("no","yes"))
+data.work$other_target_therapy[which(data.work$CIBLE1 %in% c("0"))] <- "no"
+data.work$other_target_therapy[which(data.work$CIBLE1 %in% c("1"))] <- "yes"
+table(data.work$other_target_therapy, exclude = NULL)
+```
+
+## Check NA values
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$DTDEBCIBLE1[which(data.work$DTDEBCIBLE1=='')] = NA
+data.work$DTDEBCIBLE1[which(data.work$DTDEBCIBLE1=='')] = NA
+data.work$NOMCIBLE1[which(data.work$NOMCIBLE1=='')] = NA
+
+data.work$other_target_therapy_info <- rep(NA, nrow(data.work))
+data.work$other_target_therapy_info <- apply(data.work[,c("NOMCIBLE1", "DTDEBCIBLE1", "NBCIBLE1", "POSOCIBLE1")],1,function(x) sum(!is.na(x)))
+
+data.work = imputeDate(data.work, 'DTDEBCIBLE1')
+
+table(variables_not_NA_othert_target_therapy = data.work$other_target_therapy_info, other_target_therapy = data.work$other_target_therapy, exclude = NULL)
+```
+We have `r as.numeric(summary(data.work$other_target_therapy)[3])` NAs, there is no information on target therapy variables,  NAs values are to set to NO. 
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$other_target_therapy[which(is.na(data.work$other_target_therapy))] = "no"
+```
+
+Other targer therapy status distribution is now:
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+summary(data.work$other_target_therapy)
+```
+
+
+## Check NO values
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+table(variables_not_NA_othert_target_therapy = data.work$other_target_therapy_info, other_target_therapy = data.work$other_target_therapy, exclude = NULL)
+
+v = which(data.work$other_target_therapy == 'no' & data.work$other_target_therapy_info > 0 & data.work$NOMCIBLE1 != '')
+rr= data.work[v,c("NOMCIBLE1", "DTDEBCIBLE1", "NBCIBLE1", "POSOCIBLE1")]
+rr
+```
+
+Leave them set to NO
+
+<!-- The other targer therapy status distribution is now: -->
+<!-- ```{r echo=T, message=FALSE, warning=FALSE, results='markup'} -->
+<!-- data.work$other_target_therapy[v] = "yes" -->
+<!-- ``` -->
+
+<!-- Other targer therapy status distribution is now: -->
+<!-- ```{r echo=T, message=FALSE, warning=FALSE, results='markup'} -->
+<!-- summary(data.work$other_target_therapy) -->
+<!-- ``` -->
+
+
+<!-- ## Check YES values, is it trastuzumab? -->
+<!-- ```{r echo=T, message=FALSE, warning=FALSE, results='markup'} -->
+<!-- table(data.work$NOMCIBLE1[which(data.work$other_target_therapy=='yes')]) -->
+<!-- ``` -->
+
+
+
+# Dates and first treatment
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+#========= Surgery ===========
+
+#Tumorectomie
+data.work$DTTUMOR_G[which(data.work$DTTUMOR_G %in% "")] <- NA
+data.work$DTTUMOR_D[which(data.work$DTTUMOR_D %in% "")] <- NA
+data.work$DTTUMOR <- ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$DTTUMOR_G), as.character(data.work$DTTUMOR_D))
+data.work = imputeDate(data.work, 'DTTUMOR')
+data.work$DTTUMOR = as.Date(data.work$DTTUMOR, format = "%d/%m/%Y")
+
+#Quadrantectomie
+data.work$DTQUADRA_G[which(data.work$DTQUADRA_G %in% "")] <- NA
+data.work$DTQUADRA_D[which(data.work$DTQUADRA_D %in% "")] <- NA
+data.work$DTQUADRA <- ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$DTQUADRA_G), as.character(data.work$DTQUADRA_D))
+data.work = imputeDate(data.work, 'DTQUADRA')
+data.work$DTQUADRA = as.Date(data.work$DTQUADRA, format = "%d/%m/%Y")
+
+
+#Mastectomie radicale
+data.work$DTMASTR_G[which(data.work$DTMASTR_G %in% "")] <- NA
+data.work$DTMASTR_D[which(data.work$DTMASTR_D %in% "")] <- NA
+data.work$DTMASTR <- ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$DTMASTR_G), as.character(data.work$DTMASTR_D))
+data.work = imputeDate(data.work, 'DTMASTR')
+data.work$DTMASTR = as.Date(data.work$DTMASTR, format = "%d/%m/%Y")
+
+#Mastectomie sous-cutanee
+data.work$DTMASTSC_G[which(data.work$DTMASTSC_G %in% "")] <- NA
+data.work$DTMASTSC_D[which(data.work$DTMASTSC_D %in% "")] <- NA
+data.work$DTMASTSC <- ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$DTMASTSC_G), as.character(data.work$DTMASTSC_D))
+data.work = imputeDate(data.work, 'DTMASTSC')
+data.work$DTMASTSC = as.Date(data.work$DTMASTSC, format = "%d/%m/%Y")
+
+#Curage axillaire
+data.work$DTCURAGE_G[which(data.work$DTCURAGE_G %in% "")] <- NA
+data.work$DTCURAGE_D[which(data.work$DTCURAGE_D %in% "")] <- NA
+data.work$DTCURAGE <- ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$DTCURAGE_G), as.character(data.work$DTCURAGE_D))
+data.work = imputeDate(data.work, 'DTCURAGE')
+data.work$DTCURAGE = as.Date(data.work$DTCURAGE, format = "%d/%m/%Y")
+
+#Ganglion sentinelle
+data.work$DTGANGLS_G[which(data.work$DTGANGLS_G %in% "")] <- NA
+data.work$DTGANGLS_D[which(data.work$DTGANGLS_D %in% "")] <- NA
+data.work$DTGANGLS <- ifelse(data.work$breast_surg_side %in% c("L"), as.character(data.work$DTGANGLS_G), as.character(data.work$DTGANGLS_D))
+data.work = imputeDate(data.work, 'DTGANGLS')
+data.work$DTGANGLS = as.Date(data.work$DTGANGLS, format = "%d/%m/%Y")
+
+# date first surgery
+data.work$date_surg_part <- pmin(data.work$DTTUMOR, data.work$DTQUADRA, data.work$DTMASTR,
+                            data.work$DTMASTSC, na.rm = TRUE)
+
+data.work$date_surg <- pmin(data.work$DTTUMOR, data.work$DTQUADRA, data.work$DTMASTR,
+                            data.work$DTMASTSC, data.work$DTCURAGE, data.work$DTGANGLS, na.rm = TRUE)
+
+data.work$date_first_axillar_surg = pmin(data.work$DTCURAGE, data.work$DTGANGLS, na.rm = TRUE)
+
+data.work[,'date_surg_IMPUTED'] = 0
+for(i in 1:nrow(data.work)){
+  s = paste0(substr(data.work$date_surg[i],9,10), '/', substr(data.work$date_surg[i],6,7), '/', substr(data.work$date_surg[i],1,4) )
+  if(!s %in% c(data.work$DTTUMOR_raw[i], data.work$DTQUADRA_raw[i], data.work$DTMASTR_raw[i],
+                            data.work$DTMASTSC_raw[i], data.work$DTCURAGE_raw[i], data.work$DTGANGLS_raw[i]))
+    data.work[i,'date_surg_IMPUTED'] = 1
+}
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+
+# ADJ trastu
+data.work <- data.work %>% mutate(trastu_adj = case_when(
+                          data.work$trastu == 'no' ~ 'no',
+                          as.Date(data.work$DTDEBHERCEP, format = "%d/%m/%Y") > data.work$date_surg ~ 'yes',
+                          as.Date(data.work$DTFINHERCEP, format = "%d/%m/%Y") > data.work$date_surg ~ 'yes'))
+
+data.work$dat_first_adj_antiher2 = as.Date(NA)
+data.work$dat_first_adj_antiher2[which(data.work$trastu_adj=='yes')] = as.Date(data.work$DTDEBHERCEP[which(data.work$trastu_adj=='yes')],format = "%Y-%m-%d")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+surg_NA = which(is.na(data.work$date_surg) & data.work$surgery=="yes")
+```
+
+## NA as surgery dates
+We have `r length(surg_NA)` patients with surgery but without the surgery date 
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+rr= cbind(data.frame(surg = data.work$surgery[surg_NA]) , data.work[surg_NA,c("side", "DTTUMOR_G", "DTTUMOR_D", 
+                                           "DTQUADRA_G", "DTQUADRA_D", 
+                                           "DTMASTR_G", "DTMASTR_D", 
+                                           "DTMASTSC_G", "DTMASTSC_D",
+                                           "DTCURAGE_G", "DTCURAGE_D",
+                                        "DTGANGLS_G", "DTGANGLS_D")])
+rr
+```
+
+If right tumor date is NA, take the surgery date at left breast even if the person is marked as right tumor. It was probably reported in the wrong variable.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+v = which(is.na(data.work$DTTUMOR_D) & !is.na(data.work$DTTUMOR_G) & data.work$side=='R')
+data.work$DTTUMOR[v] <- as.Date(data.work$DTTUMOR_G[v], "%d/%m/%Y")
+
+data.work$date_surg <- pmin(data.work$DTTUMOR, data.work$DTQUADRA, data.work$DTMASTR,
+                            data.work$DTMASTSC, data.work$DTCURAGE, data.work$DTGANGLS, na.rm = TRUE)
+```
+
+Surgery date not known
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+surg_NA = which(is.na(data.work$date_surg) & data.work$surgery=="yes")
+
+rr= cbind(data.frame(surg = data.work$surgery[surg_NA]) , data.work[surg_NA,c("side", "DTTUMOR_G", "DTTUMOR_D", 
+                                           "DTQUADRA_G", "DTQUADRA_D", 
+                                           "DTMASTR_G", "DTMASTR_D", 
+                                           "DTMASTSC_G", "DTMASTSC_D",
+                                           "DTCURAGE_G", "DTCURAGE_D",
+                                        "DTGANGLS_G", "DTGANGLS_D")])
+rr
+```
+
+Chemotherapy and target therapy dates
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+#========= Chimio ===========
+
+data.work$DTDEBCYCLE_ADJ[which( data.work$DTDEBCYCLE_ADJ %in% c("","D","K"))] <- NA
+data.work = imputeDate(data.work, 'DTDEBCYCLE_ADJ')
+data.work$DTDEBCYCLE_ADJ <- as.Date(data.work$DTDEBCYCLE_ADJ, "%d/%m/%Y")
+
+
+data.work$DTFINCYCLE_ADJ[which(data.work$DTFINCYCLE_ADJ %in% c("","D","K"))] <- NA
+data.work = imputeDate(data.work, 'DTFINCYCLE_ADJ')
+data.work$DTFINCYCLE_ADJ <- as.Date(data.work$DTFINCYCLE_ADJ, "%d/%m/%Y")
+
+
+data.work$DTDEBCYCLE_NEO[which(data.work$DTDEBCYCLE_NEO %in% c(""))] <- NA
+data.work = imputeDate(data.work, 'DTDEBCYCLE_NEO')
+data.work$DTDEBCYCLE_NEO <- as.Date(data.work$DTDEBCYCLE_NEO, "%d/%m/%Y")
+
+
+data.work$DTFINCYCLE_NEO[which(data.work$DTFINCYCLE_NEO %in% c(""))] <- NA
+data.work = imputeDate(data.work, 'DTFINCYCLE_NEO')
+data.work$DTFINCYCLE_NEO <- as.Date(data.work$DTFINCYCLE_NEO, "%d/%m/%Y")
+
+
+
+#========= Trastu ===========
+
+data.work$DTDEBHERCEP[which(data.work$DTDEBHERCEP %in% c(""))] <- NA
+data.work = imputeDate(data.work, 'DTDEBHERCEP')
+data.work$DTDEBHERCEP <- as.Date(data.work$DTDEBHERCEP, "%d/%m/%Y")
+
+
+data.work$DTFINHERCEP[which(data.work$DTFINHERCEP %in% c("","A","K"))] <- NA
+data.work = imputeDate(data.work, 'DTFINHERCEP')
+data.work$DTFINHERCEP <- as.Date(data.work$DTFINHERCEP, "%d/%m/%Y")
+
+
+
+#========= other_target_therapy ===========
+
+data.work$DTDEBCIBLE1[which(data.work$DTDEBCIBLE1 %in% c(""))] <- NA
+data.work = imputeDate(data.work, 'DTDEBCIBLE1')
+data.work$DTDEBCIBLE1 <- as.Date(data.work$DTDEBCIBLE1, "%d/%m/%Y")
+
+
+data.work$DTFINCIBLE1[which(data.work$DTFINCIBLE1 %in% c(""))] <- NA
+data.work = imputeDate(data.work, 'DTFINCIBLE1')
+data.work$DTFINCIBLE1 <- as.Date(data.work$DTFINCIBLE1, "%d/%m/%Y")
+
+
+
+data.work$date_first_ttt <- pmin(data.work$date_surg,data.work$DTDEBCYCLE_ADJ,data.work$DTDEBCYCLE_NEO,
+                                 data.work$DTDEBHERCEP,data.work$DTDEBCIBLE1,na.rm = TRUE)
+
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+# We have `r length(which(is.na(data.work$date_first_ttt)))` patients with no date set for surgery, neoadjuvant chemotherapy, adjuvant chemotherapy and target therapy. See distribution of dates:
+# summary(data.work$date_first_ttt)
+#32 individuals with all dates missing
+
+data.work$min_date_chimio_hormono_hercep_TC <- pmin(data.work$DTDEBCYCLE_ADJ,data.work$min_date_hormono,
+                                                    data.work$DTDEBHERCEP,data.work$DTDEBCIBLE1,na.rm = TRUE)
+data.work$min_date_hormono_hercep_TC <- pmin(data.work$min_date_hormono,
+                                                    data.work$DTDEBHERCEP,data.work$DTDEBCIBLE1,na.rm = TRUE)
+
+
+data.work$parcours <- factor(NA, levels = c("surgery","NAC","others"))
+data.work$parcours[which(data.work$NAC_bin %in% c("yes"))] <- "NAC"
+
+# hormono neoadj
+data.work$parcours[which(data.work$NAC_bin %!in% c("yes") & (data.work$HORMONO_G_M0 %in% c("1") | data.work$HORMONO_D_M0 %in% c("1")))] <- "others"
+
+# hercept before surgery
+data.work$parcours[which(data.work$NAC_bin %!in% c("yes") & !is.na(data.work$DTDEBHERCEP) &
+                          !is.na(data.work$date_surg) & data.work$DTDEBHERCEP<data.work$date_surg)] <- "others"
+
+# target therapy before surgery
+data.work$parcours[which(data.work$NAC_bin %!in% c("yes") & !is.na(data.work$DTDEBCIBLE1) &
+                          !is.na(data.work$date_surg) & data.work$DTDEBCIBLE1<data.work$date_surg)] <- "others"
+
+# hormono before surgery
+data.work$parcours[which(data.work$NAC_bin %!in% c("yes") & !is.na(data.work$min_date_hormono) &
+                           !is.na(data.work$date_surg) & data.work$min_date_hormono<data.work$date_surg)] <- "others" 
+
+#
+# data.work$parcours[which(data.work$NAC_bin %!in% c("yes") & !is.na(data.work$date_surg) &
+#                            !is.na(data.work$min_date_chimio_hormono_hercep_TC) & !is.na(data.work$min_date_hormono_hercep_TC) &
+#                            data.work$date_surg>data.work$min_date_chimio_hormono_hercep_TC &
+#                            data.work$date_surg>data.work$min_date_hormono_hercep_TC)] <- "others"  #93 cases
+
+# data.work$parcours[which(data.work$NAC_bin %!in% c("yes") & is.na(data.work$date_surg) &
+#                            !is.na(data.work$DTDEBCYCLE_ADJ) & !is.na(data.work$min_date_hormono_hercep_TC) &
+#                            data.work$DTDEBCYCLE_ADJ>data.work$min_date_hormono_hercep_TC)] <- "others"
+
+
+# surgery before chemotherapy
+data.work$parcours[which(data.work$NAC_bin %!in% c("yes") & !is.na(data.work$date_surg) &
+                          !is.na(data.work$min_date_chimio_hormono_hercep_TC) & data.work$date_surg<=data.work$min_date_chimio_hormono_hercep_TC)] <- "surgery"
+
+data.work$parcours[which(data.work$NAC_bin %!in% c("yes") & data.work$ht %in% c("no") &
+                           data.work$other_target_therapy %in% c("no") & data.work$rt %in% c("no") & data.work$trastu %in% c("no") &
+                           data.work$surgery %in% c("yes"))] <- "surgery"  #92 cases
+
+data.work$parcours[which(data.work$NAC_bin %!in% c("yes") & !is.na(data.work$date_surg) &
+                           is.na(data.work$min_date_chimio_hormono_hercep_TC) )] <- "surgery"
+
+data.work$parcours[which(data.work$NAC_bin %!in% c("yes") & is.na(data.work$date_surg) &
+                           !is.na(data.work$min_date_chimio_hormono_hercep_TC) & !is.na(data.work$min_date_hormono_hercep_TC) &
+                           data.work$min_date_chimio_hormono_hercep_TC<data.work$min_date_hormono_hercep_TC)] <- "surgery"
+
+
+```
+
+## Type of treatment path
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+summary(data.work$parcours)
+```
+
+We have `r as.numeric(summary(data.work$parcours)[4])` NAs values. See variables related to these patients to look for inconsistencies:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+missing_parcours <- data.work[which(is.na(data.work$parcours)),c("surgery", "date_surg",
+                                                                 "NAC_bin","NAC_regimen","DTDEBCYCLE_NEO","DTFINCYCLE_NEO",
+                                                                 "adj_bin","adj_regimen","DTDEBCYCLE_ADJ","DTFINCYCLE_ADJ",
+                                                                 "min_date_chimio_hormono_hercep_TC",
+                                                                 "DTDEBCIBLE1","DTDEBHERCEP",
+                                                                 "min_date_hormono_hercep_TC","min_date_hormono")]
+
+
+
+missing_parcours
+```
+
+## Surgery date after adjuvant treatment
+
+We  have `r length(which( data.work$date_surg>data.work$DTDEBCYCLE_ADJ))` patients with surgery date after adjuvant treatment. Is it a neoadj chemotherapy??? If yes, FIX
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+# 1 individual with surgery date after adjuvant treatment 
+rr= data.work[which( data.work$date_surg>data.work$DTDEBCYCLE_ADJ),
+          c("parcours","date_surg","adj_bin","DTDEBCYCLE_ADJ","NAC_bin","DTDEBCYCLE_NEO","min_date_chimio_hormono_hercep_TC",
+            "min_date_hormono_hercep_TC","DTDEBCIBLE1","DTDEBHERCEP","min_date_hormono","adj_regimen")]
+
+
+rr
+```
+
+
+
+# ER, PR, HER2
+<!-- - DCIS/Invasive status -->
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+# data.work$dcis_status <- factor(NA, levels = c("positive","negative"))
+# #surgery
+# data.work$dcis_status[which(data.work$parcours %in% c("surgery") & 
+#                               (data.work$dcis_biop %in% c("yes") | data.work$dcis_surg %in% c("yes")))] <- "positive"
+# 
+# data.work$dcis_status[which(is.na(data.work$parcours) & 
+#                               (data.work$dcis_biop %in% c("yes") | data.work$dcis_surg %in% c("yes")))] <- "positive"
+# 
+# data.work$dcis_status[which(data.work$parcours %in% c("surgery") & data.work$dcis_biop %in% c("no") &
+#                               data.work$dcis_surg %in% c("no"))] <- "negative"
+# 
+# data.work$dcis_status[which(data.work$parcours %in% c("surgery") & is.na(data.work$dcis_biop) &
+#                               data.work$dcis_surg %in% c("no"))] <- "negative"
+# 
+# data.work$dcis_status[which(data.work$parcours %in% c("surgery") & is.na(data.work$dcis_surg) &
+#                               data.work$dcis_biop %in% c("no"))] <- "negative"
+# 
+# 
+# #NAC
+# data.work$dcis_status[which(data.work$parcours %in% c("NAC") & data.work$dcis_biop %in% c("yes"))] <- "positive"
+# data.work$dcis_status[which(data.work$parcours %in% c("NAC") & data.work$dcis_biop %in% c("no"))] <- "negative"
+# #others
+# data.work$dcis_status[which(data.work$parcours %in% c("others") & data.work$dcis_biop %in% c("yes"))] <- "positive"
+# data.work$dcis_status[which(data.work$parcours %in% c("others") & data.work$dcis_biop %in% c("no"))] <- "negative"
+# 
+# data.work$dcis_status[which(is.na(data.work$parcours) & data.work$dcis_biop %in% c("yes"))] <- "positive"
+# 
+# summary(data.work$dcis_status)
+# 
+# ############ invasive status
+# 
+# 
+# data.work$invasive_status <- factor(NA, levels = c("positive","negative"))
+# #surgery
+# data.work$invasive_status[which(data.work$parcours %in% c("surgery") & 
+#                                   (data.work$invasive_biop %in% c("yes") | data.work$infiltrant_cancer_surg %in% c("yes")))] <- "positive"
+# data.work$invasive_status[which(is.na(data.work$parcours) & 
+#                                   (data.work$invasive_biop %in% c("yes") | data.work$infiltrant_cancer_surg %in% c("yes")))] <- "positive"
+# data.work$invasive_status[which(data.work$parcours %in% c("surgery") & data.work$invasive_biop %in% c("no") &
+#                                   data.work$infiltrant_cancer_surg %in% c("no"))] <- "negative"
+# data.work$invasive_status[which(data.work$parcours %in% c("surgery") & is.na(data.work$invasive_biop) &
+#                                   data.work$infiltrant_cancer_surg %in% c("no"))] <- "negative"
+# data.work$invasive_status[which(data.work$parcours %in% c("surgery") & is.na(data.work$infiltrant_cancer_surg) &
+#                                   data.work$invasive_biop %in% c("no"))] <- "negative"
+# 
+# 
+# #NAC
+# data.work$invasive_status[which(data.work$parcours %in% c("NAC") & data.work$invasive_biop %in% c("yes"))] <- "positive"
+# data.work$invasive_status[which(data.work$parcours %in% c("NAC") & data.work$invasive_biop %in% c("no"))] <- "negative"
+# #others
+# data.work$invasive_status[which(data.work$parcours %in% c("others") & data.work$invasive_biop %in% c("yes"))] <- "positive"
+# data.work$invasive_status[which(data.work$parcours %in% c("others") & data.work$invasive_biop %in% c("no"))] <- "negative"
+# 
+# data.work$invasive_status[which(is.na(data.work$parcours) & data.work$invasive_biop %in% c("yes"))] <- "positive"
+# 
+# summary(data.work$invasive_status)
+# 
+# ################### invasive_or_dcis_only
+# 
+# 
+# data.work$invasive_or_dcis_only <- factor(NA, levels = c("dcis only","invasive only","dcis+invasive"))
+# data.work$invasive_or_dcis_only[which(data.work$dcis_status %in% c("positive") & data.work$invasive_status %in% c("positive"))] <- "dcis+invasive"
+# data.work$invasive_or_dcis_only[which(data.work$dcis_status %in% c("negative") & data.work$invasive_status %in% c("positive"))] <- "invasive only"
+# data.work$invasive_or_dcis_only[which(data.work$dcis_status %in% c("positive") & data.work$invasive_status %in% c("negative"))] <- "dcis only"
+# data.work$invasive_or_dcis_only[which(is.na(data.work$dcis_status) & data.work$invasive_status %in% c("positive"))] <- "invasive only"
+# data.work$invasive_or_dcis_only[which(data.work$dcis_status %in% c("positive") & is.na(data.work$invasive_status))] <- "dcis only"
+# 
+# 
+# summary(data.work$invasive_or_dcis_only)
+
+```
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+
+# data.work$invasive_or_dcis_only_bin <- data.work$invasive_or_dcis_only
+# levels(data.work$invasive_or_dcis_only_bin) <- c("dcis only","invasive only","invasive only")
+# data.work$invasive_or_dcis_only_bin <- revalue(data.work$invasive_or_dcis_only_bin, c("dcis only"="dcis only", "invasive only"="invasive"))
+# 
+# summary(data.work$invasive_or_dcis_only_bin)
+# 
+# missing_invasive_or_dcis_only_bin <- data.work[which(is.na(data.work$invasive_or_dcis_only_bin)),
+#                                                c("parcours", "dcis_status","invasive_status","dcis_biop", "dcis_surg", "invasive_biop","infiltrant_cancer_surg")]
+# 
+# missing_invasive_or_dcis_only_bin
+```
+
+
+We plot the ER, PR and HER2 status for biopsy vs surgery, to inspect differencies. To decide which variables to use (biopsy or surgery), we used the following rules:
+
+- Use surgery information when available.
+
+- Set the patient as positive if surgery or biopsy is positive
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+ggplot(data.work) + aes(x=er_biop, fill=data.work$er_surg) + geom_bar()
+
+ggplot(data.work) + aes(x=pr_biop, fill=data.work$pr_surg) + geom_bar()
+```
+
+## ER status
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+
+
+# Use the value at biopsy. If not present take the value at surgery
+
+data.work$ER_status <- data.work$er_surg
+data.work$ER_status[which(is.na(data.work$ER_status))] = data.work$er_biop[which(is.na(data.work$ER_status))]
+data.work$ER_status[which(data.work$er_biop == 'positive')] = 'positive'
+
+# 
+# 
+# 
+# data.work$ER_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("surgery") &
+#                             (data.work$er_biop %in% c("positive") | data.work$er_surg %in% c("positive")))] <- "positive"
+# data.work$ER_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & is.na(data.work$parcours) &
+#                             (data.work$er_biop %in% c("positive") | data.work$er_surg %in% c("positive")))] <- "positive"
+# data.work$ER_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("surgery") & 
+#                             (data.work$er_biop %in% c("negative") & data.work$er_surg %in% c("negative")))] <- "negative"
+# data.work$ER_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & is.na(data.work$parcours) & 
+#                             (data.work$er_biop %in% c("negative") & data.work$er_surg %in% c("negative")))] <- "negative"
+# data.work$ER_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & is.na(data.work$parcours) & 
+#                             (data.work$er_biop %in% c("negative") & is.na(data.work$er_surg)))] <- "negative"
+# data.work$ER_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("surgery") & 
+#                             (is.na(data.work$er_biop) & data.work$er_surg %in% c("negative")))] <- "negative"
+# data.work$ER_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("surgery") & 
+#                             (data.work$er_biop %in% c("negative") & is.na(data.work$er_surg)))] <- "negative"
+# data.work$ER_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("NAC","others") &
+#                             (data.work$er_biop %in% c("positive")))] <- "positive"
+# data.work$ER_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("NAC","others") & 
+#                             (data.work$er_biop %in% c("negative")))] <- "negative"
+# 
+# data.work$ER_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("NAC","others") &
+#                             (data.work$er_biop %in% c("positive")))] <- "positive"
+# 
+# 
+# summary(data.work$ER_status)
+missing_ER_status <- data.work[which(is.na(data.work$ER_status)),c("invasive_biop","parcours","er_biop","er_surg")]
+
+```
+
+ER percentage for invasive case, intensity of right side at biopsy (INTENSRE_D_BI) is not present 
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+
+##### INTENSRE_D_BI NOT PRESENT!!!
+
+data.work$er_intensity = rep(NA, nrow(data.work))
+data.work$er_percentage = rep(NA, nrow(data.work))
+# 
+# surg = which(data.work$parcours %in% c("surgery"))
+# for(s in surg){
+#   if(data.work$LOC[s] == 1){
+#     data.work$er_intensity[s] = data.work$INTENSRE_G_M0[s]
+#     data.work$er_percentage[s] = data.work$POURCRE_G_M0[s]
+#   } else {
+#     data.work$er_intensity[s] = data.work$INTENSRE_D_M0[s]
+#     data.work$er_percentage[s] = data.work$POURCRE_D_M0[s]
+#   }
+# }
+# 
+# NAC = which(data.work$parcours %in% c("NAC","others"))
+
+
+for(s in 1:nrow(data.work)){
+  if(data.work$LOC[s] == 1){
+    data.work$er_intensity[s] = data.work$INTENSRE_G_M0[s]
+    data.work$er_percentage[s] = data.work$POURCRE_G_M0[s]
+  } else {
+    data.work$er_intensity[s] = data.work$INTENSRE_D_M0[s]
+    data.work$er_percentage[s] = data.work$POURCRE_D_M0[s]
+  }
+}
+```
+
+
+
+<!-- `r summary(data.work$ER_status)[3]` individuals with missing ER status: -->
+
+<!-- - `r summary(missing_ER_status$invasive_or_dcis_only_bin)[3]` with missing invasive/dcis status -->
+<!-- - `r summary(missing_ER_status$invasive_or_dcis_only_bin)[2]` with invasive status : `r nrow(missing_ER_status[which(missing_ER_status$invasive_or_dcis_only_bin %in% c("invasive") & is.na(missing_ER_status$er_biop) & is.na(missing_ER_status$er_surg)),])` individuals with missing ER status for surgery and biop, `r nrow(missing_ER_status[which(missing_ER_status$invasive_or_dcis_only_bin %in% c("invasive")),])-nrow(missing_ER_status[which(missing_ER_status$invasive_or_dcis_only_bin %in% c("invasive") & is.na(missing_ER_status$er_biop) & is.na(missing_ER_status$er_surg)),])` individual with `r missing_ER_status[which(missing_ER_status$invasive_or_dcis_only_bin %in% c("invasive") & is.na(missing_ER_status$er_biop) & !is.na(missing_ER_status$er_surg)),"er_surg"]` ER status for surgery -> ? -->
+
+## PR status 
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+data.work$PR_status <- data.work$pr_surg
+data.work$PR_status[which(is.na(data.work$PR_status))] = data.work$pr_biop[which(is.na(data.work$PR_status))]
+data.work$PR_status[which(data.work$pr_biop == 'positive')] = 'positive'
+
+# 
+# data.work$PR_status <- factor(NA, levels = c("positive","negative"))
+# data.work$PR_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("surgery") &
+#                             (data.work$pr_biop %in% c("positive") | data.work$pr_surg %in% c("positive")))] <- "positive"
+# data.work$PR_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & is.na(data.work$parcours) &
+#                             (data.work$pr_biop %in% c("positive") | data.work$pr_surg %in% c("positive")))] <- "positive"
+# data.work$PR_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("surgery") & 
+#                             (data.work$pr_biop %in% c("negative") & data.work$pr_surg %in% c("negative")))] <- "negative"
+# data.work$PR_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & is.na(data.work$parcours) & 
+#                             (data.work$pr_biop %in% c("negative") & data.work$pr_surg %in% c("negative")))] <- "negative"
+# data.work$PR_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & is.na(data.work$parcours) & 
+#                             (data.work$pr_biop %in% c("negative") & is.na(data.work$pr_surg)))] <- "negative"
+# data.work$PR_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("surgery") & 
+#                             (is.na(data.work$pr_biop) & data.work$pr_surg %in% c("negative")))] <- "negative"
+# data.work$PR_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("surgery") & 
+#                             (data.work$pr_biop %in% c("negative") & is.na(data.work$pr_surg)))] <- "negative"
+# data.work$PR_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("NAC","others") &
+#                             (data.work$pr_biop %in% c("positive")))] <- "positive"
+# data.work$PR_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("NAC","others") & 
+#                             (data.work$pr_biop %in% c("negative")))] <- "negative"
+
+
+summary(data.work$PR_status)
+
+missing_PR_status <- data.work[which(is.na(data.work$PR_status)),c("invasive_biop","parcours","pr_biop","pr_surg")]
+```
+
+PR percentage
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+
+data.work$pr_intensity = rep(NA, nrow(data.work))
+data.work$pr_percentage = rep(NA, nrow(data.work))
+
+# for(s in surg){
+#   if(data.work$LOC[s] == 1){
+#     data.work$pr_intensity[s] = data.work$INTENSRP_G_M0[s]
+#     data.work$pr_percentage[s] = data.work$POURCRP_G_M0[s]
+#   } else {
+#     data.work$pr_intensity[s] = data.work$INTENSRP_D_M0[s]
+#     data.work$pr_percentage[s] = data.work$POURCRP_D_M0[s]
+#   }
+# }
+
+for(s in 1:nrow(data.work)){
+  if(data.work$LOC[s] == 1){
+    data.work$pr_intensity[s] = data.work$INTENSRP_G_M0[s]
+    data.work$pr_percentage[s] = data.work$POURCRP_G_M0[s]
+  } else {
+    data.work$pr_intensity[s] = data.work$INTENSRP_D_M0[s]
+    data.work$pr_percentage[s] = data.work$POURCRP_D_M0[s]
+  }
+}
+```
+`r summary(data.work$PR_status)[3]` individuals with missing PR status:
+  
+<!-- - `r summary(missing_PR_status$invasive_or_dcis_only_bin)[3]` with missing invasive/dcis status -->
+<!-- - `r summary(missing_PR_status$invasive_or_dcis_only_bin)[2]` with invasive status : `r nrow(missing_PR_status[which(missing_PR_status$invasive_or_dcis_only_bin %in% c("invasive") & is.na(missing_PR_status$PR_biop) & is.na(missing_PR_status$PR_surg)),])` individuals with missing PR status for surgery and biop -->
+
+
+
+## Her2 status 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+
+
+
+data.work$Her2_status <- data.work$her2_surg
+data.work$Her2_status[which(is.na(data.work$Her2_status))] = data.work$her2_biop[which(is.na(data.work$Her2_status))]
+data.work$Her2_status[which(data.work$her2_biop == 'positive')] = 'positive'
+
+# data.work$Her2_status[which(data.work$her2_biop == 'positive' | data.work$her2_surg == 'positive')] = 'positive'
+
+
+# data.work$Her2_status <- factor(NA, levels = c("positive","negative"))
+# data.work$Her2_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("surgery") &
+#                               (data.work$her2_biop %in% c("positive") | data.work$her2_surg %in% c("positive")))] <- "positive"
+# 
+# data.work$Her2_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & is.na(data.work$parcours) &
+#                               (data.work$her2_biop %in% c("positive") | data.work$her2_surg %in% c("positive")))] <- "positive"
+# 
+# data.work$Her2_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("surgery") & 
+#                               (data.work$her2_biop %in% c("negative") & data.work$her2_surg %in% c("negative")))] <- "negative"
+# 
+# data.work$Her2_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & is.na(data.work$parcours) & 
+#                               (data.work$her2_biop %in% c("negative") & data.work$her2_surg %in% c("negative")))] <- "negative"
+# 
+# data.work$Her2_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & is.na(data.work$parcours) & 
+#                               (data.work$her2_biop %in% c("negative") & is.na(data.work$her2_surg)))] <- "negative"
+# 
+# data.work$Her2_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("surgery") & 
+#                               (is.na(data.work$her2_biop) & data.work$her2_surg %in% c("negative")))] <- "negative"
+# 
+# data.work$Her2_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("surgery") & 
+#                               (data.work$her2_biop %in% c("negative") & is.na(data.work$her2_surg)))] <- "negative"
+# 
+# data.work$Her2_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("NAC","others") &
+#                               (data.work$her2_biop %in% c("positive")))] <- "positive"
+# 
+# data.work$Her2_status[which(data.work$invasive_or_dcis_only_bin %in% c("invasive") & data.work$parcours %in% c("NAC","others") & 
+#                               (data.work$her2_biop %in% c("negative")))] <- "negative"
+
+
+summary(data.work$Her2_status)
+
+missing_Her2_status <- data.work[which(is.na(data.work$Her2_status)),c("invasive_biop","parcours","her2_biop","her2_surg")]
+```
+
+
+
+<!-- - Subtypes -->
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+# 
+# data.work$subtype3 <- factor(NA, levels = c("HER2+","TNBC","luminal"))
+# data.work$subtype3[which(data.work$Her2_status %in% c("positive"))] <- "HER2+"
+# data.work$subtype3[which(data.work$Her2_status %in% c("negative") & 
+#                            data.work$ER_status %in% c("negative") & data.work$PR_status %in% c("negative"))] <- "TNBC"
+# data.work$subtype3[which(data.work$Her2_status %in% c("negative") & 
+#                            (data.work$ER_status %in% c("positive") | data.work$PR_status %in% c("positive")))] <- "luminal"
+# 
+# summary(data.work$subtype3)
+# 
+# 
+# 
+# data.work$subtype4 <- factor(NA, levels = c("Her2+/HR-","Her2+/HR+","TNBC","luminal"))
+# data.work$subtype4[which(data.work$Her2_status %in% c("positive") & 
+#                            data.work$ER_status %in% c("negative") & data.work$PR_status %in% c("negative"))] <- "Her2+/HR-"
+# data.work$subtype4[which(data.work$Her2_status %in% c("positive") & 
+#                            (data.work$ER_status %in% c("positive") | data.work$PR_status %in% c("positive")))] <- "Her2+/HR+"
+# data.work$subtype4[which(data.work$Her2_status %in% c("negative") & 
+#                            data.work$ER_status %in% c("negative") & data.work$PR_status %in% c("negative"))] <- "TNBC"
+# data.work$subtype4[which(data.work$Her2_status %in% c("negative") & 
+#                            (data.work$ER_status %in% c("positive") | data.work$PR_status %in% c("positive")))] <- "luminal"
+# 
+# summary(data.work$subtype4)
+# 
+
+```
+
+
+
+# Toxicity
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+
+data.work$GranulocyteToxicityMarker = rep(0, nrow(data.work))
+data.work$doseReductionToxicityMarker = rep(0, nrow(data.work))
+
+reductionDoseVars = c("REDUCDOSE_NEO","REDUCDOSE_ADJ")
+
+growFactor = c("FACTCROISS_NEO","FACTCROISS_ADJ")
+
+datesGrowFactor = c("DTDEBFACTCROISS_NEO", "DTDEBFACTCROISS_ADJ")
+
+datesChemo = c("DTDEBCYCLE_NEO", "DTDEBCYCLE_ADJ")
+
+for(j in length(growFactor)){
+  for(i in 1:nrow(data.work)){
+    if(data.work[i,growFactor[j]] %in% c(1)){
+      date_g = as.Date(data.work[i, datesGrowFactor[j]], format = "%d/%m/%y")
+      if(!is.na(date_g)){
+        date_chem = data.work[i,datesChemo[j]]
+        if(!is.na(date_chem)){
+          if(date_chem < date_g){
+            data.work$GranulocyteToxicityMarker[i] = 1
+          }
+        }
+      }
+    }
+  }
+}
+
+data.work$doseReductionToxicityMarker[which(data.work$REDUCDOSE_NEO == 1 | data.work$REDUCDOSE_ADJ == 1)] = 1
+data.work$toxicityMixed  =  data.work$doseReductionToxicityMarker + data.work$GranulocyteToxicityMarker
+data.work$toxicityMixed[which(data.work$toxicityMixed == 2)] = "yes"
+data.work$toxicityMixed[which(data.work$toxicityMixed == 1)] = "yes"
+data.work$toxicityMixed[which(data.work$toxicityMixed == 0)] = "no"
+```
+
+
+
+
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$consult_prof <- factor(NA, levels = c("0", "1 to 5 times", "6 to 10 times", "More than 10 times"))
+data.work$consult_prof[which(data.work$NBCONS_BI %in% 
+          c("","D","K"))] <- NA
+data.work$consult_prof[which(data.work$NBCONS_BI %in% c("1"))] <- "0"
+data.work$consult_prof[which(data.work$NBCONS_BI %in% c("2"))] <- "1 to 5 times"
+data.work$consult_prof[which(data.work$NBCONS_BI %in% c("3"))] <- "6 to 10 times"
+data.work$consult_prof[which(data.work$NBCONS_BI %in% c("4"))] <- "More than 10 times"
+```
+
+# PCR
+We define pcr as no infiltrating tumor in the breast and no cancer in lymphatic nodes . Do we need to use the variable INFILTR_G_M0 and INFILTR_D_M0?
+
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+data.work$pCR <- factor(NA, levels = c("no","yes"))
+data.work$pCR[which((data.work$NAC_bin=="yes" & data.work$gang_post_chimio %in% c("no") & data.work$breast_residu_invasif %in% c("no")))  ] <- "yes"
+data.work$pCR[which(data.work$NAC_bin=="yes" & (data.work$gang_post_chimio %in% c("yes") | data.work$breast_residu_invasif %in% c("yes")))] <- "no"
+
+table(data.work$pCR , exclude = NULL)
+
+pCRmissing = which(data.work$NAC_bin=="yes" & is.na(data.work$pCR))
+
+rr= data.work[pCRmissing,c("surgery", "breast_res_insitu", "breast_res_infiltr_tmp", "ENVAHI_D_M0","ENVAHI_G_M0","RESIDU1_D_M0","RESIDU1_G_M0")]
+rr
+
+adj_reduc_dose = which(data.work$reduc_dos_adj == "yes")
+neoadj_reduc_dose = which(data.work$reduc_dos_neo == "yes")
+reduc_dose = unique(c(adj_reduc_dose, neoadj_reduc_dose))
+data.work$reduc_dose = unlist(lapply(1:nrow(data.work), function(x){if(x%in%reduc_dose)"Yes"else"No"}))
+```
+
+# Department and region
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+summary(as.factor(data.work$DPT))
+departements_region = read.csv("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_2018/Data/departements_region.csv", skip = 2, as.is = T)
+data.work$DPT[which(data.work$DPT=="01")]= "1"
+data.work$DPT[which(data.work$DPT=="02")]= "2"
+data.work$DPT[which(data.work$DPT=="03")]= "3"
+data.work$DPT[which(data.work$DPT=="04")]= "4"
+data.work$DPT[which(data.work$DPT=="05")]= "5"
+data.work$DPT[which(data.work$DPT=="06")]= "6"
+data.work$DPT[which(data.work$DPT=="07")]= "7"
+data.work$DPT[which(data.work$DPT=="08")]= "8"
+data.work$DPT[which(data.work$DPT=="09")]= "9"
+findDep <- function(numero){
+  dep = which(departements_region$Numero == numero)
+  return(as.character(departements_region$Region[dep]))
+}
+data.work$region = unlist(lapply(data.work$DPT, findDep))
+table(data.work$region)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+data.workFIN_ETUDES = read_sas("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Data/Projet 020 - COMBIMMUNO - AS HAMY - 20-12-2019/fin_etudes.sas7bdat", NULL)
+```
+
+Correction equipe Dijon
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+data.workFIN_ETUDES$SECONDCANCDIAGDATE[which(data.workFIN_ETUDES$SUBJID=="13-08950" & data.workFIN_ETUDES$SECONDCANCDIAGDATE=="NK/NK/2009")]= "NK/05/2017"
+
+# 4.4 Pour les patientes dont la dernière visite est à M36, on recrée la date de fin d’étude en prenant la date minimum entre la date de signature de l’investigateur et la
+# date de visite M36 + 24 mois.
+
+data.workM36  = read_sas("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Data/Projet 020 - COMBIMMUNO - AS HAMY - 20-12-2019/m36.sas7bdat", NULL)
+
+
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+data.workFIN_ETUDES = data.workFIN_ETUDES[nobilat,]
+
+data.work$LOCRECUR = data.workFIN_ETUDES$LOCRECUR
+data.work$LOCRECURDATE = data.workFIN_ETUDES$LOCRECURDATE
+data.work = imputeDate(data.work, 'LOCRECURDATE')
+data.work$LOCRECURDATE = as.Date(data.work$LOCRECURDATE, format = "%d/%m/%y")
+
+data.work$GANGRECUR = data.workFIN_ETUDES$GANGRECUR
+data.work$GANGRECURDATE = data.workFIN_ETUDES$GANGRECURDATE
+data.work = imputeDate(data.work, 'GANGRECURDATE')
+data.work$GANGRECURDATE = as.Date(data.work$GANGRECURDATE, format = "%d/%m/%y")
+
+data.work$METAST = data.workFIN_ETUDES$METAST
+data.work$METASTAPPDATE = data.workFIN_ETUDES$METASTAPPDATE
+data.work = imputeDate(data.work, 'METASTAPPDATE')
+data.work$METASTAPPDATE = as.Date(data.work$METASTAPPDATE, format = "%d/%m/%y")
+
+data.work$CONTROLOC = data.workFIN_ETUDES$CONTROLOC
+data.work$CONTROLOCAPPDATE = data.workFIN_ETUDES$CONTROLOCAPPDATE
+data.work = imputeDate(data.work, 'CONTROLOCAPPDATE')
+data.work$CONTROLOCAPPDATE = as.Date(data.work$CONTROLOCAPPDATE, format = "%d/%m/%y")
+
+data.work$SECONDCANC = data.workFIN_ETUDES$SECONDCANC
+data.work$SECONDCANCDIAGDATE = data.workFIN_ETUDES$SECONDCANCDIAGDATE
+data.work = imputeDate(data.work, 'SECONDCANCDIAGDATE')
+data.work$SECONDCANCDIAGDATE = as.Date(data.work$SECONDCANCDIAGDATE, format = "%d/%m/%y")
+
+data.work$DEAD = data.workFIN_ETUDES$DEAD
+data.work$DEADDATE = data.workFIN_ETUDES$DEADDATE
+data.work = imputeDate(data.work, 'DEADDATE')
+data.work$DEADDATE = as.Date(data.work$DEADDATE, format = "%d/%m/%y")
+
+
+data.workFIN_ETUDES$DTDERNNOUV[which(data.workFIN_ETUDES$DTDERNNOUV=='')] = NA
+data.work$DTDERNNOUV = data.workFIN_ETUDES$DTDERNNOUV
+data.work = imputeDate(data.work, 'DTDERNNOUV')
+data.work$DTDERNNOUV = as.Date(data.work$DTDERNNOUV, format = "%d/%m/%y")
+
+
+data.work$DEADCAUS = data.workFIN_ETUDES$DEADCAUS
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+data.workVARIABLES_DERIVEES = read_sas("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Data/Projet\ 020\ -\ COMBIMMUNO\ -\ AS\ HAMY\ -\ 20-12-2019/variablesderivees.sas7bdat", NULL)
+data.workVARIABLES_DERIVEES_noBILAT = data.workVARIABLES_DERIVEES[nobilat,]
+
+data.work$grade_3cl_DERIVEE = data.workVARIABLES_DERIVEES_noBILAT$GRADE
+data.work$TYPINFILTR = data.workVARIABLES_DERIVEES_noBILAT$TYPINFILTR
+```
+
+Correction des erreurs, equipe de Dijon, SUPPRESSION PATIENTES?
+```{r echo=T, message=FALSE, warning=FALSE, results='markup'}
+
+# 3.1 Suppression des patientes métastatiques à M0
+subj_id_list_metaM0 = c('01-07532', '01-09224', '01-09264', '01-09523', '03-08496', 
+                        '03-09681', '05-08095', '07-06354', '10-08730', '11-09053',
+                        '13-09081', '14-09007', '14-09865', '16-10123', '22-06502')
+
+# 3.2 Suppression des cancers non infiltrants
+subj_id_non_infiltr = c('01-07077', '05-07992‬')
+
+# 3.3 Suppression des patientes dont la raison de fin d’étude est « inclusion à tort ».
+subj_id_list_inclusion_tort = c('01-00281', '01-02327', '01-03278', '01-04308', '01-04873', '01-05020', '01-05176', '01-05618',
+                                '01-05954', '01-06769', '01-07076', '01-09401', '01-09596', '02-06908', '02-07019', '03-08147',
+                                '05-02918', '06-04541', '06-05947', '06-06483', '06-07160', '06-08328', '10-06445', '10-07335',
+                                '14-00056', '14-00155', '14-05522', '14-06230', '15-02991', '15-07771', '16-07260', '16-09039',
+                                '19-02236', '20-03852', '23-07279', '23-08103')
+
+# 3.4 Suppression des patientes perdues de vue ou ayant retiré leur consentement dans le mois suivant le consentement
+subj_id_list_consentement = c('01-01090', '01-03112', '01-03169', '01-03234', '01-03571', '01-05868', '03-01743', '03-05998',
+                              '05-03778', '05-04422', '06-01165', '07-03694', '07-03967', '07-04734', '09-09274', '11-08889',
+                              '13-03848', '14-01459', '14-07880', '16-08331', '17-03256', '18-01279', '18-03032')
+
+# 3.5 Suppression des patientes ayant des métastases ou un second cancer dans les 6 mois suivant le consentement
+subj_id_list_meta_6_mois = c("01-00395", "01-10091", "05-00847", "07-01036", "09-01289", "11-01217", "14-05342", "16-08714", "01-01257", "02-01338", "05-02518", "07-03984", "09-07559", "11-01831", "14-08827", "17-05364", "01-01508", "02-02019", "05-04051", "07-07661", "10-00797", "11-03272", "14-09788", "18-02333", "01-01567", "02-08227", "05-05119", "07-09028", "10-00889", "11-06671", "15-01611", "01-03812", "02-08790", "05-06358", "07-09708", "10-04192", "11-07374", "16-04243", "01-04897", "03-07081", "05-08212", "08-04302", "10-05492", "12-02261", "16-04715", "01-04964", "03-09972", "06-00924", "08-05712", "10-07275", "12-05236", "16-04722", "01-06167", "05-00117", "06-04102", "08-07677", "10-07317", "13-04574", "16-06892", "01-07135", "05-00169", "06-07749", "08-08536", "10-08417", "14-02281", "16-07263", "01-07636", "05-00402", "06-08580", "09-00702", "10-10010", "14-02653", "16-08116")
+
+# 3.6 Suppression des patientes ayant moins de 10 données renseignées au BI et n’ayant réalisé aucune autre visite
+subj_id_list_no_visit = c("01-05792", "03-09994", "14-09551", "26-09259")
+
+# 3.7 Suppression des patientes n’ayant pas de date de fin d’étude et aucune visite après BI
+subj_id_list_no_visit_after_bi = c("14-04083", "16-07265")
+
+# 3.8 Suppression de la patiente sortie d’étude avant le bilan d'inclusion
+subj_id_list_before_bilan_etude = c("19-09483")
+
+# 3.9 Suppression de la patiente ayant une date de visite M0 deux ans après le bilan d’inclusion et une date de métastases avant M0
+subj_id_list_error = c('11-04822')
+
+subj_to_remove = c(subj_id_list_metaM0 , subj_id_non_infiltr, subj_id_list_inclusion_tort, subj_id_list_consentement,
+                   subj_id_list_meta_6_mois, subj_id_list_no_visit, subj_id_list_no_visit_after_bi, subj_id_list_before_bilan_etude,
+                   subj_id_list_error)
+
+data.workOld_no_filter_patients = data.work
+data.work = data.work %>% filter(!SUBJID %in% subj_to_remove)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='markup'}
+save.image("/Users/nadir/Desktop/projects/postdoc/RT2Lab/CANTO/BASE_20DIC2019/Data/2019/preprocessing_before_comedications.Rdata", version = 2)
+
+write.csv(data.work, "/Users/nadir/Desktop/projects/postdoc/DATABASES/databases/core/04_canto/data/preprocessing_before_comedications.csv")
+
+system('export PROJECT_PATH=/Users/nadir/Desktop/projects/postdoc/DATABASES/databases;cd $PROJECT_PATH;Rscript core/00_common/src/main.R --db_name=04_canto --class_name=MappingCanto --mapping --preprocessing')
+
+```
+
+

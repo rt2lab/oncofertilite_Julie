@@ -1,0 +1,29 @@
+unnamed-chunk-1	library
+unnamed-chunk-2	%>%	==	Figure_or_Table	ifelse	library	mutate	nb	paste0	pretty_name_title	read_excel	Suppl_main	Supplemental_or_main
+unnamed-chunk-3	!	%>%	==	$	$<-	as.character	as.numeric	birth_date	c	count	ddn_nom_dusage	difftime	dmy	duplicated	factor	filter	first_name_short2	first_name_short3	gender	group_by	gsub	head	iconv	ifelse	is.na	library	mutate	name	name_only	name1	name2	name3	name4	name5	name6	new_birth_date	new_birth_date2	nom_dusage	nrow	paste	paste0	quantcut	raw_data	raw_data_corrected	read_excel	return	round	select	str_split_fixed	table	title	tolower
+unnamed-chunk-4	::	%>%	$	$<-	aes	as.factor	c	count	cumsum	element_blank	enc	factor	fig_tab	gender	gender2	geom_bar	geom_text	ggplot	group_by	guides	labs	levels	match	mutate	n	n_and_perc	paste0	percent_format	percent_full	print	rev	round	scale_fill_manual	sum	summarise	theme	theme_bw	ungroup	xlab	year2	ylab	ypos_percent
+unnamed-chunk-5	p_gender_temporal_trends
+unnamed-chunk-6	~	$	aes	age_at_ecn	c	element_blank	enc	fig_tab	gender	geom_boxplot	geom_histogram	ggplot	labs	match	print	scale_fill_manual	t.test	theme	theme_bw	title_p_gender_temporal_trends
+unnamed-chunk-7	p_histogram_gender_age_ecn
+unnamed-chunk-8	%>%	==	arrange	count	desc	enc	filter	first_name_short4	gender	group_by	n
+unnamed-chunk-9	top_prenoms_filles	top_prenoms_garcons
+unnamed-chunk-10	aes	element_blank	first_name_short4	geom_bar	ggplot	n	prenoms_filles	theme	theme_bw
+unnamed-chunk-11	::	%>%	$	$<-	aes	as.factor	c	count	cumsum	decile	element_blank	enc	factor	fig_tab	gender	gender2	geom_bar	geom_text	ggplot	group_by	guides	labs	levels	match	mutate	n	n_and_perc	paste0	percent_format	percent_full	print	rev	round	scale_fill_manual	sum	theme	theme_bw	ungroup	xlab	ylab	ypos_percent
+unnamed-chunk-12	::	%>%	$	$<-	aes	as.factor	c	count	cumsum	element_blank	enc	factor	fig_tab	gender	gender2	geom_bar	geom_text	ggplot	group_by	guides	labs	levels	match	mutate	n	n_and_perc	paste0	percent_format	percent_full	print	quartile	rev	round	scale_fill_manual	sum	theme	theme_bw	ungroup	xlab	ylab	ypos_percent
+unnamed-chunk-13	c	p_gender_deciles	p_gender_quartiles	plot_grid
+unnamed-chunk-14	::	%>%	==	$	$<-	aes	as.factor	c	count	cumsum	element_blank	enc	factor	fig_tab	filter	gender	gender2	geom_bar	geom_text	ggplot	group_by	guides	labs	levels	match	mutate	n	n_and_perc	paste0	percent_format	percent_full	print	quartile	rev	round	scale_fill_manual	sum	theme	theme_bw	ungroup	xlab	year2	ylab	ypos_percent
+unnamed-chunk-15	p_gender_1stquartiles_by_year
+unnamed-chunk-16	%>%	==	$	$<-	as.data.frame	duplicated	head	ifelse	library	nrow	paste0	read_excel	str_split_fixed	table	tolower	Unaccent
+unnamed-chunk-17	%>%	count	gender	group_by	hu	mutate	n	paste0	round	sum	summarise
+unnamed-chunk-18	::	%>%	$	$<-	aes	as.factor	c	count	cumsum	element_blank	factor	gender	gender2	geom_bar	geom_text	ggplot	group_by	guides	hu	levels	mutate	n	n_and_perc	paste0	percent_format	percent_full	print	rev	round	scale_fill_manual	sum	theme	theme_bw	ungroup	xlab	ylab	ypos_percent
+unnamed-chunk-19	p_gender_hu
+unnamed-chunk-20	%>%	==	$	$<-	as.character	as.matrix	count	enc	filter	group_by	ifelse	is_in_enc_2004_2019	mutate	n	name_first_name	name_first_name_is_in_hu	paste0	round	select	sum	summarise
+unnamed-chunk-21	::	%>%	$	chisq.test	count	cumsum	enc	gender	group_by	mutate	n	name_first_name_is_in_hu	paste0	percent_format	percent_full	round	sum	table	ungroup
+unnamed-chunk-22	%>%	==	count	enc	filter	gender	group_by	mutate	n	name_first_name_is_in_hu	paste0	round	sum	summarise
+unnamed-chunk-23	::	%>%	==	$	$<-	admitted_hu	aes	as.factor	c	count	cumsum	element_blank	enc	factor	fig_tab	filter	gender	gender2	geom_bar	geom_text	ggplot	group_by	guides	labs	levels	match	mutate	n	n_and_perc	name_first_name_is_in_hu	paste0	percent_format	percent_full	print	rev	round	scale_fill_manual	sum	summarise	theme	theme_bw	ungroup	xlab	ylab	ypos_percent
+unnamed-chunk-24	p_gender_hu_or_not
+unnamed-chunk-25	::	%>%	==	$	$<-	aes	as.factor	c	count	cumsum	element_blank	enc	factor	fig_tab	filter	gender	gender2	geom_bar	geom_text	ggplot	group_by	guides	labs	levels	match	mutate	n	n_and_perc	name_first_name_is_in_hu	paste0	percent_format	percent_full	print	rev	round	scale_fill_manual	sum	theme	theme_bw	ungroup	xlab	year2	ylab	ypos_percent
+unnamed-chunk-26	p_gender_admitted_HU_by_year
+unnamed-chunk-27	::	%>%	<	==	~	$	$<-	aes	as.factor	c	coord_flip	count	cumsum	decile	decile2	element_blank	enc	facet_grid	factor	filter	gender	geom_bar	geom_text	ggplot	group_by	guides	levels	mutate	n	n_and_perc	name_first_name_is_in_hu	paste0	percent_format	percent_full	print	rev	round	sum	theme	theme_bw	ungroup	xlab	year	ylab
+unnamed-chunk-28	c	p_deciles_ecn_HU_gender	p_deciles_ecn_HU_wp	plot_grid
+unnamed-chunk-29	p_deciles_ecn_HU_wp_and_gender

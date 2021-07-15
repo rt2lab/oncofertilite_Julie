@@ -1,0 +1,415 @@
+variable_name	level	level_name_en	level_name_fr
+database	1	Base Sein	
+database	2	Neorep	
+database	3	p53 EORTC	
+database	4	Canto	
+database	5	Feeric	
+database	6	Implants Seintinelles	
+database	7	Oncofertilite ConSoRe	
+database	8	Tabac Curie 	
+database	9	BRCAnet	
+database	10	Neoadjuvant Saint-Louis	
+database	11	REMAGUS 02 
+database	12	REMAGUS 04
+database	13	PACS 08	
+database	14	PACS 09	
+database	15	German Breast Group (GBG) 	
+database	16	ALTTO	
+database	17	Neo ALTTO	
+database	18	SEER	
+side	1	Left breast cancer	
+side	2	Right breast cancer
+period_diag	1	[1970,1975)	
+period_diag	2	[1975,1980)	
+period_diag	3	[1980,1985)	
+period_diag	4	[1985,1990)	
+period_diag	5	[1990,1995)	
+period_diag	6	[1995,2000)	
+period_diag	7	[2000,2005)	
+period_diag	8	[2005,2010)	
+period_diag	9	[2010,2015)	
+period_diag	10	[2015,2020)	
+center_curie	1	Institut Curie Paris	
+center_curie	2	Institut Curie Saint-Cloud	
+center_curie	3	Others	
+center	1	Institut Curie
+center	2	Others	
+age_cl_10_1	1	[0,30)	
+age_cl_10_1	2	[30,40)	
+age_cl_10_1	3	[40,50)	
+age_cl_10_1	4	[50,60)	
+age_cl_10_1	5	[60,70)	
+age_cl_10_1	6	[70,80)	
+age_cl_10_1	7	[80,120)	
+age_cl_10_2	1	[0,40)	
+age_cl_10_2	2	[40,50)	
+age_cl_10_2	3	[50,60)	
+age_cl_10_2	4	[60,70)	
+age_cl_10_2	5	[70,120)	
+age_cl_3_cl 	1	[0,50)	
+age_cl_3_cl 	2	[50,60)	
+age_cl_3_cl 	3	[60,120)	
+age_cl_5_cl 	1	[0,40)	
+age_cl_5_cl 	2	[40,50)	
+age_cl_5_cl 	3	[50,60)	
+age_cl_5_cl 	4	[60,75)	
+age_cl_5_cl 	5	[75,120)	
+age_young_cl	1	[0,30)	
+age_young_cl	2	[30,35)	
+age_young_cl	3	[35,40)	
+age_young_cl	4	[40,120)	
+nb_preg_3cl	0	No
+nb_preg_3cl	1	One
+nb_preg_3cl	2	More than 1	
+prev_pregnancy	0	No	
+prev_pregnancy	1	Yes	
+nb_child_3cl	0	No	
+nb_child_3cl	1	Yes	
+nb_child_3cl	2	More than 1	
+prev_child	0	No	
+prev_child	1	Yes	
+breast_feed	0	No	
+breast_feed	1	Yes 	
+menop	0	Premenopausal	
+menop	1	Postmenopausal	
+hrt	0	No	
+hrt	1	Yes	
+fam_history	0	No	
+fam_history	1	Yes	
+brca_screen	0	No	
+brca_screen	1	Yes	
+brca_mut	0	No	
+brca_mut	1	Yes	
+brca_1_2_mut	1	BRCA1	
+brca_1_2_mut	2	BRCA2	
+brca_1_2_mut	3	others (?)	
+brca_1_2_mut	4	No	
+bmi_2cl	1	<25	
+bmi_2cl	2	>25	
+bmi_3cl	2	Healthful weight	
+bmi_3cl	1	Underweigh	
+bmi_3cl	3	>=25	
+bmi_4cl	2	Healthful weight
+bmi_4cl	1	Underweigh	
+bmi_4cl	3	Overweight	
+bmi_4cl	4	Obesity	
+bmi_5cl	2	Healthful weight	
+bmi_5cl	1	Underweigh	
+bmi_5cl	3	Overweight	
+bmi_5cl	4	Obesity	
+bmi_5cl	5	Extreme obesity	
+smoking_3cl	1	Never	
+smoking_3cl	2	Current	
+smoking_3cl	3	Former 	
+smoking	0	No	
+smoking	1	Yes	
+drinking	0	No	
+drinking	1	Yes	
+hosp_psy	0	No	
+hosp_psy	1	Yes	
+comedic	0	No	
+comedic	1	Yes	
+comedic_n_nervous_system	0	No	
+comedic_n_nervous_system	1	Yes	
+comedic_c_cardiovascular	0	No	
+comedic_c_cardiovascular	1	Yes	
+comedic_a_alimentary_metabo	0	No	
+comedic_a_alimentary_metabo	1	Yes	
+comedic_h_hormonal_prep	0	No	
+comedic_h_hormonal_prep	1	Yes	
+comedic_others	0	No	
+comedic_others	1	Yes	
+comorbidity_bin	0	No	
+comorbidity_bin	1	Yes	
+comor_hypertension_heart_disease	0	No	
+comor_hypertension_heart_disease	1	Yes	
+comor_depression_anxiety	0	No	
+comor_depression_anxiety	1	Yes	
+comor_dyslipidemia	0	No	
+comor_dyslipidemia	1	Yes	
+comor_diabete	0	No	
+comor_diabete	1	Yes	
+comor_ulcere_gastritis	0	No	
+comor_ulcere_gastritis	1	Yes	
+comor_thyroid_disorders	0	No	
+comor_thyroid_disorders	1	Yes	
+comor_others_grouped	0	No	
+comor_others_grouped	1	Yes	
+bilat_bc	0	No	
+bilat_bc	1	Yes	
+inflammatory_BC	0	No	
+inflammatory_BC	1	Yes	
+moddiag	0	Radiologic	
+moddiag	1	Clinical	
+clin_multifocality	1	Unifocal	
+clin_multifocality	 2	Multifocal	
+tuicc_5cl	0	T0	
+tuicc_5cl	1	T1	
+tuicc_5cl	2	T2	
+tuicc_5cl	3	T3	
+tuicc_5cl	4	T4	
+tuicc_4cl	1	T0-T1	
+tuicc_4cl	2	T2	
+tuicc_4cl	3	T3	
+tuicc_4cl	4	T4	
+tuicc_3cl	1	T0-T1	
+tuicc_3cl	2	T2	
+tuicc_3cl	3	T3-T4	
+nuicc_4cl	0	N0	
+nuicc_4cl	1	N1	
+nuicc_4cl	2	N2	
+nuicc_4cl	3	N3	
+nuicc_2cl	0	N0	
+nuicc_2cl	1	N1-N2-N3	
+muicc	0	M0	
+muicc	1	M1	
+er_status	0	Negative	
+er_status	1	Positive	
+pr_status	0	Negative	
+pr_status	1	Positive	
+hr_status	0	Negative	
+hr_status	1	Positive	
+er_intensity	1	Weak
+er_intensity	2	Moderate	
+er_intensity	3	Strong	
+pr_intensity	1	Weak
+pr_intensity	2	Moderate	
+pr_intensity	3	Strong	
+her2_status	0	Negative	
+her2_status	1	Positive	
+luminal	0	Non luminal	
+luminal	1	Luminal	
+tnbc	0	Non TNBC	
+tnbc	1	TNBC	
+subtype	1	luminal	
+subtype	2	TNBC	
+subtype	3	HER2+	
+subtype4	1	luminal	
+subtype4	2	TNBC	
+subtype4	3	HER2+/HR+	
+subtype4	4	HER2+/HR-	
+subtype5	1	luminal A	
+subtype5	2	luminal B	
+subtype5	3	TNBC	
+subtype5	4	HER2+/RH+	
+subtype5	5	HER2+/RH-	
+er_status_1_perc	0	Negative	
+er_status_1_perc	1	Positive	
+pr_status_1_perc	0	Negative	
+pr_status_1_perc	1	Positive	
+hr_status_1_perc	0	Negative	
+hr_status_1_perc	1	Positive	
+luminal_1_perc	0	Non luminal	
+luminal_1_perc	1	Luminal	
+tnbc_1_perc	0	Non TNBC	
+tnbc_1_perc	1	TNBC	
+subtype_1_perc	1	luminal	
+subtype_1_perc	2	TNBC	
+subtype_1_perc	3	HER2+	
+subtype4_1_perc	1	luminal	
+subtype4_1_perc	2	TNBC	
+subtype4_1_perc	3	HER2+/RH+	
+subtype4_1_perc	4	HER2+/RH-	
+subtype5_1_perc	1	luminal A	
+subtype5_1_perc	2	luminal B	
+subtype5_1_perc	3	TNBC	
+subtype5_1_perc	4	HER2+/RH+	
+subtype5_1_perc	5	HER2+/RH-	
+histo_5cl	1	NST	
+histo_5cl	2	Lobular	
+histo_5cl	3	Mucinous	
+histo_5cl	4	Tubulous	
+histo_5cl	9	Others  	
+histo_4cl	1	NST	
+histo_4cl	2	Lobular	
+histo_4cl	3	Mucinous	
+histo_4cl	9	Others  	
+histo_3cl	1	NST	
+histo_3cl	2	Lobular	
+histo_3cl	9	Others  	
+histo_2cl	1	NST	
+histo_2cl	2	Others  	
+grade_3cl	1	Grade 1	
+grade_3cl	2	Grade 2	
+grade_3cl	3	Grade 3	
+grade_2cl	1	Grade 1-2	
+grade_2cl	 2	Grade 3
+Ki67_cl	1	[0-10)	
+Ki67_cl	2	[10-20)
+Ki67_cl	3	>=20	
+dcis_component	0	No	
+dcis_component	1	Yes	
+invasive_or_dcis	1	Invasive	
+invasive_or_dcis	2	DCIS	
+inv_dcis_4cl	1	Invasive without DCIS 	
+inv_dcis_4cl	2	Invasive with DCIS	
+inv_dcis_4cl	3	DCIS	
+inv_dcis_4cl	4	Invasive and DCIS NA	
+p53	 1	wild-type	
+p53	 2	mutated	
+str_til_perc_30	1	[0,30)	
+str_til_perc_30	2	>=30	
+str_til_denkert	1	[0,10)	
+str_til_denkert	2	[10,50)	
+str_til_denkert	3	>=50	
+lvi_biop	0	No	
+lvi_biop	1	Yes	
+breast_surgery	0	No	
+breast_surgery	1	Yes	
+breast_surgery_3cl	0	No surgery	
+breast_surgery_3cl	1	Lumpectomy	
+breast_surgery_3cl	2	Mastectomy	
+axillary_surgery_4cl	0	No axillar surgery	
+axillary_surgery_4cl	 1	SLN	
+axillary_surgery_4cl	 2	ALND	
+axillary_surgery_4cl	3	both	
+axillary_surgery_3cl	1	SLN
+axillary_surgery_3cl	2	ALND	
+axillary_surgery_3cl	4	No	
+axillary_surgery_2cl	1	SLN	
+axillary_surgery_2cl	2	ALND	
+comp_post_surg	0	No	
+comp_post_surg	1	Yes	
+ct	0	No	
+ct	1	Yes	
+rt	0	No	
+rt	1	Yes	
+ht	0	No	
+ht	1	Yes	
+ht_type_5cl	1	Tamoxifen	
+ht_type_5cl	 2	Aromatase inhibitors	
+ht_type_5cl	 3	Tamoxifen+agonist	
+ht_type_5cl	 4	Aromatase inhibitors+agonist	
+ht_type_5cl	 5	Others	
+ht_type_5cl	9	No	
+ht_type_3cl	1	Tamoxifen	
+ht_type_3cl	 2	Aromatase inhibitors
+ht_type_3cl	 3	Others	
+antiher2	0	No	
+antiher2	1	Yes	
+tc_other	0	No	
+tc_other	1	Yes	
+neo_ct      	0	No	
+neo_ct      	1	Yes	
+neo_ht      	0	No	
+neo_ht      	1	Yes	
+neo_rt      	0	No	
+neo_rt      	1	Yes	
+neo_antiher2	0	No	
+neo_antiher2	1	Yes	
+neo_tc_other	0	No	
+neo_tc_other	1	Yes	
+primary_ttt	1	Surgery	
+primary_ttt	2	Neoadjuvant treatment	
+primary_ttt	9	No surgery	
+primary_ttt_5cl	1	Surgery	
+primary_ttt_5cl	2	NAC +/- anti-HER2 treatment	
+primary_ttt_5cl	3	Neoadjuvant endocrine therapy alone	
+primary_ttt_5cl	4	Others neoadjuvant treatments	
+primary_ttt_5cl	9	No surgery	
+primary_ttt_3cl	1	Surgery	
+primary_ttt_3cl	2	NAC	
+primary_ttt_3cl	3	Others	
+neo_ct_regimen	1	Anthra/taxane	
+neo_ct_regimen	2	Anthra 	
+neo_ct_regimen	3	Taxanes		
+neo_ct_regimen	4	Others	
+neo_ct_sequence	1	Monosequential	
+neo_ct_sequence	2	Bi-sequential	
+neo_ct_sequence	3	Multisequential	
+reduc_dos_neo	0	No	
+reduc_dos_neo	1	Yes	
+gcsf_neo	0	No	
+gcsf_neo	1	Yes	
+neo_antiher2_regimen	 1	Trastuzumab	
+neo_antiher2_regimen	 2	Lapatinib	
+neo_antiher2_regimen	 3	Pertuzumab	
+neo_antiher2_regimen	 4	Combination	
+neo_antiher2_regimen	 5	Others	
+adj_ct	0	No	
+adj_ct	1	Yes	
+adj_ct_regimen	 1	Anthra/taxane		
+adj_ct_regimen	 2	Anthra	
+adj_ct_regimen	 3	Taxanes	
+adj_ct_regimen	 4	Others	
+adj_ct_sequence	1	Monosequential	
+adj_ct_sequence	2	Bi-sequential	
+adj_ct_sequence	3	Multisequential	
+reduc_dos_adj	0	No	
+reduc_dos_adj	1	Yes	
+gcsf_adj	0	No	
+gcsf_adj	1	Yes	
+adj_antiher2	0	No	
+adj_antiher2	1	Yes	
+ct_setting_5cl	1	NAC	
+ct_setting_5cl	2	Adjuvant	
+ct_setting_5cl	3	NAC and adjuvant	
+ct_setting_5cl	4	Chemotherapy without surgery	
+ct_setting_5cl	5	No	
+antiher2_setting_5cl	1	Neoadjuvant anti-HER2	
+antiher2_setting_5cl	2	Adjuvant anti-HER2	
+antiher2_setting_5cl	3	Neo and adjuvant anti-HER2	
+antiher2_setting_5cl	4	Anti-HER2 without surgery	
+antiher2_setting_5cl	5	No anti-HER2	
+reduc_dos_tz	0	No	
+reduc_dos_tz	1	Yes	
+stop_tz	0	No	
+stop_tz	1	Yes	
+pnuicc_4cl	1	0	
+pnuicc_4cl	 2	[1-3]	
+pnuicc_4cl	 3	[4-9]	
+pnuicc_4cl	4	10 and more	
+pnuicc_3cl	1	0	
+pnuicc_3cl	 2	[1-3]	
+pnuicc_3cl	 3	4 and more	
+pnuicc_2cl	1	Node negative	
+pnuicc_2cl	 2	Node positive	
+ptuicc_5cl	0	pT0 or pTis	
+ptuicc_5cl	1	pT1	
+ptuicc_5cl	2	pT2	
+ptuicc_5cl	3	pT3	
+ptuicc_5cl	4	pT4	
+ptuicc_4cl	1	pT0-pT1	
+ptuicc_4cl	2	pT2	
+ptuicc_4cl	3	pT3	
+ptuicc_4cl	4	pT4	
+ptuicc_3cl	1	pT0-T1	
+ptuicc_3cl	2	pT2	
+ptuicc_3cl	3	pT3-pT4	
+lvi	0	No	
+lvi	1	Yes	
+multifocal_histo	0	No	
+multifocal_histo	1	Yes	
+multifocality_clin_histo	0	No	
+multifocality_clin_histo	1	Yes	
+breast_res_insitu	0	No	
+breast_res_insitu	1	Yes	
+breast_res_infiltr	0	No	
+breast_res_infiltr	1	Yes	
+pCR	0	No	
+pCR	1	Yes	
+ypnuicc_4cl	0	0	
+ypnuicc_4cl	 1	[1-3]	
+ypnuicc_4cl	 2	[4-9]	
+ypnuicc_4cl	3	10 and more	
+ypnuicc_3cl	0	0	
+ypnuicc_3cl	 1	[1-3]	
+ypnuicc_3cl	 2	4 and more	
+ypnuicc_2cl	1	Node negative	
+ypnuicc_2cl	 2	Node positive	
+lvi_postneo	0	No	
+lvi_postneo	1	Yes	
+ev_prog_neo	0	No	
+ev_prog_neo	1	Yes	
+ev_recloc	0	No	
+ev_recloc	1	Yes	
+ev_recreg	0	No	
+ev_recreg	1	Yes	
+ev_meta	0	No	
+ev_meta	1	Yes	
+ev_contro	0	No	
+ev_contro	1	Yes	
+ev_deuxk	0	No	
+ev_deuxk	1	Yes	
+status_vital	0	No	
+status_vital	1	Yes	

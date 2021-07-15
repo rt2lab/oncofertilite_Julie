@@ -1,0 +1,291 @@
+---
+title: "mapping_neorep"
+author: "ASHP"
+date: "17/12/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r correct numdos and remove doublons, correct wrong numdos}
+# database <- neorep
+neorep$numdos7		<- formatC(neorep$numdos,width = 7, flag = "0")
+neorep            <- neorep[neorep$donon==1 & !is.na(neorep$donon),]; nrow(neorep) # 1199
+# Introduce a cletri (we keep the old way we generated the cletri, because we previously generated 
+# this way for all collaborative projects such as RCB, TILs, Desmedt and co.
+neorep$cletri <- paste0("Pt","_",as.character(c(1:nrow(neorep))))
+# Correct wrong numdos from Curie
+source('~/RT2Lab/databases/core/02_neorep/src/1_Corrections_wrong_numdos_NEOREP.R')
+# Correct baseline errors in the raw datas
+source('~/RT2Lab/databases/core/02_neorep/src/2_Corrections_added_in_NEOREP_root.r')
+# cf variable margins ; remains to correct ...
+```
+
+```{r}
+setMethod(f="mapping_patient_id",
+          signature="MappingSein",
+          definition=function(self)
+          {
+            return(list(
+      database         = 2,
+      numdos_curie     = self@database$numdos7,
+      side_tmp         = factor(self@database$cote,     levels = c(1,2), labels = c(3,4)), # BEWARE  !! 
+      side             = factor(self@database$side_tmp, levels = c(3,4), labels = c(2,1)), # levels side to invert !! 
+      dat_birth        = self@database$datnai,
+      dat_bc_diagnosis = as.Date(ifelse(is.na(self@database$datdeb), self@database$datexam,
+                                        self@database$datdeb), origin = "1970-01-01"), # date biopsy, if NA, 1st exam
+      center_curie     = factor(self@database$centre),
+      center           = 1,
+      base_cletri      = paste0(self@database$database, "_",self@database$cletri)
+            ))
+          }
+)
+```
+
+```{r}
+setMethod(f="mapping_patient_char",
+          signature="MappingSein",
+          definition=function(self)
+          {
+            return(list(
+        menop              = factor(self@database$menop),
+        fam_history        = factor(self@database$antfam),
+        weight             = as.numeric(self@database$poids),
+        size               = as.numeric(self@database$taille)/100
+            ))
+          }
+)
+```
+
+
+```{r}
+setMethod(f="mapping_bc_diagnosis",
+          signature="MappingSein",
+          definition=function(self)
+          {
+      return(list(
+        bilat_bc           = 0, # Exclusion criteria of the database NEOREP
+        inflammatory_BC    = 0, # Exclusion criteria of the database NEOREP
+        tclin              = as.numeric(self@database$tclin),
+        # REVOIR PLUS TARD COMMENT JE PROCESS MON 4 DE NEOREP QUI EST EN FAIT UN NA
+        # tuicc_5cl          = factor(self@database$tuicc),
+        # tuicc_5cl          = regroup(self@database$tuicc , list(c("T0","Tis"),c("T1"),c("T2"),c("T3"),c("T4a","T4b","T4c","T4d")), c(0,1,2,3,4)), 
+        nuicc_4cl          = factor(self@database$nuicc),
+        muicc              = 0, # Exclusion criteria of the database NEOREP
+        er_status          = factor(self@database$roec),
+        pr_status          = factor(self@database$proc),
+        er_percentage      = as.integer(self@database$roep),
+        pr_percentage      = as.integer(self@database$prop),
+        er_allred          = as.integer(self@database$allreds),
+        pr_allred          = as.integer(self@database$allredsp),
+        her2_status        = factor(self@database$surex),
+        # A voir plus tard
+        # histo_5cl          = regroup(self@database$typana ,list(c("85003"),c("85203"),c("84803"),c("82113")),
+        #                              c(1,2,3,4),base=9), #???
+        # grade_3cl          = regroup(self@database$ee,list(c("1"),c("2"),c("3")),c(1,2,3)), 
+        ki67_perc          = as.integer(self@database$kip),
+        mitotic_index      = as.integer(self@database$indexm),
+        # BEWARE, il  faudra corriger cette variable avec les variables mitotic index relues
+        invasive_or_dcis   = 1   # All cancers in NEOREP are invasive
+            ))
+          }
+)
+```
+
+```{r}
+setMethod(f="mapping_surgery",
+          signature="MappingSein",
+          definition=function(self)
+          {
+            breast_surgery      <- 0
+            breast_surgery [ which(self@database$chir == 1)]  <- 1
+            
+            return(list(
+            breast_surgery        = factor(breast_surgery),
+            breast_surgery_3cl    = factor(self@database$typchir),
+            axillary_surgery_4cl  = factor(self@database$typax),
+            dat_first_surg        = self@database$datchir
+            ))
+          }
+)
+```
+
+
+```{r}
+setMethod(f="mapping_treatments_binary",
+          signature="MappingSein",
+          definition=function(self)
+          {
+            d1$ht_type_5cl                                                                 <- NA
+            d1$ht_type_5cl[which(is.na(d1$hormo))]                                         <- 9
+            d1$ht_type_5cl[which(d1$typhor == 1)]                                          <- 1
+            d1$ht_type_5cl[which(d1$typhor == 2)]                                          <- 5
+            d1$ht_type_5cl[which(d1$typhor == 3)]                                          <- 3
+            d1$ht_type_5cl[which(d1$typhor == 4)]                                          <- 2
+            d1$ht_type_5cl[which(d1$typhor == 5)]                                          <- 4
+
+            d1$antiher2                         <- 0
+            d1$antiher2[which(d1$hercep == 1)]  <- 1
+            d1$antiher2[which(d1$heradj == 1)]  <- 1
+
+            dat_first_antiher2                 <- as.Date(NA)
+            # @ASHP process later, penible...
+
+            return(list(
+                ct                 =  1, # Inclusion criteria neorep
+                dat_first_ct       =  self@database$neodeb.q1,
+                # @ASHP : HAVE TO PROCESS file with chemotherapy separately
+                # dat_end_first_ct =  self@database$DATFCT.f1,
+                rt                 =  ifelse(is.na(self@database$rth) | self@database$rth == 0 ,0,1),
+                dat_first_rt       =  self@database$rtdeb,
+                ht                 =  ifelse(is.na(self@database$hormo) | self@database$hormo == 0 ,0,1),
+                dat_first_ht       =  self@database$dathor,
+                ht_type_5cl        = factor(ht_type_5cl),
+                antiher2           = factor(antiher2),
+                dat_first_antiher2 = dat_first_antiher2
+             ))
+          }
+)
+```
+
+```{r}
+setMethod(f="mapping_neoadj_or_not",
+          signature="MappingSein",
+          definition=function(self)
+          {
+            neo_rt       <- rep(0,nrow(self@database))
+            neo_ht       <- rep(0,nrow(self@database))
+            neo_antiher2 <- rep(0,nrow(self@database))
+
+            neo_rt[which(self@database$dat_first_rt < self@database$dat_first_surg)]             <- 1
+            neo_ht[which(self@database$dat_first_ht < self@database$dat_first_surg)]             <- 1 
+            neo_antiher2[which(self@database$dat_first_antiher2 < self@database$dat_first_surg)] <- 1
+
+            dat_first_neo_rt         <- as.Date(NA)
+            dat_first_neo_ht         <- as.Date(NA)
+            dat_first_neo_antiher2   <- as.Date(NA)  
+
+    dat_first_neo_rt[which(self@database$neo_rt      ==1)]        <- 
+       self@database[which(self@database$neo_rt      ==1),"dat_first_rt"]
+    dat_first_neo_ht[which(self@database$neo_ht      ==1)]        <- 
+       self@database[which(self@database$neo_ht      ==1),"dat_first_ht"]
+    dat_first_neo_antiher2[which(self@database$neo_antiher2==1)]  <-
+             self@database[which(self@database$neo_antiher2==1),"hercdeb"] # Variable raw, specific to neorep
+            
+            primary_ttt                                           <- rep(2,nrow(self@database)) 
+            primary_ttt[which(self@database$breast_surgery == 0)] <- 9
+
+            return(list(
+              neo_ct                 = 1,
+              neo_ht                 = 0,
+              neo_rt                 = factor(neo_rt),
+              neo_antiher2           = factor(neo_antiher2),
+              primary_ttt            = factor(primary_ttt),
+              dat_first_neo_ct       = self@database$dat_first_ct,
+              dat_first_neo_ht       = dat_first_neo_ht,
+              dat_first_neo_rt       = dat_first_neo_rt,
+              dat_first_neo_antiher2 = dat_first_neo_antiher2
+            ))
+          }
+)
+```
+
+```{r}
+setMethod(f="mapping_tumor_char_neo",
+          signature="MappingSein",
+          definition=function(self)
+          {
+            breast_res_infiltr                            <- NA
+            breast_res_infiltr[self@database$absinf == 1] <- 0
+            breast_res_infiltr[self@database$absinf == 0] <- 1
+                               
+            breast_res_insitu                            <- NA
+            breast_res_insitu[self@database$absins == 1] <- 0
+            breast_res_insitu[self@database$absins == 0] <- 1
+
+            return(list(
+              breast_res_infiltr <- factor(breast_res_infiltr),
+              breast_res_insitu  <- factor(breast_res_insitu),
+              nbggpos_postneo_ct <- self@database$ggenv
+            ))
+          }
+)
+```
+
+
+```{r}
+# @ASHP : BEWARE have to import data from Sonia and Clemence
+
+
+
+setMethod(f="mapping_events_and_censor",
+          signature="MappingSein",
+          definition=function(self)
+          {
+             dat_censor     <- "2019-03-01"
+             ev_prog_neo    <- rep(0,nrow(self@database)) #
+             dat_prog_neo   <- as.Date(NA)
+             ev_recloc      <- ifelse(!is.na(self@database$DATRLOC.f1),1,0) #
+             dat_recloc     <- as.Date(self@database$DATRLOC.f1)
+             ev_recreg      <- ifelse(!is.na(self@database$DATRGG.f1),1,0) #
+             dat_recreg     <- as.Date(self@database$DATRGG.f1)
+             ev_meta        <- ifelse(!is.na(self@database$DATMET.f1),1,0) #
+             dat_meta       <- as.Date(self@database$DATMET.f1)
+             ev_contro      <- rep(0,nrow(self@database))
+             dat_contro     <- as.Date(NA)
+             ev_deuxk       <- ifelse(!is.na(self@database$DATDK.f1),1,0) #
+             dat_deuxk      <- as.Date(self@database$DATDK.f1)
+             status_vital   <- factor(self@database$ETATDN, levels = c("vivant", "decede"), labels=c(0,1)) 
+             dat_last_news  <- self@database$DATDN
+             ev_prog_neo[which(dat_prog_neo > dat_censor)] <- 0
+             ev_recloc[which(dat_recloc > dat_censor)]     <- 0
+             ev_recreg[which(dat_recreg > dat_censor)]     <- 0
+             ev_meta[which(dat_meta > dat_censor)]         <- 0
+             ev_contro[which(dat_contro > dat_censor)]     <- 0
+             ev_deuxk[which(dat_deuxk > dat_censor)]       <- 0
+             status_vital[which(dat_last_news > dat_censor & status_vital==1 )]       <- 0
+             
+             return(list(
+                ev_prog_neo <- ev_prog_neo,
+                dat_prog_neo <- dat_prog_neo,
+                ev_recloc <- ev_recloc,
+                dat_recloc <- dat_recloc,
+                ev_recreg <- dat_recreg,
+                ev_meta <- ev_meta,
+                dat_meta <- dat_meta,
+                ev_contro <- ev_contro,
+                dat_contro <- dat_contro,
+                ev_deuxk <- ev_deuxk,
+                dat_deuxk <- dat_deuxk,
+                status_vital <- status_vital,
+                dat_last_news <- dat_last_news
+            ))
+          }
+)
+```
+
+
+
+```{r files from other sources }
+# Cf all old scripts
+
+        # brca_screen        = factor(self@database$RECMUT, levels = c("non","oui"), labels = c(0,1)), Not in raw data
+        # brca_mut           = factor(self@database$RESMUT, levels = c("non","oui"), labels = c(0,1)),
+
+        # mitotic_index      = as.integer(self@database$indexm),
+        # BEWARE, il  faudra corriger cette variable avec les variables relues
+
+        # dcis_component     = factor(self@database$INSITU, levels = c("non","oui"), labels=c(0,1))
+        # Base Than ou Charlotte Morel
+
+        # TILs Base Marick
+        
+        # des  pCR à corriger....
+        # embols_postneo_ct
+        # RCB_index
+        # RCB_class
+        # str_TIL_perc_postneo_ct
+        # IT_TIL_perc_postneo_ct
+```
+

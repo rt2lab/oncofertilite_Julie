@@ -1,0 +1,1797 @@
+---
+title: "ImmunoTox_v8"
+author: "Lidia Delrieu"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+  rmarkdown::html_document:
+    theme: lumen
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results = "asis", message = FALSE, warning = FALSE)
+```
+
+```{r librairies, echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+library(ggrepel)
+  library(ggsci)
+  library(dplyr)
+  library(ggplot2)
+  library(questionr)
+  library(car)
+  library(forestmodel)
+  library(gtsummary)
+  library(tableone)
+  library(reshape2)
+  library(cowplot)
+  library(kableExtra)
+  library(labelled)
+  library(tableone)
+  library(RColorBrewer)
+  library(tinytex)
+  library(tidyverse)
+  library(esquisse)
+  library(lubridate)
+  library(readxl)
+  library(prettyR)
+  library(FactoMineR)
+  library(intervals)
+  library(eeptools)
+  library(viridis)
+  library(devtools)
+  library(highcharter)
+  library(widgetframe)
+  library(d3r)
+  library(sunburstR)
+  library(boot) 
+  library(tableone)
+  library(labelled)
+  library(RNHANES)
+  library(plotly)
+#install_github("emwozniak/Table1")
+  library(scales) 
+  library(survival)
+  library(Benchmarking)
+  library(microbenchmark)
+  library(survminer, quietly = TRUE)
+```
+
+Ce qui a été fait :
+
+-Landmark à 3, 6 et 12 mois (partie 3.4) et multivarié avec et sans landmark
+
+# 1. Data Management
+
+```{r importation base}
+immuno<-read.csv2("/Users/lidiadelrieu/Google\ Drive/Analyses_Stat/immuno_tox/data/immunotox_v3.csv")
+```
+
+```{r data management,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+head(immuno)
+str(immuno)
+names(immuno)
+tail(immuno)
+
+#supprimer les 2 dernières lignes du tableau et les 2 colonnes vides
+immuno <-immuno %>% select(-X.1)
+tail(immuno)
+
+#as.factor
+immuno$ps_immuno1<-as.factor(immuno$ps_immuno1)
+immuno$nb_ligne_anterieure<-as.factor(immuno$nb_ligne_anterieure)
+
+#Format date 
+library(lubridate)
+str(immuno$ddn)
+immuno$ddn <- dmy(immuno$ddn)
+immuno$date_diag_meta<- dmy(immuno$date_diag_meta)
+immuno$tdm_diag<- dmy(immuno$tdm_diag)
+immuno$scanner_immuno1_date<- dmy(immuno$scanner_immuno1_date)
+immuno$date_immuno1<- dmy(immuno$date_immuno1)
+immuno$date_tox1<- dmy(immuno$date_tox1)
+immuno$date_arret_ttt_tox1<- dmy(immuno$date_arret_ttt_tox1)
+immuno$date_reprise_ttt_tox1 <- dmy(immuno$date_reprise_ttt_tox1)
+immuno$date_tox2<- dmy(immuno$date_tox2)
+immuno$date_arret_ttt_tox2<- dmy(immuno$date_arret_ttt_tox2)
+immuno$date_pd_immuno1<- dmy(immuno$date_pd_immuno1)
+immuno$date_reprise_ttt_tox2<- dmy(immuno$date_reprise_ttt_tox2)
+immuno$date_tox3<- dmy(immuno$date_tox3)
+immuno$date_reprise_ttt_tox3<- dmy(immuno$date_reprise_ttt_tox3)
+immuno$date_derniere_nouvelles<- dmy(immuno$date_derniere_nouvelles)
+immuno$date_fin_it<- dmy(immuno$date_fin_it)
+immuno$date_pd_immuno1<- dmy(immuno$date_pd_immuno1)
+str(immuno$date_immuno1)
+```
+
+(tout le datamanagement est caché mais il est dans le code R)
+
+```{r age et IMC,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+#Création de la variable age au début de l'immuno : 
+summary(immuno$ddn)
+immuno$age<-age_calc(immuno$ddn, enddate = immuno$date_immuno1, units = "years", precise = TRUE)
+summary(immuno$age)
+sd(immuno$age)
+```
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+#Création de la variable IMC au début de l'immuno
+immuno<-mutate(immuno, imc_immuno1 = poids_immuno1/ (taille_diag*taille_diag)*10000)
+summary(immuno$imc_immuno1)
+sd(immuno$imc_immuno1) 
+
+immuno$cat_imc1 <- ifelse(immuno$imc_immuno<18.5,1,
+                     ifelse(immuno$imc_immuno>= 18.5 & (immuno$imc_immuno<25),2,
+                            ifelse(immuno$imc_immuno>=25 & (immuno$imc_immuno<30),3,
+                                   ifelse(immuno$imc_immuno>=30,4,0))))
+
+immuno$cat_imc1  <-as.factor(immuno$cat_imc1)
+table(immuno$cat_imc1)
+```
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+immuno<-mutate(immuno,imc_immuno2= poids_immuno_troismois/ (taille_diag*taille_diag)*10000)
+summary(immuno$imc_immuno2)
+sd(immuno$imc_immuno2) 
+
+immuno$cat_imc2 <- ifelse(immuno$imc_immuno2<18.5,1,
+                     ifelse(immuno$imc_immuno2>= 18.5 & (immuno$imc_immuno2<25),2,
+                            ifelse(immuno$imc_immuno2>=25 & (immuno$imc_immuno2<30),3,
+                                   ifelse(immuno$imc_immuno2>=30,4,0))))
+
+immuno$cat_imc2  <-as.factor(immuno$cat_imc2)
+table(immuno$cat_imc2)
+```
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+immuno<-mutate(immuno,imc_tox1= poids_tox1/ (taille_diag*taille_diag)*10000)
+summary(immuno$imc_tox1)
+sd(immuno$imc_tox1) 
+
+immuno$cat_imc3 <- ifelse(immuno$imc_tox1<18.5,1,
+                     ifelse(immuno$imc_tox1>= 18.5 & (immuno$imc_tox1<25),2,
+                            ifelse(immuno$imc_tox1>=25 & (immuno$imc_tox1<30),3,
+                                   ifelse(immuno$imc_tox1>=30,4,0))))
+
+immuno$cat_imc3  <-as.factor(immuno$cat_imc3)
+table(immuno$cat_imc3)
+```
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+immuno<-mutate(immuno,imc_tox2= poids_tox2/ (taille_diag*taille_diag)*10000)
+summary(immuno$imc_tox2)
+sd(immuno$imc_tox2) 
+
+immuno$cat_imc4 <- ifelse(immuno$imc_tox2<18.5,1,
+                     ifelse(immuno$imc_tox2>= 18.5 & (immuno$imc_tox2<25),2,
+                            ifelse(immuno$imc_tox2>=25 & (immuno$imc_tox2<30),3,
+                                   ifelse(immuno$imc_tox2>=30,4,0))))
+
+immuno$cat_imc4  <-as.factor(immuno$cat_imc4)
+table(immuno$cat_imc4)
+```
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+#IPI et treme versus les autres car les anti CTLA 4 sont moins bien tolérés
+immuno$ctla4 <- as.character(immuno$immuno1_type)
+immuno$ctla4[immuno$immuno1_type %in% c("4","6","7")] <-"Oui"
+immuno$ctla4[immuno$immuno1_type %in% c("1","2","3","5","8")] <-"Non"
+table(immuno$ctla4)
+```
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+#regroupement localisations Digestive : colorectale, pancréas, gastro-esophagienne, cholangiocarcinome, canal anal / gynécologique : endométriale et vulvaire / ORL et glandes salivaire ensemble) ? 
+immuno$histo2<- as.character(immuno$histo)
+immuno$histo2[immuno$histo %in% c("13","14","7","8","9")] <-"Digestive"
+immuno$histo2[immuno$histo %in% c("11","16")] <-"Gynecologique"
+immuno$histo2[immuno$histo %in% c("10","12")] <-"ORL"
+immuno$histo2[immuno$histo %in% c("15")] <-"Carcinome thymique"
+immuno$histo2[immuno$histo %in% c("2")] <-"Melanome"
+immuno$histo2[immuno$histo %in% c("3")] <-"Rein"
+immuno$histo2[immuno$histo %in% c("4")] <-"Sarcome"
+immuno$histo2[immuno$histo %in% c("5")] <-"Carcinome urothelial"
+immuno$histo2[immuno$histo %in% c("6")] <-"Sein"
+immuno$histo2[immuno$histo %in% c("1")] <-"CBNPC"
+table(immuno$histo2)
+table(immuno$histo)
+
+immuno$histo2[immuno$histo2 %in% c("Sein","Gynecologique","Sarcome","Carcinome thymique")] <-"Autre"
+table(immuno$histo2)
+immuno$histo2 <- factor(immuno$histo2, levels=c("CBNPC", "ORL", "Digestive","Rein","Melanome","Carcinome urothelial","Autre"))
+
+```
+
+# 2. Analyse descriptive des variables
+
+## 2.1 Tableaux des caractéristiques
+
+```{r name,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+#Voir extraction 1 format html
+#recodage des labels
+immuno2<-immuno
+
+immuno2$cat_imc1 <-factor(immuno2$cat_imc1,
+levels =c(1,2,3,4),
+labels =c("Insuffisance pondérale","Corpulence normale","Surpoids", "Obésité"))
+table(immuno2$cat_imc1)
+
+immuno2$nb_ligne_anterieure<-factor(immuno2$nb_ligne_anterieure,
+                                    levels =c(0,1,2,3,4,5),
+                                    labels =c("Premiere ligne","Deuxieme ligne", "Troisieme ligne", "Quatrieme ligne","Cinquieme ligne","Sixieme ligne"))
+
+immuno2$sexe <- factor(immuno2$sexe,
+levels = c(1,2),
+labels = c("Femmes", "Hommes"))
+table(immuno2$sexe)
+
+table(immuno2$pdl1)
+immuno2$pdl1 <- factor(immuno2$pdl1,
+levels = c(0,1,2),
+labels = c("Négatif", "Positif","Non recherché"))
+table(immuno2$pdl1)
+
+table(immuno2$atcd_immunoallergique)
+immuno2$atcd_immunoallergique <- factor(immuno2$atcd_immunoallergique,
+levels = c(0,1),
+labels = c("Aucun", "Oui"))
+table(immuno2$atcd_immunoallergique)
+
+table(immuno2$ttt_maladie_ai)
+immuno2$ttt_maladie_ai <- factor(immuno2$ttt_maladie_ai,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(immuno2$ttt_maladie_ai)
+
+table(immuno2$ttt_anterieur_systemique)
+immuno2$ttt_anterieur_systemique <- factor(immuno2$ttt_anterieur_systemique,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(immuno2$ttt_anterieur_systemique)
+
+table(immuno2$immuno1)
+immuno2$immuno1 <- factor(immuno2$immuno1,
+levels = c(1,2),
+labels = c("Monothérapie", "Bithérapie"))
+table(immuno2$immuno1)
+
+table(immuno2$immuno1_type)
+immuno2$immuno1_type <- factor(immuno2$immuno1_type,
+levels = c(1,2,3,4,5,6,7,8),
+labels = c("Nivolumab", "Pembrolizumab","Atezolizumab","Durvalumab+ Tremelimumab","Durvalumab","Nivolumab + Ipilimumab","Ipilimumab","Avelumab"))
+table(immuno2$immuno1_type)
+
+immuno2$immuno1_type <- factor(immuno2$immuno1_type, levels=c("Nivolumab", "Pembrolizumab", "Nivolumab + Ipilimumab","Durvalumab+ Tremelimumab","Atezolizumab","Durvalumab","Ipilimumab","Avelumab"))
+
+
+table(immuno2$efficacite_immuno1)
+immuno2$efficacite_immuno1 <- factor(immuno2$efficacite_immuno1,
+levels = c(0,1,2,3,4),
+labels = c("Progression", "Stabilité","Réponse partielle","Réponse complète","Pas de donnée"))
+table(immuno2$efficacite_immuno1)
+
+table(immuno2$tox_immuno1)
+immuno2$tox_immuno1 <- factor(immuno2$tox_immuno1,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(immuno2$tox_immuno1)
+
+table(immuno2$tox1_immuno1_type)
+immuno2$tox1_immuno1_type <- factor(immuno2$tox1_immuno1_type,
+levels = c(1,2,3,4,5,6,7,8,9,10,11,12,13),
+labels = c("Digestive", "Cardiologique","Hepatite","Nephrite","Cutanée","Rhumatologique","Neurologique","Hypophysaire","Diabète","Thyroïde","Ophtalmo","Pancreas","Pulmonaire"))
+table(immuno2$tox1_immuno1_type)
+
+table(immuno2$tox1_grade)
+immuno2$tox1_grade <- factor(immuno2$tox1_grade,
+levels = c(1,2,3,4,5),
+labels = c("Grade1", "Grade2","Grade3","Grade4","Grade5"))
+table(immuno2$tox1_grade)
+
+table(immuno2$ttt_tox1)
+immuno2$ttt_tox1 <- factor(immuno2$ttt_tox1,
+levels = c(0,1,2,3),
+labels = c("Non", "Corticotherapie systemique","Corticothérapie topique","Autres"))
+table(immuno2$ttt_tox1)
+
+table(immuno2$arret_ttt_tox1)
+immuno2$arret_ttt_tox1 <- factor(immuno2$arret_ttt_tox1,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(immuno2$arret_ttt_tox1)
+
+table(immuno2$reprise_ttt_tox1)
+immuno2$reprise_ttt_tox1 <- factor(immuno2$reprise_ttt_tox1,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(immuno2$reprise_ttt_tox1)
+
+table(immuno2$tox2)
+immuno2$tox2 <- factor(immuno2$tox2,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(immuno2$tox2)
+
+table(immuno2$tox2_type)
+immuno2$tox2_type <- factor(immuno2$tox2_type,
+levels = c(1,2,3,4,5,6,7,8,9,10,11,12,13),
+labels = c("Digestive", "Cardiologique","Hepatite","Nephrite","Cutanée","Rhumatologique","Neurologique","Hypophysaire","Diabète","Thyroïde","Ophtalmo","Pancreas","Pulmonaire"))
+table(immuno2$tox2_type)
+
+table(immuno2$tox2_grade)
+immuno2$tox2_grade <- factor(immuno2$tox2_grade,
+levels = c(1,2,3,4,5),
+labels = c("Grade1", "Grade2","Grade3","Grade4","Grade5"))
+table(immuno2$tox2_grade)
+
+table(immuno2$ttt_tox2)
+immuno2$ttt_tox2 <- factor(immuno2$ttt_tox2,
+levels = c(0,1,2,3),
+labels = c("Non", "Corticotherapie systemique","Corticothérapie topique","Autres"))
+table(immuno2$ttt_tox2)
+
+table(immuno2$arret_ttt_tox2)
+immuno2$arret_ttt_tox2 <- factor(immuno2$arret_ttt_tox2,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(immuno2$arret_ttt_tox2)
+
+table(immuno2$reprise_ttt_tox2)
+immuno2$reprise_ttt_tox2 <- factor(immuno2$reprise_ttt_tox2,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(immuno2$reprise_ttt_tox2)
+
+table(immuno2$msi)
+immuno2$msi <- factor(immuno2$msi,
+levels = c(0,1),
+labels = c("Non recherche ou négatif", "MSI-H"))
+table(immuno2$msi)
+
+table(immuno2$tox3)
+immuno2$tox3 <- factor(immuno2$tox3,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(immuno2$tox3)
+
+table(immuno2$tox3_type)
+immuno2$tox3_type <- factor(immuno2$tox3_type,
+levels = c(1,2,3,4,5,6,7,8,9,10,11,12,13),
+labels = c("Digestive", "Cardiologique","Hepatite","Nephrite","Cutanée","Rhumatologique","Neurologique","Hypophysaire","Diabète","Thyroïde","Ophtalmo","Pancreas","Pulmonaire"))
+table(immuno2$tox3_type)
+
+table(immuno2$tox3_grade)
+immuno2$tox3_grade <- factor(immuno2$tox3_grade,
+levels = c(1,2,3,4,5),
+labels = c("Grade1", "Grade2","Grade3","Grade4","Grade5"))
+table(immuno2$tox3_grade)
+
+table(immuno2$ttt_tox3)
+immuno2$ttt_tox3 <- factor(immuno2$ttt_tox3,
+levels = c(0,1,2,3),
+labels = c("Non", "Corticotherapie systemique","Corticothérapie topique","Autres"))
+table(immuno2$ttt_tox3)
+
+table(immuno2$arret_ttt_tox3)
+immuno2$arret_ttt_tox3 <- factor(immuno2$arret_ttt_tox3,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(immuno2$arret_ttt_tox3)
+
+table(immuno2$reprise_ttt_tox3)
+immuno2$reprise_ttt_tox3 <- factor(immuno2$reprise_ttt_tox3,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(immuno2$reprise_ttt_tox3)
+
+table(immuno2$reponse_immuno_tox)
+immuno2$reponse_immuno_tox <- factor(immuno2$reponse_immuno_tox,
+levels = c(0,1,2,3,4),
+labels = c("Progression", "Stabilité","Réponse partielle","Réponse complète","Pas de donnée"))
+table(immuno2$reponse_immuno_tox)
+
+table(immuno2$ttt_suivant)
+immuno2$ttt_suivant <- factor(immuno2$ttt_suivant,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(immuno2$ttt_suivant)
+
+table(immuno2$ttt_suivant_type)
+immuno2$ttt_suivant_type <- factor(immuno2$ttt_suivant_type,
+levels = c(1,2,3,4,5),
+labels = c("Chimiotherapie", "Therapie ciblée","Radiothérapie","Immunothérapie","Chirurgie"))
+table(immuno2$ttt_suivant_type)
+
+table(immuno2$statut)
+immuno2$statut <- factor(immuno2$statut,
+levels = c(0,1),
+labels = c("Vivant", "Mort"))
+table(immuno2$statut)
+
+table(immuno2$raison_arret_it)
+immuno2$raison_arret_it <- factor(immuno2$raison_arret_it,
+levels = c(1,2,3,4),
+labels = c("Progression", "Toxicite","Fin de traitement","Autre"))
+table(immuno2$raison_arret_it)
+
+table(immuno2$histo)
+immuno2$histo <- factor(immuno2$histo,
+levels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16),
+labels = c("CBNPC", "Melanome", "Rein", "Sarcome","Carcinome urothélial",
+"Sein","Gastro-oesophagien","Cholangiocarcinome","Canal anal","Glande salivaire","Carcinome endométriale","ORL","Colorectal","Pancreas","Carcinome thymique"," Carcinome épidermoide vulvaire"))
+table(immuno2$histo)
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+#https://cran.r-project.org/web/packages/table1/vignettes/table1-examples.html
+
+library(table1)
+label(immuno2$cat_imc1)    <- "Catégories IMC au début de l'immunothérapie"
+label(immuno2$ctla4)    <- "CTLA4"
+label(immuno2$histo2)    <- "Histologie regroupée"
+label(immuno2$sexe)       <- "Sexe"
+label(immuno2$pdl1)       <- "PDL1"
+label(immuno2$msi)        <- "MSI"
+label(immuno2$poids_diag) <- "Poids au diagnostic"
+label(immuno2$histo) <- "Histologie"
+label(immuno2$atcd_immunoallergique) <- "Antécédent immunoallergique"
+label(immuno2$ttt_maladie_ai) <- "Traitement maladie autoimmune"
+label(immuno2$ttt_anterieur_systemique) <- "Traitement sytémique antérieur"
+label(immuno2$nb_ligne_anterieure)        <- "Ligne de traitement de l'immunothérapie"
+label(immuno2$immuno1)    <- "Modalité immunothérapie"
+label(immuno2$immuno1_type)    <- "Type immunothérapie"
+label(immuno2$poids_immuno1)    <- "Poids au moment immunothérapie"
+label(immuno2$ps_immuno1) <- "PS au début de l'immunothérapie"
+label(immuno2$efficacite_immuno1) <- "Efficacité première immunothérapie"
+label(immuno2$tox_immuno1) <- "Première toxicité"
+label(immuno2$tox1_immuno1_type) <- "Type de la première toxicité"
+label(immuno2$poids_tox1) <- "Poids au moment de la première toxicité"
+label(immuno2$tox1_grade) <- "Grade de la première toxicité"
+label(immuno2$ttt_tox1) <- "Traitement pour la première toxicité"
+label(immuno2$arret_ttt_tox1) <- "Traitement pour la première toxicité"
+label(immuno2$reprise_ttt_tox1) <- "Reprise traitement après la première toxicité"
+label(immuno2$tox2) <- "Deuxième toxicité"
+label(immuno2$tox2_type) <- "Type de la seconde toxicité"
+label(immuno2$poids_tox2) <- "Poids au moment de la seconde toxicité"
+label(immuno2$tox2_grade) <- "Grade de la seconde toxicité"
+label(immuno2$ttt_tox2) <- "Traitement pour la seconde toxicité"
+label(immuno2$arret_ttt_tox2) <- "Traitement pour la seconde toxicité"
+label(immuno2$reprise_ttt_tox2) <- "Reprise traitement après la seconde toxicité"
+label(immuno2$tox3) <- "Troisème toxicité"
+label(immuno2$tox3_type) <- "Type de la troisième toxicité"
+label(immuno2$poids_tox3) <- "Poids au moment de la troisième toxicité"
+label(immuno2$tox3_grade) <- "Grade de la troisième toxicité"
+label(immuno2$ttt_tox3) <- "Traitement pour la troisième toxicité"
+label(immuno2$arret_ttt_tox3) <- "Traitement pour la troisième toxicité"
+label(immuno2$reprise_ttt_tox3) <- "Reprise traitement après la troisième toxicité"
+label(immuno2$reponse_immuno_tox) <- "Réponse à l'immunothérapie après toxicité"
+label(immuno2$raison_arret_it) <- "Raison de l'arrêt de l'immunothérapie"
+label(immuno2$ttt_suivant) <- "Traitement suivant"
+label(immuno2$ttt_suivant_type) <- "Type de traitement suivant"
+label(immuno2$statut) <- "Statut"
+label(immuno2$age)        <- "Age"
+label(immuno2$imc_immuno1) <- "IMC au début de l'immunothérapie"
+units(immuno2$imc_immuno1) <- "kg/m²"
+units(immuno2$age)        <- "année"
+units(immuno2$poids_diag) <- "kg"
+units(immuno2$poids_immuno1)    <- "kg"
+units(immuno2$poids_tox1) <- "kg"
+units(immuno2$poids_tox3) <- "kg"
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+str(immuno2$toxicite)
+table(immuno2$toxicite)
+
+immuno2$toxicite <- 
+  factor(immuno2$toxicite, 
+         levels=c(0,1,2,3),
+         labels=c("Non", # Reference
+                  "Une toxicite", 
+                  "Deux toxicites",
+                  "Trois toxicites"))
+
+table1(~ sexe +age+histo+histo2+imc_immuno1+cat_imc1+pdl1 +msi+poids_diag+atcd_immunoallergique+ttt_maladie_ai+ttt_anterieur_systemique+nb_ligne_anterieure+immuno1+immuno1_type+ctla4+poids_immuno1+ps_immuno1+efficacite_immuno1+tox_immuno1+tox1_immuno1_type+poids_tox1+tox1_grade+ttt_tox1+arret_ttt_tox1+reprise_ttt_tox1+tox2+tox2_type+poids_tox2+tox2_grade+ttt_tox2+arret_ttt_tox2+reprise_ttt_tox2+tox3+tox3_type+poids_tox3+tox3_grade+ttt_tox3+arret_ttt_tox3+reprise_ttt_tox3+reponse_immuno_tox+raison_arret_it+ttt_suivant+ttt_suivant_type+statut|toxicite, data=immuno2, overall="Total")
+```
+
+```{r,echo=FALSE,message = FALSE, warning = FALSE}
+table1(~age+sexe+ps_immuno1+histo2+immuno1_type+pdl1+ctla4+immuno1+nb_ligne_anterieure+tox_immuno1+tox2+tox3+imc_immuno1+cat_imc1+statut, data=immuno2, overall="Total")
+```
+
+## 2.2 Représentations graphiques
+
+### 2.2.1 Les différents types d'immuno (Donut Chart)
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+library(swatches)
+library(hrbrthemes)
+# palette = pal_jama()(7) #TODO change palette if needed 
+# scales::show_col(palette)
+palette = read_palette("/Users/lidiadelrieu/Google\ Drive/Analyses_Stat/Pantone\ COY18\ Palette\ ASE\ files/PantoneCOY18-Attitude.ase")
+show_palette(palette)
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+# scales::show_col(colorRampPalette(palette,interpolate = "spline")(8))
+
+##TODO voir les labels qui sont en dehors des cases
+table(immuno$immuno1_type)
+prop.table(table(immuno$immuno1_type))*100
+
+# Create test data.
+data <- data.frame(
+  category=c("Nivolumab", "Atezolizumab","Nivolumab + ipilimumab","Pembrolizumab","Durvalumab+Tremelimumab","Durvalumab","Ipilimumab","Avelumab"),
+  count=c(114,13,19,103,14,7,1,1)
+)
+ 
+# Compute percentages
+data$fraction <- data$count / sum(data$count)
+
+# Compute the cumulative percentages (top of each rectangle)
+data$ymax <- cumsum(data$fraction)
+
+# Compute the bottom of each rectangle
+data$ymin <- c(0, head(data$ymax, n=-1))
+
+# Compute label position
+data$labelPosition <- (data$ymax + data$ymin) / 2
+
+# Compute a good label
+data$label <- paste0(data$category, "\n value: ", data$count)
+data$category<- factor(data$category)
+
+# Make the plot
+ggplot(data, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=category)) +
+  geom_rect() +
+  #geom_label( x = 5, aes(y=labelPosition, label=label), size=3) +
+  coord_polar(theta="y") +
+  geom_label_repel(aes(label = label,y=labelPosition),x = 4, size=3, nudge_x = 0.8) +
+  scale_fill_manual(values = rev(as.vector(palette))) +
+  xlim(c(2, 5)) +
+  theme_void() +
+  theme(legend.position = "none")
+```
+
+```{r,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+library(plotly)
+
+fig <- plot_ly(
+  labels = c("poumon", "Nivolumab", "Pembrolizumab", "Atezolizumab","Oui Nivo","Non Nivo","Oui Pembro","Non Pembro","Oui Atezo","Non Atezo","Thyroide Atezo","Rhumato Atezo","Thyroide Pembro","Rhumato Pembro","Dig Pembro","Cutane Pembro","Pulmo Pembro", "Autre Pembro", "Thyroide Nivo", "Rhumato Nivo", "Dig Nivo", "Cutane Nivo", "Pulmo Nivo","Autre Nivo"),
+  
+  parents = c("","poumon","poumon","poumon","Nivolumab","Nivolumab","Pembrolizumab","Pembrolizumab","Atezolizumab","Atezolizumab","Oui Atezo","Oui Atezo","Oui Pembro","Oui Pembro","Oui Pembro","Oui Pembro","Oui Pembro","Oui Pembro","Oui Nivo","Oui Nivo", "Oui Nivo","Oui Nivo", "Oui Nivo","Oui Nivo"),
+  
+  stringsAsFactors=FALSE,
+  values = c(136, 48, 76, 12,20, 28, 31, 45, 3, 9, 1, 2, 6, 7, 6, 4, 3, 5, 7, 2, 2, 2, 3, 4),
+  type = 'sunburst',
+  branchvalues = 'total'
+)
+
+fig
+```
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+fig <- plot_ly(
+  labels = c("immuno","CBNPC","Melanome","Rein","Sarcome","Urothelial","Sein","Gastro oeso", "Cholangio","Canal anal","Glande salivaire","Endomètre","ORL","Colorectal","Pancreas","Thymus","Vulve","Oui CBNPC","Non CBNPC","Oui melanome","Non melanome","Oui rein","Non rein","Oui sarcome","Non sarcome","Oui urothélial","Non urothélial","Oui sein","Non sein","Oui gastro","Non gastro","Oui cholangio","Non cholangio","Oui canal anal","Non canal anal","Oui glande salivaire","Non glande salivaire","Oui endometre","Non endometre","Oui ORL","Non ORL","Oui colorectal","Non colorectal","Oui pancreas","Non pancreas","Oui thymus","Non thymus","Oui vulve","Non vulve"),
+  
+  parents = c("","immuno","immuno","immuno","immuno","immuno","immuno","immuno","immuno","immuno","immuno","immuno","immuno","immuno","immuno","immuno","immuno","CBNPC","CBNPC","Melanome","Melanome","Rein","Rein","Sarcome","Sarcome","Urothelial","Urothelial","Sein","Sein","Gastro oeso","Gastro oeso","Cholangio","Cholangio","Canal anal","Canal anal","Glande salivaire","Glande salivaire","Endomètre","Endomètre","ORL","ORL","Colorectal","Colorectal","Pancreas","Pancreas","Thymus","Thymus","Vulve","Vulve"),
+  
+  stringsAsFactors=FALSE,
+  values = c(272, 136, 22, 24, 3, 19, 2, 7, 2, 1, 1, 4, 35, 13, 1, 1, 1, 54, 82, 17, 5, 9, 15, 1, 2, 10, 9, 2, 0, 4, 3, 2, 0, 1, 0, 0, 1, 2, 2, 5, 30, 7, 6, 0, 1, 1, 0, 1, 0),
+  type = 'sunburst',
+  branchvalues = 'total'
+)
+
+fig
+```
+
+## 2.3 Délais d'apparition des toxicités
+
+```{r toxicités,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+#Séléction des patients qui ont eu des toxicités
+table(immuno2$tox_immuno1)
+immuno_tox1<- immuno2 %>%
+      filter(tox_immuno1=="Oui")
+
+immuno_tox0<- immuno2 %>%
+      filter(tox_immuno1=="Non")
+```
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+#Durée entre le début de l'immuno et de la première toxicité 
+#Duree mois
+immuno_tox1$duree_immuno1= as.numeric(difftime(immuno_tox1$date_tox1, immuno_tox1$date_immuno1, units ="days"))/(365.25)
+#duree jours
+immuno_tox1$duree_immuno1= as.numeric(difftime(immuno_tox1$date_tox1, immuno_tox1$date_immuno1, units ="days"))
+summary(immuno_tox1$duree_immuno1)
+sd(immuno_tox1$duree_immuno1)
+
+```
+
+Concernant les délais d'apparition des toxicités
+
+Au total, parmi les patients qui ont développé des toxicités, le délai moyen d'apparition des toxicités après le début de l'immuno était de 132,28.72 jours (SD=157.78) et min=4.0 et max=857
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+#Durée
+ggplot(immuno_tox1)+
+  aes(x=duree_immuno1)+
+  geom_density(adjust=1.5)+
+  ggtitle("Délai d'apparition des toxicités")+
+  xlab("Durée")+
+  ylab("Densite")
+```
+
+```{r duree tox2,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+#Durée entre le début de l'immuno et de la seconde toxicité
+#Séléction des patients qui ont eu des toxicités
+table(immuno2$tox2)
+
+immuno_tox2<- immuno2 %>%
+      filter(tox2=="Oui")
+
+immuno2$duree_immuno2= as.numeric(difftime(immuno2$date_tox2, immuno2$date_immuno1, units ="days"))
+
+summary(immuno2$duree_immuno2)
+sd(immuno2$duree_immuno2)
+```
+
+Le délai moyen entre le début de l'immuno et la seconde toxicité était de 250.9 jours et min=31 et max=834
+
+```{r duree entre 2 tox,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+#Délai entre toxicité 1 et 2 pour ceux qui ont fait des toxicités
+immuno$duree_tox12= as.numeric(difftime(immuno$date_tox2, immuno$date_tox1, units ="days"))
+
+summary(immuno$duree_tox12)
+sd(immuno$duree_tox12)
+```
+
+Le délai moyen entre les toxicités 1 est 2 est de 148,9 jours et min=0 et max=690jours
+
+```{r duree entre 1 et 3,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+table(immuno$tox3)
+
+immuno_tox3<- immuno %>%
+      filter(tox3==1)
+
+immuno_tox3$duree_immuno3= as.numeric(difftime(immuno_tox3$date_tox3, immuno_tox3$date_immuno1, units ="days"))
+
+summary(immuno_tox3$duree_immuno3)
+```
+
+Le délai entre la première toxicité et la 3ème est de 306,5 jours (min=251 et max=362)
+
+## 2.4 Délai de survenu des principales toxicités
+
+```{r,echo=FALSE,results="hide", message = FALSE, warning = FALSE}
+##Toxicité thyroïde
+tox_thyroid<-immuno %>% filter(tox1_immuno1_type==10 | tox2_type==10 |tox3_type==10)
+
+#quand elle survient lors de la toxicité 1
+tox_thyroid1<-filter(tox_thyroid,tox1_immuno1_type==10)
+tox_thyroid1$duree_tox_thyroid1= as.numeric(difftime(tox_thyroid1$date_tox1, tox_thyroid1$date_immuno1, units ="days"))
+
+summary(tox_thyroid1$duree_tox_thyroid1)
+sd(tox_thyroid1$duree_tox_thyroid1)
+
+#quand elle survient lors de la toxicité 2
+tox_thyroid2<-filter(tox_thyroid,tox2_type==10)
+tox_thyroid2$duree_tox_thyroid2= as.numeric(difftime(tox_thyroid2$date_tox2, tox_thyroid2$date_immuno1, units ="days"))
+
+summary(tox_thyroid2$duree_tox_thyroid2)
+sd(tox_thyroid2$duree_tox_thyroid2)
+
+#Quand elle survient lors de la toxicité 3
+tox_thyroid3<-filter(tox_thyroid,tox3_type==10)
+```
+
+1)  Thyroide Aucun patient n'a eu plusieurs fois des toxicités à la thyroïde
+
+Quand la toxicité de la thyroïde apparait lors de la première toxicité le délai moyen est de 73,37 jours (SD=57.25) et min=15 et max =257
+
+Quand la toxicité de la thyroïde survient lors de la seconde toxicité le délai moyen est de 161.3 jours (62.05) min=112 et max=231
+
+Aucune toxicité de la thyroïde n'apparait lors de la 3ème toxicité
+
+Donc le délai moyen d'apparition des toxicités de la thyroïde est de 117,34 (59.65) et min=15 et max=257.00
+
+```{r,echo=FALSE,results="hide", message = FALSE, warning = FALSE}
+##Toxicité  digestive
+tox_digestive<-immuno %>% filter(tox1_immuno1_type==1 | tox2_type==1 |tox3_type==1)
+
+#quand elle survient lors de la toxicité 1
+tox_digestive1<-filter(tox_digestive,tox1_immuno1_type==1)
+
+tox_digestive1$duree_tox_digestive1= as.numeric(difftime(tox_digestive1$date_tox1, tox_digestive1$date_immuno1, units ="days"))
+
+summary(tox_digestive1$duree_tox_digestive1)
+sd(tox_digestive1$duree_tox_digestive1)
+
+#quand elle survient lors de la toxicité 2
+#il faut supprimer la case date_tox2 du patient 1718737 car il a déjà eu une toxicité au début
+tox_digestive2<-filter(tox_digestive,tox2_type==1)
+tox_digestive2<-tox_digestive2[!(tox_digestive2$patient=="1718737"),]
+
+tox_digestive2$duree_tox_digestive2= as.numeric(difftime(tox_digestive2$date_tox2, tox_digestive2$date_immuno1, units ="days"))
+
+summary(tox_digestive2$duree_tox_digestive2)
+sd(tox_digestive2$duree_tox_digestive2)
+
+#Quand elle survient lors de la toxicité 3
+tox_digestive3<-filter(tox_digestive,tox3_type==1)
+tox_digestive3$duree_tox_digestive3= as.numeric(difftime(tox_digestive3$date_tox3, tox_digestive3$date_immuno1, units ="days"))
+
+summary(tox_digestive3$duree_tox_digestive3)
+sd(tox_digestive3$duree_tox_digestive3)
+```
+
+2)  Digestive Il y a un patient qui a eu 2 fois des toxicités digestive lors de la toxicité 1 et 2
+
+Quand la toxicité digestive apparait lors de la première toxicité le délai moyen est de 201,5 jours (SD=227,83) et min=14 et max =737
+
+Quand la toxicité digestive survient lors de la seconde toxicité le délai moyen est de 296.5 jours (178.60) min=133 et max=475
+
+La toxicité digestive survient chez une seul patient lors de la troisième toxicité. Le délai moyen est de 251 jours
+
+Donc le délai moyen d'apparition des toxicités digestive est de 249,67 (SD=203.22) et min=14 et max=737
+
+```{r,echo=FALSE,results="hide", message = FALSE, warning = FALSE}
+#Délai de survenue pour chaque type de tox ou au moins les 5 + fréquentes.
+##Toxicité  rhumato
+tox_rhumato<-immuno %>% filter(tox1_immuno1_type==6 | tox2_type==6 |tox3_type==6)
+
+#quand elle survient lors de la toxicité 1
+tox_rhumato1<-filter(tox_rhumato,tox1_immuno1_type==6)
+
+tox_rhumato1$duree_tox_rhumato1= as.numeric(difftime(tox_rhumato1$date_tox1, tox_rhumato1$date_immuno1, units ="days"))
+
+summary(tox_rhumato1$duree_tox_rhumato1)
+sd(tox_rhumato1$duree_tox_rhumato1)
+
+#quand elle survient lors de la toxicité 2
+tox_rhumato2<-filter(tox_rhumato,tox2_type==6)
+
+tox_rhumato2$duree_tox_rhumato2= as.numeric(difftime(tox_rhumato2$date_tox2, tox_rhumato2$date_immuno1, units ="days"))
+
+summary(tox_rhumato2$duree_tox_rhumato2)
+sd(tox_rhumato2$duree_tox_rhumato2)
+```
+
+3)  Rhumato
+
+Aucun patient a eu 2 fois des toxicités rhumato
+
+Quand la toxicité rhumato apparait lors de la première toxicité le délai moyen est de 145,3 jours (SD=168,84) et min=15 et max=697
+
+Quand la toxicité rhumato survient lors de la seconde toxicité le délai moyen est de 226.6 jours (SD=271.303) min=31 et max=834
+
+Pas de toxicité rhumato lors de la 3ème toxicité
+
+Donc le délai moyen d'apparition des toxicités rhumato est de 185.95 (SD=220.07) et min=15.0 et max=834
+
+```{r,echo=FALSE,results="hide", message = FALSE, warning = FALSE}
+#Délai de survenue pour chaque type de tox ou au moins les 5 + fréquentes.
+##Toxicité  cutanée
+tox_cutane<-immuno %>% filter(tox1_immuno1_type==5 | tox2_type==5 |tox3_type==5)
+
+#quand elle survient lors de la toxicité 1
+tox_cutane1<-filter(tox_cutane,tox1_immuno1_type==5)
+
+tox_cutane1$duree_tox_cutane1= as.numeric(difftime(tox_cutane1$date_tox1, tox_cutane1$date_immuno1, units ="days"))
+
+summary(tox_cutane1$duree_tox_cutane1)
+sd(tox_cutane1$duree_tox_cutane1)
+
+#quand elle survient lors de la toxicité 2
+tox_cutane2<-filter(tox_cutane,tox2_type==5)
+
+tox_cutane2$duree_tox_cutane2= as.numeric(difftime(tox_cutane2$date_tox2, tox_cutane2$date_immuno1, units ="days"))
+
+summary(tox_cutane2$duree_tox_cutane2)
+sd(tox_cutane2$duree_tox_cutane2)
+```
+
+4)  Cutanée
+
+Aucun patient a eu 2 fois des toxicités cutanées
+
+Quand la toxicité cutanée apparait lors de la première toxicité le délai moyen est de 109,1 jours (SD=108,62) et min=4 et max=399
+
+Quand la toxicité cutanée survient lors de la seconde toxicité le délai moyen est de 411.7 jours (299.161) min=195.0 et max=753.0
+
+Pas de toxicité cutanée lors de la 3ème toxicité
+
+Donc le délai moyen d'apparition des toxicités cutanées est de 260,4 (SD=203,89) et min=4.0 et max=753.0
+
+```{r,echo=FALSE,results="hide", message = FALSE, warning = FALSE}
+##Toxicité  pulmonaire
+tox_pulmo<-immuno %>% filter(tox1_immuno1_type==13 | tox2_type==13 |tox3_type==13)
+
+#quand elle survient lors de la toxicité 1
+tox_pulmo1<-filter(tox_pulmo,tox1_immuno1_type==13)
+
+tox_pulmo1$duree_tox_pumo1= as.numeric(difftime(tox_pulmo1$date_tox1, tox_pulmo1$date_immuno1, units ="days"))
+
+summary(tox_pulmo1$duree_tox_pumo1)
+sd(tox_pulmo1$duree_tox_pumo1)
+
+#quand elle survient lors de la toxicité 2
+#il faut supprimer la case date_tox2 du patient 1718272car il a déjà eu une toxicité au début
+tox_pulmo2<-filter(tox_pulmo,tox2_type==13)
+tox_pulmo2<-tox_pulmo2[!(tox_pulmo2$patient=="1718272"),]
+
+tox_pulmo2$duree_tox_pulmo2= as.numeric(difftime(tox_pulmo2$date_tox2, tox_pulmo2$date_immuno1, units ="days"))
+
+summary(tox_pulmo2$duree_tox_pulmo2)
+sd(tox_pulmo2$duree_tox_pulmo2)
+```
+
+5)  Pulmonaire
+
+Un patient a eu deux toxicités pulmonaires lors de la toxicité 1 et 2
+
+Lors de la première toxité sont apparues lors de le délai moyen était de 161,2 jours (SD=120,24) et min=24 et max=397
+
+Après avoir enlevé le patient qui a eu deux fois des toxicités on n'a plus de patient qui a eu une toxicité pulmonaire lors de la seconde tox
+
+Pas de toxicité pulmonaire lors de la 3ème toxicité
+
+Donc si on prend l'apparition de la première toxicité pulmonaire pour ce patient, on peut dire que le délai moyen pour tous les patients qui développent des toxicités pulmonaires est de 161,2 jours (SD=120,24) et min=24 et max=397
+
+```{r,echo=FALSE,results="hide", message = FALSE, warning = FALSE}
+##Toxicité  hépatique
+tox_hepa<-immuno %>% filter(tox1_immuno1_type==3 | tox2_type==3 |tox3_type==3)
+
+#quand elle survient lors de la toxicité 1
+tox_hepa1<-filter(tox_hepa,tox1_immuno1_type==3)
+
+tox_hepa1$duree_tox_hepa1= as.numeric(difftime(tox_hepa1$date_tox1, tox_hepa1$date_immuno1, units ="days"))
+
+summary(tox_hepa1$duree_tox_hepa1)
+sd(tox_hepa1$duree_tox_hepa1)
+
+#quand elle survient lors de la toxicité 2
+#On enlève le patient 1616963 qui a eu des toxicités hépatiques deux fois
+tox_hepa2<-filter(tox_hepa,tox2_type==3)
+tox_hepa2<-tox_hepa2[!(tox_hepa2$patient=="1616963"),]
+
+tox_hepa2$duree_tox_hepa2= as.numeric(difftime(tox_hepa2$date_tox2, tox_hepa2$date_immuno1, units ="days"))
+
+summary(tox_hepa2$duree_tox_hepa2)
+sd(tox_hepa2$duree_tox_hepa2)
+```
+
+6)  Hépatique
+
+Il y a un patient qui a eu deux fois des toxicités hépatiques à la suite
+
+Quand la toxicité hépatique apparait lors de la première toxicité le délai moyen est de 83,60 jours (SD=87,72) et min=21 et max=252
+
+Quand la toxicité hépatique survient lors de la seconde toxicité le délai moyen est de 244,0 jours (295,57) min=35 et max=453
+
+Pas de toxicité hépatique lors de la 3ème toxicité
+
+Donc le délai moyen d'apparition des toxicités hépatique est de 163,8 jours (SD=191,65) et min=21 et max=453 (on va retenir uniquement l'apparition de la première toxicité hépatique du patient)
+
+## 2.5 Durée de l'immuno et raison de l'arrêt
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+immuno2$duree_immuno= as.numeric(difftime(immuno2$date_fin_it, immuno2$date_immuno1, units ="days"))
+summary(immuno2$duree_immuno)
+sd(immuno2$duree_immuno)
+
+```
+
+La durée moyenne de l'immuno est de 161,6 jours min=0 et max=856, NA=44
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+ggplot(immuno2)+
+  aes(x=duree_immuno)+
+  geom_density(adjust=1.5)+
+  ggtitle("Duree immunothérapie")+
+  xlab("Durée")+
+  ylab("Densite")
+
+```
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+table(immuno2$raison_arret_it)
+```
+
+Pour les raisons de l'arrêt de l'immuno on a
+
+-   n=154 pour progression
+
+-   n=44 pour toxicité
+
+-   n=13 fin de traitement
+
+-   n=16 autre raison
+
+## 2.6 Délai jusqu'aux dernières nouvelles
+
+```{r dernière nouvelle,echo=FALSE,results="hide", message = FALSE, warning = FALSE}
+#Durée jusqu'aux dernières nouvelles
+#duree jours
+immuno_tox0$duree_nvl= as.numeric(difftime(immuno_tox0$date_derniere_nouvelles, immuno_tox0$date_immuno1, units ="days"))
+summary(immuno_tox0$duree_nvl)
+sd(immuno_tox0$duree_nvl)
+
+immuno$dureemed=as.numeric(difftime(immuno$date_derniere_nouvelles, immuno$date_immuno1, units ="days"))
+summary(immuno$dureemed)
+sd(immuno$dureemed)
+```
+
+Pour les patients qui n'ont pas dévelopé de toxicités, le délai moyen jusqu'aux dernières nouvelles était de 260,64 jours (SD=252,14) et min=3.0 et max = 1204
+
+## 2.7 Décès
+
+```{r duree tox1,echo=FALSE,results="hide", message = FALSE, warning = FALSE}
+#Selection des patients qui sont DCD
+table(immuno$statut)
+immuno_dc<- immuno %>%
+      filter(statut==1)
+
+immuno_dc$duree_dc= as.numeric(difftime(immuno_dc$date_derniere_nouvelles, immuno_dc$date_immuno1, units ="days"))
+
+summary(immuno_dc$duree_dc)
+sd(immuno_dc$duree_dc)
+```
+
+Au total, 135 patients sur les 272 sont décédés. Parmi les 135 patients, le délai moyen entre le début de l'immuno et le décès était de 235,8 jours (SD=247,755) et min=3.0 et max=1089 jours
+
+## 2.8 Corrélations PS&IMC
+
+```{r,echo=FALSE,results="hide", message = FALSE, warning = FALSE}
+chisq.test(immuno$cat_imc1, immuno$ps_immuno1)
+table(immuno2$cat_imc1, immuno2$ps_immuno1)
+
+chisq.test(immuno$imc_immuno1, immuno$ps_immuno1)
+#Comparaison IMC en fonction du PS
+a1 <- aov(immuno2$imc_immuno1~immuno2$ps_immuno1)
+summary(a1)
+TukeyHSD(a1)
+```
+
+# 3.Survie
+
+## 3.1 Toute la population
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+#Et puis bien sur la question de la survie. Est-ce que la survenue d’une tox impacte la survie des patients ?
+library(survival)
+library(survminer)
+
+#if(!require(devtools)) install.packages("devtools")
+#devtools::install_github("kassambara/ggpubr")
+
+table(immuno$statut)
+
+immuno$survie<-as.numeric(difftime(immuno$date_derniere_nouvelles, immuno$date_immuno1, units ="days"))
+
+summary(immuno$survie, use.na=TRUE)
+sd(immuno$survie)
+
+#j'ai mis survie 2 en mois
+immuno$survie2<-as.numeric(difftime(immuno$date_derniere_nouvelles, immuno$date_immuno1, units ="days")/30)
+summary(immuno$survie2)
+
+kaplan <- survfit(Surv(survie, statut) ~ 1, data = immuno)
+kaplan
+ggsurvplot(kaplan)
+```
+
+Médiane de suvie à 659 (422-756) jours
+
+Sur les 272 patients il y a eu 135 événements
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+summary(kaplan, times = c(0, 365, 730, 1095, 1460, 1825))
+```
+
+A 1 an il y a 106 décès A 2 ans 21 décès A 3 ans 8 décès
+
+## 3.2 IMC et survie
+
+```{r,echo=FALSE,results="hide", message = FALSE, warning = FALSE}
+#cat_imc4 c'est l'IMC regroupé en 3 classes
+table(immuno$cat_imc1)
+immuno$cat_imc4 <- as.character(immuno$cat_imc1)
+immuno$cat_imc4[immuno$cat_imc1 %in% c("3","4")] <-"3"
+table(immuno$cat_imc4)
+
+#cat_imc5 c'est l'IMC regroupé en 2 classes
+immuno$cat_imc5 <- as.character(immuno$cat_imc4)
+immuno$cat_imc5[immuno$cat_imc4 %in% c("1","2")] <-"1"
+table(immuno$cat_imc5)
+
+immuno$cat_imc4 <-factor(immuno$cat_imc4,
+levels =c(1,2,3),
+labels =c("Dénutris","Normal","Surpoids ou obèses"))
+table(immuno$cat_imc4)
+
+immuno$cat_imc5 <-factor(immuno$cat_imc5,
+levels =c(1,3),
+labels =c("Dénutris et poids normal","Surpoids ou obèses"))
+table(immuno$cat_imc5)
+```
+
+```{r,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+immuno$cat_imc1 <-factor(immuno$cat_imc1,
+levels =c(1,2,3,4),
+labels =c("Underweight","Normal weight","Overweight", "Obesity"))
+table(immuno$cat_imc1)
+
+kaplan1 <- survfit(Surv(survie2, statut) ~ cat_imc1, data = immuno)
+survdiff(Surv(survie2, statut) ~ cat_imc1, data = immuno)
+kaplan1
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+library(survival)
+library(survminer)
+
+plot1<-ggsurvplot(
+  kaplan1, 
+  data =immuno,  
+  conf.int = TRUE, 
+  pval = TRUE,   
+  risk.table = TRUE, 
+  risk.table.col="strata",
+  ylab="Overall survival probability",
+  legend.labs=c("Underweight","Normal weight","Overweight", "Obesity"),
+  tables.y.text = FALSE,
+  legend="bottom",
+  legend.title="BMI",
+  risk.table.height=0.35,
+  ggtheme = theme_bw() 
+) + guides(colour = guide_legend(nrow = 2))
+plot1$plot <- plot1$plot + labs(title = "A")
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+levels(immuno$cat_imc1)
+immuno$cat_imc1<-relevel(immuno$cat_imc1,ref="Normal weight")
+cox1 <- coxph(Surv(survie, statut) ~ cat_imc1, data = immuno)
+summary(cox1)
+ggforest(cox1)
+```
+
+Ici j'ai laissé les 4 classes d'IMC
+
+```{r,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+kaplan2 <- survfit(Surv(survie, statut) ~ cat_imc4, data = immuno)
+survdiff(Surv(survie, statut) ~ cat_imc4, data = immuno)
+kaplan2
+```
+
+```{r,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+ggsurvplot(kaplan2, conf.int = TRUE, risk.table = TRUE, pval = TRUE, data =immuno,
+legend="bottom",
+legend.title="IMC")
+```
+
+J'ai regroupé trois classes ensemble pour avoir les personnes en dessous du poids normal, les personnes de poids normal et les personnes en surpoids ou obèses
+
+```{r,echo=FALSE,results="hide", message = FALSE, warning = FALSE}
+kaplan3 <- survfit(Surv(survie2, statut) ~ cat_imc5, data = immuno)
+kaplan3
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+plot2<-ggsurvplot(
+  kaplan3, 
+  data =immuno,  
+  conf.int = TRUE, 
+  pval = TRUE,   
+  risk.table = TRUE, 
+  risk.table.col="strata",
+  ylab="Overall survival probability",
+  legend.labs=c("Underweight and Normal weight","Overweight and Obesity"),
+  tables.y.text = FALSE,
+  legend="bottom",
+  legend.title="BMI",
+  risk.table.height=0.35,
+  ggtheme = theme_bw(),
+  print = FALSE)  + guides(colour = guide_legend(nrow = 2))
+plot2$plot <- plot2$plot + labs(title = "B")
+
+plot_list <- list(plot1,plot2)
+  
+pdf("/Users/lidiadelrieu/Google\ Drive/Analyses_Stat/immuno_tox/data/test_arrange_surv.pdf", width = unit(8,"cm"), height = unit(6,"cm"))
+  arrange_ggsurvplots(plot_list, ncol = 2)
+dev.off()
+```
+
+J'ai regroupé deux classes ensemble pour avoir les personnes en dessous du poids normal+ les personnes de poids normal vs les personnes en surpoids ou obèses Les personnes en surpoids ou obèses vivent plus longtemps que les personnes dénutris ou de poids normal p=0,015
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+cox2 <- coxph(Surv(survie, statut) ~ cat_imc5, data = immuno)
+summary(cox2)
+ggforest(cox2)
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+immuno2$cat_imc5<-immuno$cat_imc5
+
+table1(~ sexe +age+histo+histo2+imc_immuno1+cat_imc1+pdl1 +msi+poids_diag+atcd_immunoallergique+ttt_maladie_ai+ttt_anterieur_systemique+nb_ligne_anterieure+immuno1+immuno1_type+ctla4+poids_immuno1+ps_immuno1+efficacite_immuno1+tox_immuno1+tox1_immuno1_type+poids_tox1+tox1_grade+ttt_tox1+arret_ttt_tox1+reprise_ttt_tox1+tox2+tox2_type+poids_tox2+tox2_grade+ttt_tox2+arret_ttt_tox2+reprise_ttt_tox2+tox3+tox3_type+poids_tox3+tox3_grade+ttt_tox3+arret_ttt_tox3+reprise_ttt_tox3+reponse_immuno_tox+raison_arret_it+ttt_suivant+ttt_suivant_type+statut|cat_imc5, data=immuno2, overall="Total")
+```
+
+## 3.3 IMC et toxicités
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+#Délai entre début de l'immuno et la toxicité 1
+immuno$delaitox= as.numeric(difftime(immuno$date_tox1, immuno$date_immuno1, units ="days"))
+summary(immuno$delaitox)
+sd(immuno$delaitox)
+
+immuno$delaitox2= as.numeric(difftime(immuno$date_tox1, immuno$date_immuno1, units ="days")/30)
+summary(immuno$delaitox2)
+sd(immuno$delaitox2)
+
+kaplan4 <- survfit(Surv(delaitox2, tox_immuno1) ~ cat_imc5, data = immuno)
+kaplan4
+
+library(survival)
+plot3<-ggsurvplot(
+  kaplan4, 
+  data =immuno,
+  conf.int = TRUE, 
+  pval = TRUE,   
+  ylab="Toxicity probability",
+  risk.table = TRUE, 
+  risk.table.col="strata",
+  legend.labs=c("Underweight and Normal weight","Overweight and Obesity"),
+  tables.y.text=FALSE,
+  legend="bottom",
+  legend.title="BMI",
+  risk.table.height=0.35,
+  ggtheme = theme_bw()
+)+ guides(colour = guide_legend(nrow = 2))
+plot3$plot <- plot3$plot + labs(title = "")
+
+plot_list <- list(plot3)
+
+pdf("/Users/lidiadelrieu/Google\ Drive/Analyses_Stat/immuno_tox/data/tox.plot.pdf", width = unit(8,"cm"), height = unit(6,"cm"))
+  arrange_ggsurvplots(plot_list)
+dev.off()
+
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+plot_inv1<-ggsurvplot(
+  kaplan4, 
+  data=immuno,
+  conf.int=TRUE, 
+  fun = "event", 
+  risk.table = TRUE, 
+  risk.table.col="strata",
+  surv.scale = "percent",  
+  legend.labs=c("Underweight and Normal weight","Overweight and Obesity"),
+  tables.y.texte=FALSE,
+  legend="bottom", 
+  legend.title="BMI",
+  risk.table.height=0.35,
+  ggtheme = theme_bw()
+  )+ guides(colour = guide_legend(nrow = 2))
+
+plot_inv1$plot <- plot_inv1$plot + labs(title = "")
+plot_inv1$plot = plot_inv1$plot + geom_text(x= 600, y = 0.2, label = "p=0.24")
+
+plot_list <- list(plot_inv1)
+
+pdf("/Users/lidiadelrieu/Google\ Drive/Analyses_Stat/immuno_tox/data/tox_plot_inv1.pdf", width = unit(10,"cm"), height = unit(6,"cm"))
+  arrange_ggsurvplots(plot_list)
+dev.off()
+```
+
+
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+cox3<- coxph(Surv(delaitox, tox_immuno1) ~ cat_imc5, data = immuno)
+summary(cox3)
+ggforest(cox3)
+```
+
+```{r}
+kaplan5 <- survfit(Surv(delaitox2, tox_immuno1) ~ cat_imc1, data = immuno)
+kaplan5
+
+library(survival)
+plot4<-ggsurvplot(
+  kaplan5, 
+  data =immuno,  
+  conf.int = TRUE, 
+  pval = TRUE,   
+  risk.table = TRUE, 
+  ylab="Toxicity probability",
+  risk.table.col="strata",
+  legend.labs=c("Underweight","Normal weight","Overweight", "Obesity"),
+  tables.y.text=FALSE,
+  legend="bottom",
+  legend.title="BMI",
+  risk.table.height=0.35,
+  ggtheme = theme_bw()
+)+ guides(colour = guide_legend(nrow = 2))
+plot4$plot <- plot4$plot + labs(title = "B")
+
+plot_list <- list(plot4)
+
+pdf("/Users/lidiadelrieu/Google\ Drive/Analyses_Stat/immuno_tox/data/tox.plot2.pdf", width = unit(8,"cm"), height = unit(6,"cm"))
+  arrange_ggsurvplots(plot_list)
+dev.off()
+```
+
+## 3.4 Survie en fonction des toxicités sur toute la population
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+kaplan6 <- survfit(Surv(survie2, statut) ~ tox_immuno1, data = immuno)
+kaplan6
+
+library(survival)
+ggsurvplot(kaplan6, conf.int = TRUE, risk.table = TRUE, pval = TRUE, data =immuno,
+legend.labs=c("Without toxicity","With toxicity"),
+legend="bottom",
+legend.title="Toxicity")
+
+plot5<-ggsurvplot(
+  kaplan6, 
+  data =immuno,  
+  conf.int = TRUE, 
+  pval = TRUE,   
+  risk.table = TRUE, 
+  risk.table.col="strata",
+  ylab="Overall survival probability",
+  legend.labs=c("Without toxicity","With toxicity"),
+  tables.y.text = FALSE,
+  legend="bottom",
+  legend.title="Toxicity",
+  risk.table.height=0.35,
+  ggtheme = theme_bw(),
+  print = FALSE)  + guides(colour = guide_legend(nrow = 2))
+plot5$plot <- plot5$plot + labs(title = "A")
+
+```
+
+
+Les patients qui développent des toxicités vivent plus longtemps que les patients qui ne développent pas de toxicités (p\<0,01)
+
+Voici un tableau sur les principaux facteurs entre les patients qui ont eu des toxicités vs pas de toxicités
+
+```{r,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+table(immuno$tox_immuno1)
+immuno$tox_immuno1<-as.factor(immuno$tox_immuno1)
+cox4<- coxph(Surv(survie, statut) ~ tox_immuno1, data = immuno)
+summary(cox4)
+ggforest(cox4)
+```
+
+```{r,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+table1(~ sexe +age+histo2+cat_imc1+pdl1 +msi+nb_ligne_anterieure+immuno1_type+ctla4+ps_immuno1+statut|tox_immuno1, data=immuno2, overall="Total")
+```
+
+## 3.5 Landmark
+
+### 3.5.1 On enlève les décès précoces
+
+On commence par enlever les décès précoces (jusqu'à 2 mois)
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+#https://www.emilyzabor.com/tutorials/survival_analysis_in_r_tutorial.html#Part_2:_Landmark_#Analysis_and_Time_Dependent_Covariates
+
+library(SemiCompRisks)
+lm_dat <- 
+  immuno %>% 
+  filter(survie >= 60)
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+#faire la même courbe mais sur la population filtree lm_dat
+lm_fit <- survfit(Surv(survie, statut) ~ tox_immuno1, data = lm_dat)
+ggsurvplot(lm_fit, conf.int = TRUE, risk.table = TRUE, pval = TRUE, data =lm_dat,
+legend="bottom",
+legend.labs=c("Without toxicity","With toxicity"),
+legend.title="Toxicity")
+```
+
+J'ai supprimé les patients qui sont décédés dans les 2 mois. L'idée est que les deces très précoces n'ont pas le temps de faire une tox et sont plus souvent dans le groupe Non. On rééquilibre donc les groupes en terme de risque.
+
+Au niveau des effectifs on a n=110 avec toxicités et n=126 sans toxicités
+
+On retrouve bien une différence statistiquement significative en terme de survie entre les patients qui font des toxicités vs les autres p\<0,001
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+str(lm_dat)
+
+lm_dat$pdl1<-as.factor(lm_dat$pdl1)
+lm_dat$msi<-as.factor(lm_dat$msi)
+lm_dat$immuno1_type<-as.factor(lm_dat$immuno1_type)
+lm_dat$statut<-as.factor(lm_dat$statut)
+
+lm_dat$statut <- factor(lm_dat$statut,
+levels = c(0,1),
+labels = c("Vivant", "Mort"))
+table(lm_dat$statut)
+
+lm_dat$cat_imc1 <-factor(lm_dat$cat_imc1,
+levels =c(1,2,3,4),
+labels =c("Insuffisance pondérale","Corpulence normale","Surpoids", "Obésité"))
+table(lm_dat$cat_imc1)
+
+lm_dat$sexe<-factor(lm_dat$sexe,
+levels = c(1,2),
+labels = c("Femmes", "Hommes"))
+table(lm_dat$sexe)
+
+lm_dat$pdl1 <- factor(lm_dat$pdl1,
+levels = c(0,1,2),
+labels = c("Négatif", "Positif","Non recherché"))
+table(lm_dat$pdl1)
+
+lm_dat$immuno1_type <- factor(lm_dat$immuno1_type,
+levels = c(1,2,3,4,5,6,7,8),
+labels = c("Nivolumab", "Pembrolizumab","Atezolizumab","Durvalumab+ Tremelimumab","Durvalumab","Nivolumab + Ipilimumab","Ipilimumab","Avelumab"))
+table(lm_dat$immuno1_type)
+
+lm_dat$msi <- factor(lm_dat$msi,
+levels = c(0,1),
+labels = c("Non recherche ou négatif", "MSI-H"))
+table(lm_dat$msi)
+
+```
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+table1(~ sexe +age+histo2+cat_imc1+pdl1 +msi+nb_ligne_anterieure+immuno1_type+ctla4+ps_immuno1+statut|tox_immuno1, data=lm_dat, overall="Total")
+```
+
+J'ai fait un tableau descriptif pour vérifier qu'on re équilibre les groupes avec ce landmark en terme de gravités
+
+**Cependant c'est peut être plus pertinent de prédire des toxicités précoces donc on va créer 3 landmark différents pour avoir deux groupes avec toxicités et sans toxicités**
+
+1.  Création d'une variable toxicité dans les 3 mois pour avoir un groupe oui/non
+
+2.  Création d'une variable toxicité dans les 6 mois pour avoir un groupe oui/non
+
+3.  Création d'une variable toxicité dans les 1 an pour avoir un groupe oui/non
+
+### 3.5.2 Patients qui ont fait des toxicités de 0 à 3 mois
+
+```{r,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+immuno3<-immuno
+immuno3 <- immuno3 %>%
+  mutate(delay_immuno = date_tox1 - date_immuno1) %>%
+  mutate(tox_immuno1 = ifelse(tox_immuno1 == 1 & delay_immuno <= 90, 1, 0))%>%
+  filter(survie >= 90)
+
+table(immuno$tox_immuno1)
+table(immuno3$tox_immuno1)
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+#faire la même courbe mais sur la population filtree lm_dat
+lm_fit3 <- survfit(Surv(survie2, statut) ~ tox_immuno1, data = immuno3)
+ggsurvplot(lm_fit3, conf.int = TRUE, risk.table = TRUE, pval = TRUE, data =immuno3,
+legend="bottom",
+legend.labs=c("Without toxicity","With toxicity"),
+legend.title="Toxicity")
+```
+
+```{r}
+plot6<-ggsurvplot(
+  lm_fit3, 
+  data =immuno3,  
+  conf.int = TRUE, 
+  pval = TRUE,   
+  risk.table = TRUE, 
+  risk.table.col="strata",
+  ylab="Overall survival probability",
+  legend.labs=c("Without toxicity","With toxicity"),
+  tables.y.text = FALSE,
+  legend="bottom",
+  legend.title="Toxicity",
+  risk.table.height=0.35,
+  ggtheme = theme_bw(),
+  print = FALSE)  + guides(colour = guide_legend(nrow = 2))
+plot6$plot <- plot6$plot + labs(title = "B")
+
+plot_list <- list(plot5,plot6)
+  
+pdf("/Users/lidiadelrieu/Google\ Drive/Analyses_Stat/immuno_tox/data/test_arrange_surv2.pdf", width = unit(8,"cm"), height = unit(6,"cm"))
+  arrange_ggsurvplots(plot_list, ncol = 2)
+dev.off()
+```
+
+J'ai recodé la variable toxicité : si toxicité dans les 3 mois alors toxicité= oui sinon non Ensuite j'ai décalé le délai de survie à partir de 3 mois donc ceux qui décèdent avant les 3 mois sont exclus de même que ceux censurés à trois mois
+
+On a donc une survie qui commence à 3 mois avec 2 groupes de patients, ceux qui ont et ceux qui n'ont pas eu de tox entre 0 et 3 mois
+
+Il y a 62 patients qui ont déclarés des toxicités et 159 pas de toxicités
+
+chez les patients ayant atteint les 3 mois d'immuno, le fait d'avoir une tox dans les 6 premiers mois est pas pronostic (p=0,028)
+
+```{r,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+cox5<- coxph(Surv(survie, statut) ~ tox_immuno1, data = immuno3)
+summary(cox5)
+ggforest(cox5)
+```
+
+### 3.5.3 Patients qui ont fait des toxicités de 0 à 6 mois
+
+```{r,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+immuno4<-immuno
+immuno4 <- immuno4 %>%
+  mutate(delay_immuno = date_tox1 - date_immuno1) %>%
+  mutate(tox_immuno1 = ifelse(tox_immuno1 == 1 & delay_immuno <= 182, 1, 0))%>%
+  filter(survie >= 182)
+
+table(immuno$tox_immuno1)
+table(immuno4$tox_immuno1)
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+#faire la même courbe mais sur la population filtree lm_dat
+lm_fit3 <- survfit(Surv(survie, statut) ~ tox_immuno1, data = immuno4)
+ggsurvplot(lm_fit3, conf.int = TRUE, risk.table = TRUE, pval = TRUE, data =immuno4,
+legend="bottom",
+legend.labs=c("Without toxicity","With toxicity"),
+legend.title="Toxicity")
+```
+
+J'ai recodé la variable toxicité : si toxicité dans les 6 mois alors toxicité= oui sinon non Ensuite j'ai décalé le délai de survie à partir de 6 mois donc ceux qui décèdent avant les 6 mois sont exclus de même que ceux censurés à 6 mois
+
+On a donc une survie qui commence à 6 mois avec 2 groupes de patients, ceux qui ont et ceux qui n'ont pas eu de tox entre 0 et 6 mois
+
+Il y a 79 patients qui ont déclarés des toxicités et 96 pas de toxicités
+
+L'interprétation est quand même, chez les patients ayant atteint les 6 mois d'immuno, le fait d'avoir une tox dans les 6 premiers mois n'est pas pronostic
+
+```{r,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+cox6<- coxph(Surv(survie, statut) ~ tox_immuno1, data = immuno4)
+summary(cox6)
+ggforest(cox6)
+```
+
+### 3.5.4 Patients qui ont fait des toxicités de 0 à 12 mois
+
+```{r,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+immuno5<-immuno
+immuno5 <- immuno5 %>%
+  mutate(delay_immuno = date_tox1 - date_immuno1) %>%
+  mutate(tox_immuno1 = ifelse(tox_immuno1 == 1 & delay_immuno <= 365, 1, 0))%>%
+  filter(survie >= 365)
+
+table(immuno$tox_immuno1)
+table(immuno5$tox_immuno1)
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+#faire la même courbe mais sur la population filtree lm_dat
+lm_fit4 <- survfit(Surv(survie, statut) ~ tox_immuno1, data = immuno5)
+ggsurvplot(lm_fit4, conf.int = TRUE, risk.table = TRUE, pval = TRUE, data =immuno5,
+legend="bottom",
+legend.labs=c("Without toxicity","With toxicity"),
+legend.title="Toxicity")
+```
+
+J'ai recodé la variable toxicité : si toxicité dans les 12 mois alors toxicité= oui sinon non Ensuite j'ai décalé le délai de survie à partir de 12 mois donc ceux qui décèdent avant les 12 mois sont exclus de même que ceux censurés à 12 mois
+
+On a donc une survie qui commence à 12 mois avec 2 groupes de patients, ceux qui ont et ceux qui n'ont pas eu de tox entre 0 et 12 mois
+
+Il y a 68 patients qui ont déclarés des toxicités et 49 pas de toxicités
+
+```{r,echo=FALSE, results="hide",message = FALSE, warning = FALSE}
+cox7<- coxph(Surv(survie, statut) ~ tox_immuno1, data = immuno5)
+summary(cox7)
+ggforest(cox7)
+```
+
+**Dans les Landmark 3.4.2, 3.4.3 et 3.4.4 les courbes sont beaucoup moins séparées avec landmark voir même plus significatives meme si on perd de la puissance puisqu'on supprime des patients.**
+
+## 3.6 Multivarié survie en fonction des toxicités et de l'IMC (modèle de Cox) sans prendre en compte les landmark
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+#catégorie ligne de traitement
+table(immuno$nb_ligne_anterieur)
+immuno$lignes <- as.character(immuno$nb_ligne_anterieur)
+immuno$lignes[immuno$nb_ligne_anterieur %in% c("0","1")] <-"2 premieres"
+immuno$lignes[immuno$nb_ligne_anterieur %in% c("2","3","4","5")] <-"3 et plus"
+table(immuno$lignes)
+
+str(immuno$histo)
+immuno$histo<-as.factor(immuno$histo)
+immuno$histo2<-as.factor(immuno$histo2)
+immuno$pdl1<-as.factor(immuno$pdl1)
+immuno$sexe<-as.factor(immuno$sexe)
+
+levels(immuno$histo2)
+
+table(immuno$pdl1)
+immuno$pdl1<-factor(as.character(immuno$pdl1),exclude="2")
+
+levels(immuno$histo2)
+table(immuno$histo2)
+immuno$histo2<-relevel(immuno$histo2,ref="CBNPC")
+```
+
+Pour l'histologie, on a pris la classe CBNPC comme classe de référence (n=136)
+
+### 3.6.1 Analyses en univariés
+
+```{r}
+library(purrr)
+names(immuno)
+#J'ai regroupé les grades de toxixités avec <2 ou >= 3
+immuno$tox1_grade[immuno$tox1_grade %in% c("1","2")] <-"<3"
+immuno$tox1_grade[immuno$tox1_grade %in% c("3","4","5")] <-">=3"
+table(immuno$tox1_grade)
+
+names(immuno)
+summary(immuno$ps_immuno1)
+str(immuno$ps_immuno1)
+colnames(immuno)
+univar <- immuno %>%
+  dplyr::select(histo2,cat_imc5,sexe,ctla4,pdl1,msi,ps_immuno1,tox1_grade,tox_immuno1,statut,survie)
+  
+purrr::map(names(univar), 
+           ~coxph(as.formula(paste("Surv(survie, statut) ~ ", .x)), univar))
+
+```
+
+### 3.6.2 Analyses multivariées sur la survie
+
+On rajoute ici le fait d'avoir eu des toxicités et l'IMC en deux classes
+
+```{r,echo=FALSE,results="hide", message = FALSE, warning = FALSE}
+library(GGally, quietly = TRUE)
+table(immuno$cat_imc3)
+
+table(immuno$cat_imc5)
+table(immuno$tox_immuno1)
+table(immuno$pdl1)
+table(immuno$tox1_grade)
+
+immuno$msi<-as.factor(immuno$msi)
+mod9 <- coxph(Surv(survie, statut) ~ histo2+sexe+ctla4+cat_imc5+tox_immuno1+ps_immuno1+msi, data = immuno)
+ggcoef(mod9, exponentiate = TRUE)
+summary(mod9)
+ggforest(mod9)
+
+immuno$msi<- factor(immuno$msi,
+levels = c(0,1),
+labels = c("No", "Yes"))
+table(immuno$msi)
+
+levels(immuno$cat_imc5)
+immuno$cat_imc5<- factor(immuno$cat_imc5,
+levels = c("Dénutris et poids normal","Surpoids ou obèses"),
+labels = c("<25", "≥25"))
+table(immuno$cat_imc5)
+
+levels(immuno$tox_immuno1)
+label(immuno$tox_immuno1) <- "Toxicity"
+immuno$tox_immuno1<- factor(immuno$tox_immuno1,
+levels = c(0,1),
+labels = c("No", "Yes"))
+table(immuno$tox_immuno1)
+
+mod10<-step(mod9, scope=list(upper=as.formula("~ histo2+sexe+ctla4+cat_imc5+tox_immuno1+ps_immuno1+msi"),lower=~ 1),data=immuno)
+
+ggforest(mod10)
+
+immuno$cat_imc5bis<-immuno$cat_imc5
+immuno$tox_immuno1bis<-immuno$tox_immuno1
+immuno$ps_immuno1bis<-immuno$ps_immuno1
+immuno$msibis<-immuno$msi
+
+table(immuno$cat_imc5bis)
+
+colnames(x=immuno)[colnames(x=immuno)=="cat_imc5bis"] <- 'BMI'
+colnames(x=immuno)[colnames(x=immuno)=="tox_immuno1bis"] <- 'Toxicity'
+colnames(x=immuno)[colnames(x=immuno)=="ps_immuno1bis"] <- 'PS'
+colnames(x=immuno)[colnames(x=immuno)=="msibis"] <- 'MSI'
+
+names(immuno)
+
+mod11 <- coxph(Surv(survie, statut) ~ BMI+Toxicity+PS+MSI, data = immuno)
+myplot<-ggforest(mod11)
+
+ggsave("myplot.pdf")
+  
+```
+
+On vérifie le modèle selon l'hypothèse des résidus de Schoenfeld
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+test <- cox.zph(mod10)
+ggcoxzph(test)
+cox.zph(mod10)
+
+#diag des patients qui ont une forte influence sur B
+#dfbeta.mod9 <- residuals(mod9, type="dfbeta")
+#dfbeta.mod9
+
+#par(mfrow=c(1, 2))
+#for (j in 1:2)
+#{
+#plot(dfbeta.mod9[, j], ylab=names(coef(mod9))[j])
+#abline(h=0, lty=2)
+#}
+```
+
+Graphiquement le modèle semble validé
+
+## 3.7 Modèle de régression logistique (toxicité oui non)
+### 3.7.1 Toute la population
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+names(immuno)
+
+univar2 <- immuno %>%
+  dplyr::select(histo2,BMI,sexe,ctla4,pdl1,MSI,PS,Toxicity,immuno$immuno1_type,nb_ligne_anterieure,immuno1)
+```
+
+
+```{r}
+names(immuno)
+str(immuno$Toxicity)
+summary(immuno$pdl1)
+str(immuno$ctla4)
+immuno$ctla4<-as.factor(immuno$ctla4)
+summary(immuno$PS)
+summary(immuno$nb_ligne_anterieure)
+immuno$immuno1_type<-as.factor(immuno$immuno1_type)
+summary(immuno$immuno1_type)
+immuno$immuno1<-as.factor(immuno$immuno1)
+summary(immuno$immuno1)
+
+#on va regrouper les catégories
+immuno$PS <- as.character(immuno$PS)
+immuno$PS[immuno$PS %in% c("0","1")] <-"<2"
+immuno$PS[immuno$PS %in% c("2","3","4")] <-"≥2"
+table(immuno$PS)
+
+immuno$nb_ligne_anterieure <- as.character(immuno$nb_ligne_anterieure)
+immuno$nb_ligne_anterieure[immuno$nb_ligne_anterieure %in% c("0","1")] <-"<2"
+immuno$nb_ligne_anterieure[immuno$nb_ligne_anterieure %in% c("2","3","4","5")] <-"≥3"
+table(immuno$nb_ligne_anterieure)
+```
+
+```{r}
+var_label(immuno$sexe) <- "Sex"
+var_label(immuno$nb_ligne_anterieure) <- "Priori lines treatment"
+var_label(immuno$immuno1) <- "Type of immunotherapy"
+var_label(immuno$histo2) <- "Histology"
+
+immuno$sexe <- factor(immuno$sexe,
+levels = c(1,2),
+labels = c("Women", "Men"))
+table(immuno$sexe)
+
+immuno$immuno1 <- factor(immuno$immuno1,
+levels = c(1,2),
+labels = c("Monotherapy", "Bitherapy"))
+table(immuno$immuno1)
+
+immuno$histo2 <- factor(immuno$histo2,
+levels = c("CBNPC","ORL","Digestive","Rein","Melanome","Carcinome urothelial","Autre"),
+labels = c("NSCLC", "HNSCC", "Gastrointestinal","RCC","Melanoma","Urothelial","Other"))
+table(immuno$histo2)
+```
+
+
+```{r}
+#stepwise approach
+fullmod <- glm(Toxicity ~BMI+sexe+MSI+nb_ligne_anterieure+immuno1+histo2+ctla4, data = immuno, family = binomial(logit))
+
+summary(fullmod)
+
+nothing <- glm(Toxicity ~ 1,family=binomial, data=immuno)
+summary(nothing)
+
+backwards = step(fullmod) # Backwards selection is the default
+formula(backwards)
+summary(backwards)
+
+bothways =step(nothing, list(lower=formula(nothing),upper=formula(fullmod)),
+direction="both",trace=0)
+
+formula(bothways)
+
+tbl_regression(backwards,exponentiate = TRUE)
+
+plot7<-forest_model(backwards)
+
+setwd("~/Google Drive/Analyses_Stat/immuno_tox/data")
+
+ggsave(plot7, file="myplotHR.pdf", width = 10, height=8, dpi=300)
+
+```
+
+
+
+### 3.7.2 Dans le landmark
+```{r}
+#on va regrouper les catégories
+names(immuno3)
+immuno3$ps_immuno1 <- as.character(immuno3$ps_immuno1)
+immuno3$ps_immuno1[immuno3$ps_immuno1 %in% c("0","1")] <-"<2"
+immuno3$ps_immuno1[immuno3$ps_immuno1 %in% c("2","3","4")] <-"≥2"
+table(immuno3$ps_immuno1)
+
+immuno3$nb_ligne_anterieure <- as.character(immuno3$nb_ligne_anterieure)
+immuno3$nb_ligne_anterieure[immuno3$nb_ligne_anterieure %in% c("0","1")] <-"<2"
+immuno3$nb_ligne_anterieure[immuno3$nb_ligne_anterieure %in% c("2","3","4","5")] <-"≥3"
+table(immuno3$nb_ligne_anterieure)
+```
+
+```{r}
+var_label(immuno3$sexe) <- "Sex"
+var_label(immuno3$nb_ligne_anterieure) <- "Priori lines treatment"
+var_label(immuno3$immuno1) <- "Type of immunotherapy"
+var_label(immuno3$histo2) <- "Histology"
+var_label(immuno3$msi) <- "MSI"
+var_label(immuno3$cat_imc5) <- "BMI"
+var_label(immuno3$ps_immuno1) <- "PS"
+
+
+immuno3$sexe <- factor(immuno3$sexe,
+levels = c(1,2),
+labels = c("Women", "Men"))
+table(immuno3$sexe)
+
+immuno3$immuno1 <- factor(immuno3$immuno1,
+levels = c(1,2),
+labels = c("Monotherapy", "Bitherapy"))
+table(immuno3$immuno1)
+
+immuno3$cat_imc5 <- factor(immuno3$cat_imc5,
+levels = c("Dénutris et poids normal","Surpoids ou obèses"),
+labels = c("<25", "≥25"))
+table(immuno3$cat_imc5)
+
+immuno3$msi <- factor(immuno3$msi,
+levels = c(0,1),
+labels = c("No", "Yes"))
+table(immuno3$msi)
+
+immuno3$histo2 <- factor(immuno3$histo2,
+levels = c("CBNPC","ORL","Digestive","Rein","Melanome","Carcinome urothelial","Autre"),
+labels = c("NSCLC", "HNSCC", "Gastrointestinal","RCC","Melanoma","Urothelial","Other"))
+table(immuno3$histo2)
+```
+
+
+
+```{r}
+str(immuno3$msi)
+immuno3$sexe<-as.factor(immuno3$sexe)
+immuno3$msi<-as.factor(immuno3$msi)
+immuno3$immuno1<-as.factor(immuno3$immuno1)
+
+fullmod2<-glm(tox_immuno1~cat_imc5+sexe+msi+nb_ligne_anterieure+immuno1+histo2, data = immuno3, family=binomial(logit))
+
+summary(fullmod2)
+
+nothing2 <- glm(tox_immuno1 ~ 1,family=binomial, data=immuno3)
+summary(nothing2)
+
+backwards2 = step(fullmod2) # Backwards selection is the default
+formula(backwards2)
+summary(backwards2)
+
+
+bothways2 =step(nothing, list(lower=formula(nothing2),upper=formula(fullmod2)),
+direction="both",trace=0)
+
+formula(bothways2)
+
+
+tbl_regression(backwards2,exponentiate = TRUE)
+
+plot8<-forest_model(backwards2)
+
+ggsave(plot8, file="myplotHR2.pdf", width = 10, height=8, dpi=300)
+
+```
+
+
+
+
+

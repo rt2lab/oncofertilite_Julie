@@ -1,0 +1,604 @@
+---
+title: "Cleaning_mapping_base_sein"
+author: "ASHP"
+date: "27/11/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(dplyr)
+library(tidyverse)
+```
+
+```{r Import_raw_database }
+setwd("/Users/ahamypet/RT2Lab/Bases_de_donnees/chantier_BDD_2019/")
+# See input script in example_input_database_base_sein.R
+load("/Users/ahamypet/RT2Lab/Bases_de_donnees/chantier_BDD_2019/data/raw/unilat_and_bilat_test.RData")
+d1        <- unilat_and_bilat_test ; head(d1)
+```
+
+```{r}
+# All items mapped to bc_biology are the items on NON pretreated tumors 
+```
+
+```{r cleaning to easily play with mybase }
+d1 <- d1 %>% select(-starts_with("NUMANA"))
+d1 <- d1 %>% select(-starts_with("LANA")) 
+d1 <- d1 %>% select(-starts_with("CHIRMET"), -starts_with("DATANA"),-starts_with("CIMORG"),-starts_with("NVRE"))  
+d1 <- d1 %>% select(-starts_with("MR"), -starts_with("HTMET"),-starts_with("RTMET"),-starts_with("CTMET"))  
+d1 <- d1 %>% select(-starts_with("TYPDK"), -starts_with("SIEGDK"),-starts_with("ACTANA"),-starts_with("TTMET"),-starts_with("TTRLOC"))  
+d1 <- d1 %>% select(-starts_with("TCMET"), -starts_with("RTRG"),-starts_with("TTRGG"),-starts_with("CHIRR"))  
+```
+
+```{r patient_id}
+d1$database           <- 1
+d1$numdos_curie       <- d1$NUMDOS
+# d1$cletri @ASHP : trouver la cletri, mail à Chanas?
+d1$cletri             <- "toto"
+d1$side               <- factor(d1$cote, levels = c("G","D"), labels = c(1,2))
+d1$dat_birth          <- d1$DATNAI
+d1$dat_bc_diagnosis   <- as.Date(ifelse(is.na(d1$DATDIAG), d1$datechir, d1$DATDIAG), origin = "1970-01-01")
+d1$center_curie       <- factor(d1$LIEUCHIRA, levels = c("I.C. Paris", "I.C. St Cloud","hors I.C."),
+                                       labels = c(1,2,3))
+d1$center             <- ifelse(d1$center_curie == 3,2,1)
+# d1$clinical_trial     <- factor(d1$ESSAI_CLIN, levels = c("I.C. Paris","I.C. St Cloud"), labels = c(1,2))
+d1$base_cletri        <- paste0(d1$database, "_",d1$cletri)
+```
+
+```{r patient_char}
+d1$age_menarche       <- as.numeric(unilat_and_bilat$AGEPR)
+d1$prev_pregnancy     <- d1$GROS   
+d1[which(d1$GROS == "non precise"),"prev_pregnancy"] <- NA
+d1$prev_pregnancy     <- factor(d1$prev_pregnancy, levels = c("non","oui"), labels = c(0,1))
+d1$menop              <- d1$MENOP   
+d1[which(d1$MENOP == "non precise"),"menop"] <- NA
+d1$menop              <- factor(d1$menop, levels = c("non","oui"), labels = c(0,1))
+d1$age_menop          <- as.numeric(d1$AGMENOP) 
+d1$hrt                <- d1$THS   
+d1[which(d1$THS == "non precise"),"hrt"] <- NA
+d1$hrt                <- factor(d1$hrt, levels = c("non","oui"),  labels = c(0,1))
+d1$fam_history        <- d1$ANTFAM   
+d1[which(d1$fam_history == "non precise"),"fam_history_BC_OC"] <- NA
+d1$fam_history        <- factor(d1$fam_history, levels = c("non","oui"), labels = c(0,1))
+d1$brca_screen        <- factor(d1$RECMUT, levels = c("non","oui"), labels = c(0,1))
+d1$brca_mut           <- factor(d1$RESMUT, levels = c("non","oui"), labels = c(0,1))
+d1$weight             <- as.numeric(d1$POIDS)
+d1$size               <- as.numeric(d1$TAILLE)/100
+```
+
+```{r bc_diagnosis}
+# d1$bilat_BC @ASHP revoir     
+d1$inflammatory_BC    <- ifelse(d1$TUICC  %in% c("T4c","T4d"), 1,0)
+d1$moddiag            <- factor(d1$MODDIAG, levels = c("radiologique","clinique"),labels=c(0,1)) 
+d1$clin_multifocality <- factor(d1$MULTIF, levels = c("non","oui"),labels=c(0,1))
+
+d1$tclin              <- as.numeric(d1$TCLIN)
+d1$tuicc_5cl                                                         <- NA 
+d1$tuicc_5cl[d1$TUICC  %in% c("T0","Tis") ]                          <- 0
+d1$tuicc_5cl[d1$TUICC  %in% c("T1") ]                                <- 1
+d1$tuicc_5cl[d1$TUICC  %in% c("T2") ]                                <- 2
+d1$tuicc_5cl[d1$TUICC  %in% c("T3") ]                                <- 3
+d1$tuicc_5cl[d1$TUICC  %in% c("T4a","T4b","T4c","T4d") ]             <- 4
+
+d1$nuicc_4cl                                    <- NA
+d1$nuicc_4cl[d1$NUICC  %in% c("N0") ]           <- 0
+d1$nuicc_4cl[d1$NUICC  %in% c("N1") ]           <- 1
+d1$nuicc_4cl[d1$NUICC  %in% c("N2") ]           <- 2
+d1$nuicc_4cl[d1$NUICC  %in% c("N3") ]           <- 3
+
+d1$muicc            <- factor(d1$MUICC, levels = c("M0","M1"), labels = c(0,1))
+
+d1$er_status        <- factor(d1$ROCL, levels = c("RO -", "RO +"), labels=c(0,1)) 
+d1$pr_status        <- factor(d1$RPCL, levels = c("RP -", "RP +"), labels=c(0,1)) 
+d1$er_intensity     <- factor(d1$ROINT, levels = c("faible", "modere","fort"), labels=c(1,2,3))
+d1$pr_intensity     <- factor(d1$RPINT, levels = c("faible", "modere","fort"), labels=c(1,2,3))
+d1$er_percentage    <- as.integer(d1$ROPCT)
+d1$pr_percentage    <- as.integer(d1$RPPCT)
+
+d1$her2_status                                                               <- NA
+d1$her2_status[d1$HERIHC == "+++" | d1$HERA == "oui"]                        <- 1
+d1$her2_status[d1$HERIHC == "+" | d1$HERIHC == "negatif" |d1$HERA == "non"]  <- 0
+
+# Histological type
+sort(table(d1$CIMO1,exclude=NULL)) # Beware, also codes for non invasive #(85002)DCIS; # (85012)High grade DCIS;
+d1    <- d1 %>% mutate(histo_5cl = case_when( CIMO1 ==  "85003" ~ 1,
+                                              CIMO1 ==  "85203" ~ 2,
+                                              CIMO1 ==  "84803" ~ 3,
+                                              CIMO1 ==  "82113" ~ 4,
+                                              TRUE ~ 9))
+
+d1$grade_3cl                        <- NA
+d1$grade_3cl[d1$EE  == "1" ]        <- 1
+d1$grade_3cl[d1$EE  == "2" ]        <- 2
+d1$grade_3cl[d1$EE  == "3" ]        <- 3
+
+d1$ki67_perc              <- as.integer(d1$KI67PCT)
+d1$mitotic_index          <- as.integer(d1$NBMIT)
+d1$mitotic_index_class    <- NA   
+d1$mitotic_index_class    <- factor(d1$IM, levels = c("faible", "moyen","fort"), labels=c(1,2,3))
+d1$invasive_or_dcis       <- factor(d1$INFILT, levels = c("infiltrant", "CCIS","CCIS + micro infiltrant"), labels=c(1,2,1)) 
+d1$dcis_component         <- factor(d1$INSITU, levels = c("non","oui"), labels=c(0,1)) 
+```
+
+```{r surgery}
+d1$dat_first_surg     <- d1$DATCHIR.f1
+
+d1$breast_surgery     <- ifelse(!is.na(d1$dat_first_surg),1,0)  # Also in derived variables...
+# But we need it to build chemo settings...
+
+d1$TYPCHIR            <-  paste(d1$TYPCHIR.f1,d1$TYPCHIR.f2, d1$TYPCHIR.f3)
+d1$breast_surgery_3cl <- NA
+d1$breast_surgery_3cl [ which(d1$TYPCHIR %in% c("NA NA NA") | 
+    d1$TYPCHIR %in% c("pas de geste mammaire NA NA"))]          <- 0
+d1$breast_surgery_3cl [ grep("tumorectomie",d1$TYPCHIR) ]       <- 1
+d1$breast_surgery_3cl [ grep("mastectomie",d1$TYPCHIR)   ]      <- 2
+
+d1$axillary_surgery_4cl                                                 <- NA
+d1$axillary_surgery_4cl[which(d1$GS =="oui")]                           <- 1
+d1$axillary_surgery_4cl[which(d1$CAX == "oui")]                         <- 2
+d1$axillary_surgery_4cl[which(d1$GS =="oui" & d1$CAX == "oui") ]        <- 3
+d1$axillary_surgery_4cl[which(d1$CAX =="non" & d1$GS == "non" & 
+                        !is.na (d1$GS) & !is.na(d1$GS)) ]               <- 4
+d1 %>% filter(is.na(axillary_surgery_4cl)) %>% select(GS,CAX,NBGSPREL,NBCAPREL)
+d1 %>% filter(is.na(axillary_surgery_4cl)) %>% group_by(GS,CAX,NBGSPREL,NBCAPREL,NBGSPOS, NBCAPOS) %>% count()
+#   GS    CAX   NBGSPREL NBCAPREL NBGSPOS NBCAPOS     n
+#   <chr> <chr> <chr>    <chr>    <chr>   <chr>   <int>
+# 1 NA    non   NA       NA       NA      NA        640
+# 2 NA    NA    NA       NA       NA      NA        165
+# => We consider that none of these had axillar surgery => imputed to 4
+d1$axillary_surgery_4cl[which(is.na(d1$axillary_surgery_4cl))  ]        <- 4
+```
+
+```{r treatments_binary}
+d1$ct                                 <- ifelse(!is.na(d1$DATDCT.f1),1,0)
+d1$dat_first_ct                       <- d1$DATDCT.f1
+d1$dat_end_first_ct                   <- d1$DATFCT.f1
+
+d1$rt                                 <- ifelse(!is.na(d1$DATDRT),1,0)
+d1$dat_first_rt                       <- d1$DATDRT
+
+d1$ht                                 <- ifelse(!is.na(d1$DATDHT.q1),1,0)
+d1$dat_first_ht                       <- d1$DATDHT.q1
+
+# We consider only first HT ; First Identify double upfront ht
+d1$TYPHT                                          <-  paste(d1$TYPHT.q1,d1$TYPHT.q2)
+d1$TYPHT[ grep("NA",d1$TYPHT) ]                   <- NA
+d1$TYPHT[which(d1$DATDHT.q1 != d1$DATDHT.q2)]     <- NA
+table(d1$TYPHT,exclude=NULL)
+
+d1$ht_type_5cl                                                            <- NA
+d1$ht_type_5cl[which(d1$ht == 1)]                                         <- 5
+d1$ht_type_5cl[which(d1$TYPHT.q1== "Anti-oestrogenes")]                   <- 1
+d1$ht_type_5cl[which(d1$TYPHT.q1== "Inhibiteur Aromatase")]               <- 2
+d1$ht_type_5cl[which(d1$TYPHT %in% c("Agoniste LH RH Anti-oestrogenes",
+                               "Anti-oestrogenes Agoniste LH RH"))]       <- 3
+d1$ht_type_5cl[which(d1$TYPHT %in% c("Inhibiteur Aromatase Agoniste LH RH",
+                               "Agoniste LH RH Inhibiteur Aromatase"))]   <- 4
+
+d1$antiher2                           <- ifelse(d1$TYPTCIBL.q1.f1 %in% c("HERCEPTIN","PERJETA","TYVERB"),1,0) 
+d1$dat_first_antiher2                 <- as.Date(NA)
+d1[which(d1$antiher2 == 1),"dat_first_antiher2"] <- as.Date(d1[which(d1$antiher2 == 1),"DATDTCIBL.f1"] )
+
+d1$tc_other                           <- ifelse(!d1$TYPTCIBL.q1.f1 %in% c("HERCEPTIN","PERJETA","TYVERB"),1,0) 
+d1$dat_first_tc_other                 <- as.Date(NA)
+d1[which(d1$tc_other == 1),"dat_first_tc_other"] <- as.Date(d1[which(d1$tc_other == 1),"DATDTCIBL.f1"] )
+```
+
+```{r neoadj_or_not}
+# We consider by default that if no mention of such treatments, no treatments
+d1$neo_ct       <- 0
+d1$neo_ht       <- 0
+d1$neo_rt       <- 0
+d1$neo_antiher2 <- 0
+d1$neo_tc_other <- 0
+
+d1[which(d1$dat_first_ct < d1$dat_first_surg),"neo_ct"]             <- 1
+d1[which(d1$dat_first_ht < d1$dat_first_surg),"neo_ht"]             <- 1
+d1[which(d1$dat_first_rt < d1$dat_first_surg),"neo_rt"]             <- 1
+d1[which(d1$dat_first_antiher2 < d1$dat_first_surg),"neo_antiher2"] <- 1
+d1[which(d1$dat_first_tc_other < d1$dat_first_surg),"neo_tc_other"] <- 1
+
+d1$primary_ttt                                <- 1 
+d1[which(d1$breast_surgery==0),"primary_ttt"] <- 9
+d1[which( d1$neo_ct      == 1 |
+          d1$neo_ht      == 1 |
+          d1$neo_rt      == 1 |
+          d1$neo_antiher2== 1 |
+          d1$neo_tc_other== 1 ),"primary_ttt"] <- 2
+table(d1$primary_ttt,d1$trt1,exclude=NULL)
+# Few discrepancies
+  #    chir    ct    ht    rt    tc
+  # 1 15731     0     1     0     0
+  # 2     1  1809   359     2     6
+  # 9     0    48   217    17     0
+# @ASHP to correct
+
+d1 %>% filter(primary_ttt==1,trt1 == "ht")    %>% select(numdos_curie, neo_ct,neo_ht,dat_first_surg,dat_first_ht) #1000124
+d1 %>% filter(primary_ttt==2,trt1 == "chir")  %>% select(numdos_curie, neo_ct,neo_ht,dat_first_surg,dat_first_ht) #1200256
+# @ à BDD le 4 decembre
+# @ASHP to correct
+
+d1$dat_first_neo_ct         <- as.Date(NA)
+d1$dat_first_neo_ht         <- as.Date(NA)
+d1$dat_first_neo_rt         <- as.Date(NA)
+d1$dat_first_neo_antiher2   <- as.Date(NA)
+d1$dat_first_neo_tc_other   <- as.Date(NA)
+
+d1[which(d1$neo_ct      ==1),"dat_first_neo_ct"]        <- d1[which(d1$neo_ct      ==1),"dat_first_ct"]
+d1[which(d1$neo_ht      ==1),"dat_first_neo_ht"]        <- d1[which(d1$neo_ht      ==1),"dat_first_ht"]
+d1[which(d1$neo_rt      ==1),"dat_first_neo_rt"]        <- d1[which(d1$neo_rt      ==1),"dat_first_rt"]
+d1[which(d1$neo_antiher2==1),"dat_first_neo_antiher2"]  <- d1[which(d1$neo_antiher2==1),"dat_first_antiher2"]
+d1[which(d1$neo_tc_other==1),"dat_first_neo_tc_other"]  <- d1[which(d1$neo_tc_other==1),"dat_first_tc_other"]
+```
+
+```{r}
+load(file= "data/processed/df_all_chemo.RData")
+load(file= "data/processed/df_all_chemo_wide.RData")
+load(file= "data/processed/df_all_chemo_wide_2.RData")
+```
+
+```{r to preprocess CT data we use a separate script Process_CT_in_base_sein_v2.Rmd }
+# Run script, and obtain 3 preprocessed databases: 
+# d1                 
+# df_all_chemo       
+# df_all_chemo_wide  
+# df_all_chemo_wide_2
+
+# To merge with those 3 database, we have to create 
+d1$numdos_curie_side  <- paste0(d1$numdos_curie,"_",d1$side)
+```
+
+```{r}
+d1 %>% filter(antiher2==1) %>% group_by(TYPTCIBL.q1.f1) %>% count() %>% arrange(desc(n))
+#   TYPTCIBL.q1.f1     n
+#   <chr>          <int>
+# 1 HERCEPTIN       1514
+# 2 TYVERB            16
+# 3 PERJETA            2
+d1 %>% filter(antiher2==1) %>% group_by(TYPTCIBL.q2.f1) %>% count() %>% arrange(desc(n))
+#   TYPTCIBL.q2.f1     n
+#   <chr>          <int>
+# 1 NA              1446
+# 2 Autres            49
+# 3 AVASTIN           14
+# 4 HERCEPTIN          9
+# 5 PERJETA            8
+# 6 TYVERB             4
+# 7 TDM1               2
+d1 %>% filter(antiher2==1) %>% group_by(TYPTCIBL.q1.f2) %>% count() %>% arrange(desc(n))
+#   TYPTCIBL.q1.f2     n
+#   <chr>          <int>
+# 1 NA              1286
+# 2 HERCEPTIN        246
+# => do they represent adjuvant post neoadj???
+
+# Appel linda haroun 3 december ; 
+# sometimes 1 form for pre-neo;
+# 2 form for post neo
+# Sometimes merged => We can not know
+# We choose to forget about antiher2 type ;
+# Because those with Tyverb represent only 1% of the whole++++
+```
+
+
+```{r neoadjuvant_ct_antiher2 }
+# @ASHP !!! BEWARE not to duplicate lines !!! 
+# if several neoadjuvant lines !!!!!!
+#   numdos_curie_side nb_cy_neo_ct_concat nb_cycles_neo_ct                        neo_ct_clair neo_ct_regimen neo_ct_sequence
+# 1         0688281_1                 4|3                7 EC (Epirubicine+endoxan) - TAXOTERE              1               2
+# 2         0688281_1                   3                3                                 FUN              4               1
+#   neo_q3_and_more dat_end_neo_ct adj_ct nb_cy_adj_ct_concat nb_cycles_adj_ct adj_ct_clair adj_ct_regimen adj_ct_sequence adj_q3_and_more
+# 1            <NA>     2007-05-21      0                <NA>               NA         <NA>           <NA>            <NA>            <NA>
+# 2            <NA>     2007-08-16      0                <NA>               NA         <NA>           <NA>            <NA>            <NA>
+#   dat_first_adj_ct dat_end_adj_ct adj_anti_her2
+# 1             <NA>           <NA>             0
+# 2             <NA>           <NA>             0
+
+df_all_chemo_wide %>% filter(numdos_curie_side=="0688281_1")
+df_all_chemo_wide_2 %>% filter(numdos_curie_side=="0688281_1")
+
+# For the data of the nac regimen, we import agregated data df_all_chemo_wide_2
+# Beware, Here, we miss all the ones with neo + adj data +++++
+# To reimport later !!!! 
+df_all_chemo_wide_neo <- df_all_chemo_wide_2 %>% filter(seq_ct_each_pat_side == "neoadjuvant") %>% 
+                          select(numdos_curie_side,nb_cy_q1q2_f1f2,sum_nbcy_q1q2_f1f2,typ_chimio_clair_q1q2_f1f2,
+                                 regimen_ct_each_pat_side,seq_ct_each_pat_side,date_end_f1f2,
+                                 pluriseq_ct_each_pat_side) %>% 
+                          rename(nb_cycles_neo_ct = sum_nbcy_q1q2_f1f2,
+                                 nb_cy_neo_ct_concat = nb_cy_q1q2_f1f2,
+                                 neo_ct_clair  = typ_chimio_clair_q1q2_f1f2,
+                                 # neo_q3_and_more = chemo_q3_q4_q5,
+                                 dat_end_neo_ct = date_end_f1f2,
+                                 neo_ct_regimen = regimen_ct_each_pat_side,
+                                 neo_ct_sequence = pluriseq_ct_each_pat_side) ; head(df_all_chemo_wide_neo)
+
+df_all_chemo_wide_neo$neo_ct_regimen <- recode(df_all_chemo_wide_neo$neo_ct_regimen,
+                                               "anthra-taxanes" = "1", "anthra"="2", "taxanes"="3","others"="4")
+df_all_chemo_wide_neo$neo_ct_sequence <- recode(df_all_chemo_wide_neo$neo_ct_sequence,
+                                               "monosequential" = "1", "bi-sequential"="2", "plurisequential"="3")
+
+nip_d1_neo_ct <- d1[d1$neo_ct==1, "numdos_curie_side"]
+all(df_all_chemo_wide_neo$numdos_curie_side %in% nip_d1_neo_ct ) # All those processed are in d1
+table(nip_d1_neo_ct %in% df_all_chemo_wide_neo$numdos_curie_side)
+# FALSE  TRUE 
+#   323  1500 
+# 323 !!  are not in df_all_chemo_wide_neo ...
+# => all the neoadj => adj
+
+d1 <- left_join(d1,df_all_chemo_wide_neo,by = "numdos_curie_side") ; head(d1)
+
+head(df_all_chemo_wide_neo)
+df_all_chemo_wide$sequence_ct_each_f
+# At this moment, we consider that all the files where the first sequence is  "neo and adjuvant"" have problems and that data are not enough reliable... => we  do not import them yet...
+tmp <- df_all_chemo_wide %>% filter(sequence_ct_each_f == "neo and adjuvant") 
+```
+
+```{r adjuvant_ct_antiher2}
+# adjuvant chemotherapy
+d1$adj_ct    <- 0 
+d1[which(d1$DATDCT.f1> d1$dat_first_surg |
+         d1$DATFCT.f1> d1$dat_first_surg |
+         d1$DATDCT.f2> d1$dat_first_surg |
+         d1$DATFCT.f2> d1$dat_first_surg |
+         d1$DATDCT.f3> d1$dat_first_surg |
+         d1$DATFCT.f3> d1$dat_first_surg), "adj_ct"] <- 1
+head(df_all_chemo_wide)
+
+df_all_chemo_wide_adj <- df_all_chemo_wide_2 %>% filter(seq_ct_each_pat_side == "adjuvant") %>% 
+                          select(numdos_curie_side,nb_cy_q1q2_f1f2,sum_nbcy_q1q2_f1f2,typ_chimio_clair_q1q2_f1f2,
+                                 regimen_ct_each_pat_side,seq_ct_each_pat_side,date_start_f1f2,date_end_f1f2,
+                                 pluriseq_ct_each_pat_side) %>% 
+                          rename(nb_cycles_adj_ct = sum_nbcy_q1q2_f1f2,
+                                 nb_cy_adj_ct_concat = nb_cy_q1q2_f1f2,
+                                 adj_ct_clair  = typ_chimio_clair_q1q2_f1f2,
+                                 # adj_q3_and_more = chemo_q3_q4_q5,
+                                 dat_first_adj_ct = date_start_f1f2, 
+                                 dat_end_adj_ct = date_end_f1f2,
+                                 adj_ct_regimen = regimen_ct_each_pat_side,
+                                 adj_ct_sequence = pluriseq_ct_each_pat_side) ; head(df_all_chemo_wide_adj)
+
+df_all_chemo_wide_adj$adj_ct_regimen <- recode(df_all_chemo_wide_adj$adj_ct_regimen,
+                                               "anthra-taxanes" = "1", "anthra"="2", "taxanes"="3","others"="4")
+df_all_chemo_wide_adj$adj_ct_sequence <- recode(df_all_chemo_wide_adj$adj_ct_sequence,
+                                               "monosequential" = "1", "bi-sequential"="2", "plurisequential"="3")
+
+nip_d1_adj_ct <- d1[d1$adj_ct==1, "numdos_curie_side"]
+all(df_all_chemo_wide_adj$numdos_curie_side %in% nip_d1_adj_ct ) # All those processed are in d1
+table(nip_d1_adj_ct %in% df_all_chemo_wide_adj$numdos_curie_side)
+# FALSE  TRUE 
+#   329  5432 
+
+d1 <- left_join(d1,df_all_chemo_wide_adj,by = "numdos_curie_side") ; head(d1)
+
+df_all_chemo_wide$sequence_ct_each_f
+# At this moment, we consider that all the files where the first sequence is  "neo and adjuvant"" have problems and that data are not enough reliable... => we  do not import them yet...
+tmp <- df_all_chemo_wide %>% filter(sequence_ct_each_f == "neo and adjuvant") 
+
+# adjuvant antiher2
+d1$adj_antiher2                                <- 0 
+d1[which(d1$DATDTCIBL.f1> d1$dat_first_surg |
+         d1$DATDTCIBL.f2> d1$dat_first_surg |
+         d1$DATDTCIBL.f3> d1$dat_first_surg |
+         d1$DATFTCIBL.f1> d1$dat_first_surg |
+         d1$DATFTCIBL.f2> d1$dat_first_surg |
+         d1$DATFTCIBL.f3> d1$dat_first_surg), "adj_antiher2"] <- 1
+
+df_all_tcibl_adj  <- d1 %>% select(numdos_curie_side, dat_first_surg,
+                                   contains("DATDTCIBL"),contains("DATFTCIBL")) %>% 
+                            rename(first_surg = dat_first_surg ) %>% 
+                            pivot_longer( cols = starts_with("DAT"),#- dat_first_surg,
+                                          names_to = "which_date",
+                                         values_to = "date") %>% 
+      filter(!is.na(date)) %>% arrange(numdos_curie_side,date) %>% 
+      mutate(date_after_surg = ifelse(date> first_surg, 1,0)) %>% 
+                              filter(date_after_surg==1) %>% 
+      mutate(antiher2_6months_post_surgery = ifelse(date-first_surg<180,1,0)) %>% 
+                    distinct(numdos_curie_side, first_surg,date_after_surg,.keep_all = TRUE)
+  head(df_all_tcibl_adj);  nrow(df_all_tcibl_adj)
+  unique(df_all_tcibl_adj$numdos_curie_side) # OK no duplicated number
+  
+  df_all_tcibl_adj <- df_all_tcibl_adj %>% 
+                        rename(dat_first_antiher2_adj = date) %>%  
+                        select(-which_date,-first_surg, - date_after_surg)
+
+  d1 <- left_join(d1,df_all_tcibl_adj ,by = "numdos_curie_side") 
+  d1[which(d1$antiher2_6months_post_surgery == 0),"adj_antiher2"] <- 0
+  d1[which(d1$antiher2_6months_post_surgery == 0 & 
+           d1$neo_antiher2==0),"antiher2"]     <- 0
+```
+
+```{r treatments except surgery }
+# TYPCT	CT	Type de chimiothérapie 
+# NBCYCT	CT	Nb de cycles 
+# TYPCTCL	CT	si autre en clair
+# DATFCT	CT	Date de fin
+# DATDCTENT	CTENT	Date début
+# TYPTCTENT	CTENT	Type de traitement
+# TYPTCTENTCL	CTENT	si autre en clair,
+# DATCTFENT	CTENT	Date de fin
+# ct_setting_4cl
+# adj_regimen
+# reduc_dos_adj
+# gcsf_adj
+# nb_cycles_adj
+# dat_first_adj
+```
+
+
+```{r tumor_char_surg}
+d1$NBGSPOS_2 <- ifelse(is.na(as.integer(d1$NBGSPOS)),0,as.integer(d1$NBGSPOS))
+d1$NBCAPOS_2 <- ifelse(is.na(as.integer(d1$NBCAPOS)),0,as.integer(d1$NBCAPOS))
+d1$nbggpos   <- d1$NBGSPOS_2 + d1$NBCAPOS_2
+
+d1$histo_size <- as.integer(d1$TINF)  
+
+d1$ptuicc_5cl                                                           <- NA 
+d1$ptuicc_5cl[d1$PTUICC  %in% c("pT0","pTis") ]                         <- 0
+d1$ptuicc_5cl[d1$PTUICC  %in% c("pT1a","pT1b","pT1c","pT1Mic","pT1") ]  <- 1
+d1$ptuicc_5cl[d1$PTUICC  %in% c("pT2") ]                                <- 2
+d1$ptuicc_5cl[d1$PTUICC  %in% c("pT3") ]                                <- 3
+d1$ptuicc_5cl[d1$PTUICC  %in% c("pT4b","pT4","pT4a","pT4c") ]           <- 4
+
+d1$embols             <- factor(d1$EMBV,levels = c("non","oui"), labels = c(0,1))
+d1$multifocal_histo   <- factor(d1$MULTHIST,levels = c("non","oui"), labels = c(0,1))
+# Multifocality  : merge clinical information (for neoadj only) and histological multifocality 
+d1$multifocality_clin_histo                                   <- 0
+d1[which(d1$neoadj==1 & d1$MULTIF == "oui"),"multifocality_clin_histo"]  <- 1
+d1[which(d1$MULTHIST == "oui"),"multifocality_clin_histo"]               <- 1
+```
+
+
+```{r final quality controls for neoadj / others }
+variables_post_neoadj	<- c("YPTUICC","YPNUICC","CHEVALIE","SATALOFT","SATALOFG")		  
+d1 <- d1 %>% mutate(trace_post_NAC_stage =  
+          ifelse( !is.na(YPTUICC) |!is.na(YPNUICC) |!is.na(CHEVALIE)|!is.na(SATALOFT)|!is.na(SATALOFG),1,0))
+table(d1$trace_post_NAC_stage,exclude =  NULL)
+
+d1$neoadj_check <- NA
+d1[which(d1$neo_ct == 1 & d1$trace_post_NAC_stage == 1) ,"neoadj_check"]     <- 1
+d1[which(d1$neo_ht == 1 & d1$trace_post_NAC_stage == 1) ,"neoadj_check"]     <- 1
+d1[which(d1$neo_rt == 1 & d1$trace_post_NAC_stage == 1) ,"neoadj_check"]  <- 1
+d1[which(d1$neo_antiher2 == 1 & d1$trace_post_NAC_stage == 1) ,"neoadj_check"]  <- 1
+d1[which(d1$neo_ct == 0 & d1$trace_post_NAC_stage == 0) ,"neoadj_check"]     <- 0
+d1[which(d1$neo_ht == 0 & d1$trace_post_NAC_stage == 0) ,"neoadj_check"]     <- 0
+d1[which(d1$neo_rt == 0 & d1$trace_post_NAC_stage == 0) ,"neoadj_check"]  <- 0
+d1[which(d1$ct == 0 & d1$trace_post_NAC_stage == 0) ,"neoadj_check"]      <- 0
+d1[which(d1$neo_antiher2 == 0 & d1$trace_post_NAC_stage == 0) ,"neoadj_check"]<- 0
+d1[which(d1$breast_surgery ==0 ) ,"neoadj_check"]                         <- 9
+table(d1$neoadj_check,exclude = NULL) #previously 15 NA, now 9...
+
+files_to_check_by_data <- d1 %>% filter(is.na(neoadj_check)) %>% select(NUMDOS, trt1,
+                                              breast_surgery,ct,ht,rt, 
+                                              neo_ct,neo_ct,neo_antiher2,neo_rt,
+                                              # ptuicc_5cl,
+                                              nbggpos,
+                                              one_of(variables_post_neoadj)) %>% 
+                                              arrange(trt1)
+write.csv2(files_to_check_by_data, file="/Users/ahamypet/RT2Lab/Bases_de_donnees/chantier_BDD_2019/data/processed/files_to_check_by_data.csv")
+# @ on 3 december
+# @ASHP cf
+```
+
+```{r tumor_char_neo}
+variables_ini_neoadj	<- c("CTPMM","CTPMMRES","CTPGG","CTPGGRES","BIOPRETT","LIEUBIOP")
+variables_post_neoadj	<- c("PTUICC","YPTUICC","YPNUICC","PNUICC","CHEVALIE","SATALOFT","SATALOFG")		  
+
+# Residual disease breast 
+d1$breast_res_infiltr   <- NA
+d1$breast_res_infiltr[d1$YPTUICC %in% c("pT0","pTis")]                                     <- 0
+d1$breast_res_infiltr[d1$SATALOFT %in% c("TA effet therapeutique total ou presque")]       <- 0
+d1$breast_res_infiltr[d1$CHEVALIE %in% c("G1 aucun reliquat sein et ggl",
+                                         "G2 in situ strict sein - pas de reliquat ggl")]   <- 0
+d1$breast_res_infiltr[d1$YPTUICC %in% c(c("pT1","pT1a","pT1b","pT1c","pT1Mic","pT2","pT3","pT4","pT4b","pT4d"))]<- 1
+d1$breast_res_infiltr[d1$SATALOFT %in% c("TB effet therapeutique de plus de 50 %",
+                    "TC effet therapeutique moins de 50 %","TD pas effet therapeutique")]  <- 1
+table(d1$breast_res_infiltr,exclude=NULL)
+# 16703 NA
+
+d1 %>% filter(!is.na(breast_res_infiltr),
+              # neoadj==1,
+              neo_ct != 1,
+              neo_ht !=1,
+              neo_rt !=1) %>% group_by(neo_ct,neo_ht,neo_rt,breast_res_infiltr) %>% count() # Several patients with data 
+# Only one patient remaining
+
+d1 %>% filter(neo_ct == 1 | neo_ht ==1 | neo_rt ==1) %>% 
+            group_by(NBGSPOS) %>% count()
+d1 %>% filter(neo_ct == 1 | neo_ht ==1 | neo_rt ==1) %>% 
+            group_by(NBCAPOS) %>% count()
+d1 %>% filter(neoadj_check ==1) %>% 
+            group_by(nbggpos) %>% count()
+
+d1$nbggpos_postneo_ct   <- NA
+d1[which(d1$neoadj_check==1),"nbggpos_postneo_ct"]  <- d1[which(d1$neoadj_check==1),"nbggpos"]  
+
+# BEWARE ; still discrepancies .... 
+# @ASHP
+d1 %>% filter(nbggpos_postneo_ct == 0) %>% group_by(YPNUICC) %>% count()
+d1 %>% filter(nbggpos_postneo_ct > 0) %>% group_by(YPNUICC) %>% count()
+
+# pCR # We process here pCR rather in common script, 
+# Because otherwise, many missing data (80)
+d1$pCR                                                         <- NA
+d1$pCR[which(d1$breast_res_infiltr == 0 & d1$ypnuicc_2cl==1)]  <- 1
+d1$pCR[which(d1$breast_res_infiltr == 1 | d1$ypnuicc_2cl==2)]  <- 0
+table(d1$neoadj_check,d1$pCR,exclude=NULL) # 80 NA
+
+# Explore 80 NA
+d1 %>% filter(neoadj_check == 1,
+              is.na(pCR)) %>% select(nbggpos_postneo_ct,one_of(variables_post_neoadj)) 
+#WE consider that all the tumors with CHEVALIE G3 or G4 are not in pCR; but we do not know if it is because breast or ganglion
+d1[which(d1$neoadj_check == 1 & is.na(d1$pCR) & 
+           d1$CHEVALIE %in% c("G3 carcinome inf modifie sein et/ou ggl",
+                              "G4 carcinome inf non ou peu modifie sein et/ou ggl") ) ,  "pCR"] <- 0
+table(d1$neoadj_check,d1$pCR,exclude=NULL) # 7 NA
+
+# attention, beucoup de discordances entre chevalier et notre classif !
+table(d1$YPTUICC, d1$pCR,exclude=NULL)
+table(d1$YPNUICC, d1$pCR,exclude=NULL)
+table(d1$CHEVALIE,d1$pCR, exclude=NULL) 
+table(d1$SATALOFT,d1$pCR, exclude=NULL)
+table(d1$SATALOFG,d1$pCR, exclude=NULL)
+
+# Notably check : 
+  #                                                            0     1  <NA>
+  # NC effet therapeutique visible, mais presence de metas    93     5     0
+  # ND pas d'effet therapeutique, metas visibles              31     1     0
+  # non precise                                              137    45     4
+  # <NA>                                                     895   197 16547
+
+d1 %>% filter(SATALOFG %in% c("NC effet therapeutique visible, mais presence de metas",
+                              "ND pas d'effet therapeutique, metas visibles"),
+              pCR==1) %>% select(neo_ct, nbggpos_postneo_ct,one_of(variables_post_neoadj)) 
+# Ok; only SATALOFG is discordant with the other ones. => We let them like this
+```
+
+```{r events }
+dat_censor        <- "2012-12-31"
+d1$ev_prog_neo    <- NA
+d1$dat_prog_neo   <- NA
+# @ASHP a revoir +++++
+d1$ev_prog_neo    <- 0
+d1$dat_prog_neo   <- as.Date(NA)
+
+d1$ev_recloc      <- ifelse(!is.na(d1$DATRLOC.f1),1,0)
+d1$dat_recloc     <- as.Date(d1$DATRLOC.f1)
+d1$ev_recreg      <- ifelse(!is.na(d1$DATRGG.f1),1,0)
+d1$dat_recreg     <- as.Date(d1$DATRGG.f1)
+d1$ev_meta        <- ifelse(!is.na(d1$DATMET.f1),1,0)
+d1$dat_meta       <- as.Date(d1$DATMET.f1)
+d1$ev_contro      <- ifelse(!is.na(d1$DATCON),1,0)
+d1$dat_contro     <- as.Date(d1$DATCON)
+# @ASHP à revoir car pas de contro donnes dans la base bilat +++++
+d1$ev_contro      <- 0
+d1$dat_contro     <- as.Date(NA)
+
+d1$ev_deuxk       <- ifelse(!is.na(d1$DATDK.f1),1,0)
+d1$dat_deuxk      <- as.Date(d1$DATDK.f1)
+d1$status_vital   <- factor(d1$ETATDN, levels = c("vivant", "decede"), labels=c(0,1)) %>% as.character() %>% as.integer()
+d1$dat_last_news  <- d1$DATDN
+
+d1[which(d1$dat_prog_neo > dat_censor),"ev_prog_neo"] <- 0
+d1[which(d1$dat_recloc > dat_censor),"ev_recloc"]     <- 0
+d1[which(d1$dat_recreg > dat_censor),"ev_recreg"]     <- 0
+d1[which(d1$dat_meta > dat_censor),"ev_meta"]         <- 0
+d1[which(d1$dat_contro > dat_censor),"ev_contro"]     <- 0
+d1[which(d1$dat_deuxk > dat_censor),"ev_deuxk"]       <- 0
+d1[which(d1$dat_last_news > dat_censor & 
+           d1$status_vital==1 ),"status_vital"]       <- 0
+```
+
+# Additional variables coming from other databases
+
+```{r From Gaia}
+# d1$brca_1_2_mut
+```
+
+```{r TILs}
+# @ASHP, BEWARE, WHEN VARIABLE COMES FROM ANOTHER BASE?????
+# d1$str_TIL_perc <- 
+# d1$IT_TIL_perc <- 
+```
+

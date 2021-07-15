@@ -1,0 +1,240 @@
+generic_or_derived	family_var	var	var_type	levels	descript	names_var	01_base_sein	02_neorep	03_p53_eortc	04_canto	05_feeric	06_implants_seintinelles	07_oncofertilite_consore	08_tabac_curie_prospectif	09_brcanet	10_neoadj_st_louis	11_remagus02	12_remagus04	13_pacs08	14_pacs09	15_altto	16_neoaltto	17_seer	18_gbg
+generic	patient_id	database	character	"1:base_sein;2:neorep;3:p53_eortc;4:canto;5:feeric;6:implants_seintinelles;7:oncofertilite_consore; 8:tabac_curie_prospectif;9:brcanet;10:neoadj_st_louis;11:remagus02;12:remagus04;13:pacs08;14:pacs09;15:gbg;16:altto;17:neoaltto;18:seer"	Different data base 	Data base	x	x
+generic	patient_id	numdos_curie	integer		Patient identification number	NIPP	x	x
+generic	patient_id	cletri	character				x	x
+generic	patient_id	side	character	"1:Left;2:Right"	Breast cancer laterality 	Laterality	x	x
+derived	patient_id	base_cletri	character				x
+derived	patient_id	patient_side	character				x
+derived	patient_id	base_cletri_side	character
+generic	patient_id	dat_birth	date		Date of birth	Date of birth	x	x
+derived	patient_id	year_birth	integer		Year of birth 	Year of birth 	x
+generic	patient_id	dat_bc_diagnosis	date		Date of first biopsy with cancer. If NA, take date of first physical examination, then date of first breast imaging.	BC diagnosis 	x	x
+generic	patient_id	dat_rando_inclusion	date		Date of randomisation in case of clinical trial, date of inclusion in case of cohort
+derived	patient_id	year_diag	integer		Year of BC diagnosis 	Year BC diagnosis	x
+derived	patient_id	period_diag	character	"1:[1970,1975);2:[1975,1980);3:[1980,1985);4:[1985,1990);5:[1990,1995);6:[1995,2000);7:[2000,2005);8:[2005,2010);9:[2010,2015);10:[2015,2020)"	Period of BC diagnosis	Year BC diagnosis (class)	x
+specif_database	patient_id	center_curie	character	"1:Curie Paris;2:Curie St Cloud;3:Others"	BC treatment center (Paris Curie/Sant Cloud)	Treatment center (Paris Curie/Sant Cloud)	specif_database	x
+generic	patient_id	center	character	"1:Curie;2:Others"	BC treatment center 	Treatment center 	x
+derived	patient_char	age	numeric		Age at BC diagnosis 	Age	x
+derived	patient_char	age_cl_10_1	character	"1:[0,30);2:[30,40);3:[40,50);4:[50,60);5:[60,70);6:[70,80);7:[80,120)"	Age by decades at BC diagnosis	Age (decade class)	x
+derived	patient_char	age_cl_10_2	character	"1:[0,40);2:[40,50);3:[50,60);4:[60,70);5:[70,120)"	Age by decades2 at BC diagnosis 	Age (decade2 class)	x
+derived	patient_char	age_cl_3_cl 	character	"1:[0,50);2:[50,60);3:[60,120)"	Age by 3 class at BC diagnosis 	Age (3 classes)	x
+derived	patient_char	age_cl_5_cl 	character	"1:[0,40);2:[40,50);3:[50,60);4:[60,75);5:[75,120)"	Age by 5 class at BC diagnosis 	Age (5 classes)	x
+derived	patient_char	age_young_cl	character	"1:[0,30);2:[30,35);3:[35,40);4:[40,120)"	Age by five-year period in young woman at BC diagnosis 	Age young (by lustrum)	x
+generic	patient_char	age_menarche	numeric		Age of first period  	Age first period	x	NA
+generic	patient_char	nb_preg	integer		Number of pregnancies	Number of pregnancies	x	NA
+derived	patient_char	nb_preg_3cl	character	"0:0; 1:1;2;More than 1"	Number of pregnancies (class)	Number of pregnancies (3 classes)	x	NA
+derived	patient_char	prev_pregnancy	character	"0:No;1:Yes"	Previous pregnancies 	Previous pregnancies 	x	NA
+generic	patient_char	nb_child	integer		Number of live births	Number of childrens	NA	NA
+derived	patient_char	nb_child_3cl	character	"0:0; 1:1;2;More than 1"	Number of live births (3 classes)	Number of childrens (3 classes)	NA	NA
+derived	patient_char	prev_child	character	"0:No;1:Yes"			NA	NA
+generic	patient_char	breast_feed	character	"0:No;1:Yes "	Breastfeeding in at least one of the births 	Breast feeding	NA	NA
+generic	patient_char	menop	character	"0:Premenopausal;1:Postmenopausal"	Menopausal status at BC diagnosis	Menopausal status	x	x
+generic	patient_char	age_menop	numeric		Age at menopause diagnosis	Menopausal age 	x	NA
+generic	patient_char	hrt	character	"0:No;1:Yes"	HRT use	HRT use	x	NA
+generic	patient_char	fam_history	character	"0:No;1:Yes"	Familial history of BC	Familial history of BC	x	x
+generic	patient_char	brca_screen	character	"0:No;1:Yes"	Research of hereditary predisposition	BRCA screening	x	other_source
+generic	patient_char	brca_mut	character	"0:No;1:Yes"	BRCA mutation	BRCA mutation	x	other_source
+generic	patient_char	brca_1_2_mut	character	1:BRCA1;2:BRCA2; 3:others;4:No	BRCA mutation genes	BRCA mutation genes	NA	other_source
+generic	patient_char	weight	numeric		weight in kgs	Weight	x	x
+generic	patient_char	size	numeric		size in meters	Size	x	x
+derived	patient_char	bmi	numeric		BMI (WHO)	BMI (continuous)	x
+derived	patient_char	bmi_2cl	character	"1:<25;2:>25"	BMI classes (normal, overweight)	BMI classes (2 classes)	x
+derived	patient_char	bmi_3cl	BEWARE LEVELS	"2:18.5-24.9;1:<18.5;3:>=25"	BMI classes (underweight,normal, overweight)	BMI classes (3 classes)	x
+derived	patient_char	bmi_4cl	BEWARE LEVELS	"2:18.5-24.9;1:<18.5; 3:25-29.9, 4:>=30"	BMI classes (underweight,normal, overweight, obese)	BMI classes (4 classes)	x
+derived	patient_char	bmi_5cl	BEWARE LEVELS	"2:18.5-24.9;1:<18.5; 3:25-29.9, 4:>=30;5:>=35"	BMI classes (underweight,normal, overweight, obese, severely obese)	BMI classes (5 classes)	x
+generic	patient_char	smoking_3cl	character	"1:Never;2:Current;3:Former "	Smoking status at diagnosis 	Smoking status	NA	other_source
+generic	patient_char	smoking	character	"0:No;1:Yes"	Smoking status at diagnosis ( yes/no) 	Smoking status	NA	other_source
+generic	patient_char	drinking	character	"0:No;1:Yes"	Alcohol consumption (daily) at diagnosis 	Alcohol consumption (daily)	NA	NA
+generic	patient_char	charlson_indx	integer		Prediction 10-year survival in patients with multiple comorbidities.	Charlson index	NA	NA
+generic	patient_char	hosp_psy	character	"0:No;1:Yes"	Hospitalization for psychiatric reasons	Hospitalization for psychiatric reasons	NA	NA
+generic	comedication	comedic	character	"0:No;1:Yes"	Taking of co-medications at BC diagnosis 	Co-medications	NA	other_source
+generic	comedication	comedic_n_nervous_system	character	"0:No;1:Yes"	at least 1 comedic level 1	Nervous co-medications	NA	other_source
+generic	comedication	comedic_c_cardiovascular	character	"0:No;1:Yes"	at least 1 comedic level 1	Cardiovascular co-medications	NA	other_source
+generic	comedication	comedic_a_alimentary_metabo	character	"0:No;1:Yes"	at least 1 comedic level 1	Alimentary co-medications	NA	other_source
+generic	comedication	comedic_h_hormonal_prep	character	"0:No;1:Yes"	at least 1 comedic level 1	Hormonal co-medications	NA	other_source
+generic	comedication	comedic_others	character	"0:No;1:Yes"	at least 1 comedic level 1	Others co-medications	NA	other_source
+generic	comorbidity	comorbidity_bin	character	"0:No;1:Yes"	Comorbidity at BC diagnosis 	Comorbidities	NA	other_source
+generic	comorbidity	comor_hypertension_heart_disease	character	"0:No;1:Yes"	Hypertension or/and heart disease	AHT or/and heart disease 	NA	other_source
+generic	comorbidity	comor_depression_anxiety	character	"0:No;1:Yes"	Depression or anxiety	Depression or anxiety	NA	other_source
+generic	comorbidity	comor_dyslipidemia	character	"0:No;1:Yes"	Dyslipemia (lipids in the blood:LDL, VLDL, IDL.  Hypercholesterolemia, Hyperglyceridemia, Hyperlipoproteinemia) 	Dyslipemia	NA	other_source
+generic	comorbidity	comor_diabete	character	"0:No;1:Yes"	Diabetes 1 or 2 	Diabetes	NA	other_source
+generic	comorbidity	comor_ulcere_gastritis	character	"0:No;1:Yes"	Gastric ulcer 	Gastric ulcer	NA	other_source
+generic	comorbidity	comor_thyroid_disorders	character	"0:No;1:Yes"	Thyroid disorders	Thyroid_disorders	NA	other_source
+generic	comorbidity	comor_others_grouped	character	"0:No;1:Yes"	Others comorbidities 	Others comorbidities 	NA	other_source
+generic	bc_diagnosis	bilat_bc	character	"0:No;1:Yes"	Synchronous bilat BC (< 6 months)	Bilateral tumor	later	x
+generic	bc_diagnosis	inflammatory_BC	character	"0:No;1:Yes"	Inflammatory BC at diagnosis 	Inflammatory BC	x	x
+generic	bc_diagnosis	moddiag	character	"0:Radiologic;1:Clinical"	Mode of BC diagnosis: radiological/clinical	Mode BC diagnosis	x	NA
+generic	bc_diagnosis	clin_multifocality	character	1:unifocal; 2:multifocal	Tumor focality at dignosis 	Tumor focality		NA
+generic	bc_diagnosis	tclin		numeric	Clinical tumor size at diagnosis (mm)	Clinical Tumor size (mm)	x	x
+generic	bc_diagnosis	tuicc_5cl	character	0:T0;1:T1;2:T2;3:T3;4:T4	Clinical T stage (maximum size of a tumor at diagnosis), TNM.	Clinical T stage (TNM)	x	stand_by
+derived	bc_diagnosis	tuicc_4cl	character	1:T0-T1;2:T2;3:T3;4:T4	Clinical T stage (maximum size of a tumor at diagnosis). 4 classes	Clinical T stage (TNM)	x
+derived	bc_diagnosis	tuicc_3cl	character	"1:T0-T1;2:T2;3:T3-T4"	Clinical T stage (maximum size of a tumor at diagnosis). 3 classes	Clinical T stage (TNM)	x
+generic	bc_diagnosis	nuicc_4cl	character	"0:N0;1:N1;2:N2;3:N3"	Clinical N stage at diagnosis (detected by imaging, clinical or histology)	Clinical N stage (TNM)	x	x
+derived	bc_diagnosis	nuicc_2cl	character	0:N0;1:N1-N2-N3	Clinical N stage at diagnosis (detected by imaging, clinical or histology). 2 classes	Clinical N stage (TNM)	x
+generic	bc_diagnosis	muicc	character	"0:M0;1:M1"	Distant metastases at diagnosis (by clinical history, physical examination, and imaging studies) 	Distant metastases (TNM)	x	x
+generic	bc_diagnosis	dat_first_biopsy	date		Date of first biopsy with cancer diagnosis	Date biopsy 	x
+generic	bc_biology	er_status	character	"0:Negative;1:Positive"	Estrogen receptors  on the baseline biopsy	ER status 	x	x
+generic	bc_biology	pr_status	character	"0:Negative;1:Positive"	Progesterone receptors on the baseline biopsy	PR status 	x	x
+derived	bc_biology	hr_status	character	"0:Negative;1:Positive"	Hormone-receptors on the baseline biopsy (one or both of the estrogen  or progesterone receptors)	HR status 	x
+generic	bc_biology	er_intensity	character	"1:+;2:++;3:+++"	Intensity of estrogen receptors on the baseline biopsy  (IS)	Intensity of ER	x	NA
+generic	bc_biology	pr_intensity	character	"1:+;2:++;3:+++"	Intensity of progesterone receptors on the baseline biopsy  (IS)	Intensity of PR 	x	NA
+generic	bc_biology	er_percentage	integer		Nuclear ER staining (%) (PS) on the baseline biopsy	Nuclear ER staining (%)	x	x
+generic	bc_biology	pr_percentage	integer		Nuclear PR staining (%) (PS) on the baseline biopsy	Nuclear PR staining (%)	x	x
+generic	bc_biology	er_allred	integer		ER Allred scoring [Total Score( PS+IS)=0-8] on the baseline biopsy	ER Allred scoring 		x
+generic	bc_biology	pr_allred	integer		PR Allred scoring [Total Score( PS+IS)=0-8] on the baseline biopsy	PR Allred scoring		x
+generic	bc_biology	her2_status	character	"0:Negative;1:Positive"	Her2 status on the baseline biopsy	Her2 status 	x	x
+derived	bc_biology	luminal	character	"0:Non luminal;1:Luminal"	Luminal BC subtype based on the baseline biopsy	Luminal 	x
+derived	bc_biology	tnbc	character	"0:Non TNBC;1:TNBC"	TNBC BC subtype based on the baseline biopsy	TNBC	x
+derived	bc_biology	subtype	character	"1:luminal;2:TNBC;3:HER2+"	BC subtype (3 classes) based on the baseline biopsy	BC subtype	x
+derived	bc_biology	subtype4	character	"1:luminal;2:TNBC;3:HER2+/HR+;4:HER2+/HR-"	BC subtype (4 classes) based on the baseline biopsy	BC subtype	x
+derived	bc_biology	subtype5	character	"1:luminal A;2:luminal B;3:TNBC;4:HER2+/RH+;5:HER2+/RH-"	BC subtype (5 classes) based on the baseline biopsy	BC subtype	x
+derived	bc_biology	er_status_1_perc	character	"0:Negative;1:Positive"	Estrogen receptors in surgical piece 	ER in surgical piece 	x
+derived	bc_biology	pr_status_1_perc	character	"0:Negative;1:Positive"	Progesterone receptors in surgical piece 	PR in surgical piece 	x
+derived	bc_biology	hr_status_1_perc	character	"0:Negative;1:Positive"	Hormone-receptors in surgical piece 	HR in surgical piece 	x
+derived	bc_biology	luminal_1_perc	character	"0:Non luminal;1:Luminal"	Luminal BC subtype based in surgical piece 	Luminal 	x
+derived	bc_biology	tnbc_1_perc	character	"0:Non TNBC;1:TNBC"	TNBC BC subtype  based in surgical piece 	TNBC	x
+derived	bc_biology	subtype_1_perc	character	"1:luminal;2:TNBC;3:HER2+"	BC subtype (3 classes)  based in surgical piece 	BC subtype	x
+derived	bc_biology	subtype4_1_perc	character	"1:luminal;2:TNBC;3:HER2+/RH+;4:HER2+/RH-"	BC subtype (4 classes)  based in surgical piece 	BC subtype	x
+derived	bc_biology	subtype5_1_perc	character	"1:luminal A;2:luminal B;3:TNBC;4:HER2+/RH+;5:HER2+/RH-"	BC subtype (5 classes)  based in surgical piece 	BC subtype	x
+generic	bc_biology	histo_5cl		"1:NST;2:Lobular;3:Mucinous;4:Tubulous;9:Others  "	Histological type (5 classes)	Histological type	x	stand_by
+derived	bc_biology	histo_4cl		"1:NST;2:Lobular;3:Mucinous;9:Others  "	Histological type (4 classes)	Histological type	x
+derived	bc_biology	histo_3cl		"1:NST;2:Lobular;9:Others  "	Histological type (3 classes)	Histological type	x
+derived	bc_biology	histo_2cl		"1:NST;2:Others  "	Histological type (2 classes)	Histological type	x
+generic	bc_biology	grade_3cl		"1:Grade I;2:Grade II;3:Grade III"	BC grade: tumour architecture, shape/size of the cell nucleus and the number of dividing cells.Well differentiated, moderately differentiated, and poorly differentiated)	SBR grade	x	stand_by
+derived	bc_biology	grade_2cl		1:Grade I-II, 2:Grade III	BC grade: tumour architecture, shape/size of the cell nucleus and the number of dividing cells. 2 classes 	SBR grade	x
+generic	bc_biology	Ki67_perc		integer	% cells stained	KI67	x	x
+derived	bc_biology	Ki67_cl		"1:[0-10);2:[10-20);3:>=20"	% cells stained (3 classes)	KI67 classes	x
+generic	bc_biology	mitotic_index		integer	Number mitoses per mm_(2 mm_?)  (most mitotic active area of carcinoma)	Mitotic index	x	x
+derived	bc_biology	mitotic_index_class			Number mitoses per mm_(2 mm_?) (? classes)		x
+generic	bc_biology	dcis_component		"0:No;1:Yes"	Ductal carcinoma in situ 	DCIS component	x	other_source
+generic	bc_biology	invasive_or_dcis		"1:Invasive;2:DCIS"	Invasive or in situ cancer	Cancer infiltrant	x	x
+derived	bc_biology	inv_dcis_4cl		"1:Invasive without DCIS ;2:Invasive with DCIS;3:DCIS;Invasive and DCIS NA"	Invasive cancer or/and in situ 	Invasive/in situ cancer	x
+generic	bc_biology	p53		1:wild type; 2:mutated	p53 status 	p53 status 	NA	NA		Not available
+generic	bc_biology	str_til_perc		integer	% stromal lymphocytes	Stromal TIL levels (%)	x	other_source
+derived	bc_biology	str_til_perc_30		"1:[0,30);2:>=30"	% stromal lymphocytes (2 classes)	Stromal TIL levels (%)	x
+derived	bc_biology	str_til_denkert		"1:[0,10);2:[10,50);3:>=50"	% stromal lymphocytes (3 classes. Denkert classification)	Denkert Stromal TIL levels (%)	x
+generic	bc_biology	it_til_perc		integer	% intra-tumoral lymphocytes	IT TIL levels (%)	x	other_source
+generic	bc_biology	lvi_biop		"0:No;1:Yes"	Presence of lymphovascular invasion(LVI) on the baseline biopsy	LVI	NA	other_source
+derived	surgery	breast_surgery		"0:No;1:Yes"	BC surgery 	BC surgery 	x	x
+generic	surgery	breast_surgery_3cl		"0:No surgery;1:Lumpectomy;2:Mastectomy"	BC surgery and type	BC surgery (type)	x	x
+generic	surgery	dat_first_surg	date		Date of first surgery 	Date first surgery	x	x
+generic	surgery	axillary_surgery_4cl		"0:No axillar surgery; 1:SNB; 2:AND;3:both"	Sentinel node biopsy / axillary node dissection	Axillar surgery	x	x
+derived	surgery	axillary_surgery_3cl		"1:SNB;2:AND;4:No"	In this class, both are classified as AND	Axillar surgery	x
+derived	surgery	axillary_surgery_2cl		"1:SNB;2:AND"	In this class, both are classified as AND	Axillar surgery	x
+generic	surgery	comp_post_surg		"0:No;1:Yes"	Complication after surgery	Surgical complications	NA
+generic_or_derived	treatments_binary	ct		"0:No;1:Yes"	Chemotherapy ( after surgery)	Chemotherapy	x	x
+generic	treatments_binary	dat_first_ct	date		Date of first cycle of chemotherapy	Date first chemotherapy	x	x
+generic	treatments_binary	dat_end_first_ct	date		Date of last cycle of chemotherapy 	Date end chemotherapy	x	stand_by
+generic	treatments_binary	rt		"0:No;1:Yes"	Radiotherapy	Radiotherapy	x	x
+generic	treatments_binary	dat_first_rt	date		Date of first cycle of radiotherapy	Date first radiotherapy	x	x
+generic	treatments_binary	ht		"0:No;1:Yes"	Endocrine therapy	Endocrine therapy	x	x
+generic	treatments_binary	dat_first_ht	date		Data of first endocrine therapy 	Date first endocrine therapy	x	x
+generic	treatments_binary	ht_type_5cl		"1:tamoxifen; 2:aromatase inhibitor; 3:tamoxifen+agonist; 4:aromatase inhibitor+agonist; 5:others;9:No"	Type of endocrine therapy (5 classes)	Type of endocrine therapy	x	x
+derived	treatments_binary	ht_type_3cl		1:tamoxifen; 2:aromatase inhibitor; 3:others	Type of endocrine therapy (3 classes)	Type of endocrine therapy	x
+generic	treatments_binary	antiher2		"0:No;1:Yes"	Anti-HER2 therapy	Anti-HER2 therapy	x	x
+generic	treatments_binary	dat_first_antiher2	date		Data of first anti-HER2 therapy 	Date first anti-HER2 therapy	x	stand_by
+generic	treatments_binary	tc_other		"0:No;1:Yes"	Targeted therapy (other than anti-HER2)	Targeted therapy (other than anti-HER2)	x	NA
+generic	treatments_binary	dat_first_tc_others	date		Data of first targeted therapy 	Date first targeted therapy	x	NA
+generic	neoadj_or_not	neo_ct      		"0:No;1:Yes"	Neoadjuvant chemotherapy (before surgery)	Neoadjuvant chemotherapy	x	x
+generic	neoadj_or_not	neo_ht      		"0:No;1:Yes"	Neoadjuvant endocrine therapy (NET)  (before surgery)	Neoadjuvant endocrine therapy (NET)	x	x
+generic	neoadj_or_not	neo_rt      		"0:No;1:Yes"	Neoadjuvant RT ( (before surgery)	Neoadjuvant RT	x	x
+generic	neoadj_or_not	neo_antiher2		"0:No;1:Yes"	Neoajuvant anti-HER2 therapy  (before surgery)	Neoajuvant anti-HER2 therapy	x	x
+generic	neoadj_or_not	neo_tc_other		"0:No;1:Yes"	Neoajuvant targeted therapy (other than HER2)  (before surgery)	Neoajuvant targeted therapy (other than HER2)	x	NA
+generic	neoadj_or_not	dat_first_neo_ct      	date		Date of first cycle of neoadjuvant chemotherapy (before surgery)	Date first neoadjuvant chemotherapy	x	x
+generic	neoadj_or_not	dat_first_neo_ht      	date		Date of first cycle of neoadjuvant  endocrine therapy (NET) (before surgery)	Date first neoadjuvant endocrine therapy (NET) 	x	x
+generic	neoadj_or_not	dat_first_neo_rt      	date		Date of first cycle of neoadjuvant RT (before surgery)	Date first cycle of neoadjuvant RT	x	x
+generic	neoadj_or_not	dat_first_neo_antiher2	date		Date of first neoadjuvant anti-HER2 (before surgery)	Date first neoadjuvant anti-HER2	x	x
+generic	neoadj_or_not	dat_first_neo_tc_other	date		Date of first neoadjuvant targeted therapy (before surgery)	Date first neoadjuvant targeted therapy	x	NA
+derived	neoadj_or_not	primary_ttt		"1:Surgery;2:Neoadjuvant treatment;9:No surgery"	Primary treatment (3 classes)	Primary treatment 	x	x
+derived	neoadj_or_not	primary_ttt_5cl		"1:Surgery;2:NAC +/- anti-HER2 treatment;3:Neoadjuvant endocrine therapy alone;4:Others neoadjuvant treatments;9:No surgery"	Primary treatment (5 classes)	Primary treatment 	x
+derived	neoadj_or_not	primary_ttt_3cl		"1:Surgery;2:NAC;3:Others"	Primary treatment 	Primary treatment 	x
+generic	neoadjuvant_ct_antiher2	neo_ct_regimen		"1:anthra-taxans; 2:anthra ;3:taxanes; 4:others"	Regimen of NAC 	CT regimen (NAC)	x
+generic	neoadjuvant_ct_antiher2	nb_cycles_neo_ct		integer	Number of cycles (NAC)	Number cycles (NAC)	x
+generic	neoadjuvant_ct_antiher2	nb_cycles_neo_ct_taxanes		integer	Number cycles of taxanes (NAC)	Taxanes cycles (NAC)	later
+generic	neoadjuvant_ct_antiher2	nb_cycles_neo_ct_anthra		integer	Number cycles of anthracyclines (NAC)	Anthracyclines cycles (NAC)	later
+generic	neoadjuvant_ct_antiher2	dat_end_neo_ct      		date	Date of last cycle of neoadjuvant chemotherapy	Date end neoadjuvant	x
+generic	neoadjuvant_ct_antiher2	neo_ct_sequence		"1:monosequential;2:bi-sequential;3:plurisequential"	Type of sequencing of neoadyuvant chemotherapy	Neoadjuvant sequencing 	x
+generic	neoadjuvant_ct_antiher2	reduc_dos_neo		"0:No;1:Yes"	Neoadyuvant chemotherapy dose reduction 	Neoadjuvant deescalation 	NA
+generic	neoadjuvant_ct_antiher2	gcsf_neo		"0:No;1:Yes"	Treatment with colony-stimulating factor 	GCSF use	NA
+generic	neoadjuvant_ct_antiher2	neo_antiher2_regimen		1:trastuzumab; 2:lapatinib; 3:pertuzumab; 4:combination; 5:others	Type of neoajuvant anti-HER2 therapy	Neoajuvant anti-HER2 	later
+generic	neoadjuvant_ct_antiher2	dat_first_antiher2_neo	date		Date of first anti-HER2 therapy in neoajuvant	Date neoadjuvant anti-HER2	x
+generic	adjuvant_ct_antiher2	adj_ct		"0:No;1:Yes"	Treatment with adjuvant chemotherapy ( after surgery)	Adjuvant chemotherapy	x
+generic	adjuvant_ct_antiher2	adj_ct_regimen		"1:anthra-taxans; 2:anthra ;3:taxanes; 4:others"	 Regimen of adjuvant chemotherapy	CT regimen (adj CT)	x
+generic	adjuvant_ct_antiher2	nb_cycles_adj_ct_taxanes		integer	Number cycles of taxanes (adj CT)	Taxanes cycles (adj CT)	later
+generic	adjuvant_ct_antiher2	nb_cycles_adj_ct_anthra		integer	Number cycles of anthracyclines (adj CT)	Anthracyclines cycles (adj CT)	later
+generic	adjuvant_ct_antiher2	adj_ct_sequence		"1:monosequential;2:bi-sequential;3:plurisequential"	Type of sequencing of neoadyuvant chemotherapy	Neoadjuvant sequencing 	x
+generic	adjuvant_ct_antiher2	nb_cycles_adj_ct		integer	Number of cycles (adj CT)	Number cycles (adj CT)	x
+generic	adjuvant_ct_antiher2	dat_first_adj_ct	date		Date of first cycle of adjuvant chemotherapy	Date first adjuvant chemotherapy	x
+generic	adjuvant_ct_antiher2	dat_end_adj_ct	date		Date of last cycle of adjuvant chemotherapy 	Date end adjuvant chemotherapy	x
+generic	adjuvant_ct_antiher2	reduc_dos_adj		"0:No;1:Yes"	Chemotherapy dose reduction 	Adjuvant deescalation 	NA
+generic	adjuvant_ct_antiher2	gcsf_adj		"0:No;1:Yes"	Treatment with colony-stimulating factor 	GCSF use	NA
+generic	adjuvant_ct_antiher2	adj_antiher2		"0:No;1:Yes"	Adjuvant anti-HER2 therapy  (after surgery)	Adjuvant anti-HER2 (adj CT)	x
+generic	adjuvant_ct_antiher2	dat_first_antiher2_adj			Date of first anti-HER2 therapy 	Date first anti-HER2 (adj CT)	x
+derived	settings_and_regimen	ct_setting_5cl		"1:NAC;2:Adjuvant;3:NAC and adjuvant;4.Chemotherapy without surgery;5:No"	Chemotherapy setting	Chemotherapy setting	x
+derived	settings_and_regimen	antiher2_setting_5cl		"1:Neoadjuvant anti-HER2;2:Adjuvant anti-HER2;3:Neo and adjuvant anti-HER2;4:Anti-HER2 without surgery;5:No anti-HER2"	Trastuzumab setting	Trastuzumab setting	x
+generic	treatments	reduc_dos_tz		"0:No;1:Yes"	Trastuzumab dose reduction 	Trastuzumab dose reduction 	later
+generic	treatments	stop_tz		"0:No;1:Yes"	Premature stop of trastuzumab	Premature stop trastuzumab	later
+generic	tumor_char_surg	nbggpos		integer	Number nodes involved	Nb nodes positive	x	NA
+derived	tumor_char_surg	pnuicc_4cl		"1:0; 2:[1-3]; 3:[4-9];4:10 and more"	Number nodes involved ( 4 classes) 	pN	x	NA
+derived	tumor_char_surg	pnuicc_3cl		1:0; 2:[1-3]; 3:4 and more	Number nodes involved ( 3 classes) 	pN	x	NA
+derived	tumor_char_surg	pnuicc_2cl		1:Node negative; 2:Node positive	Number nodes involved ( 2 classes) 	pN	x	NA
+generic	tumor_char_surg	histo_size			Pathological tumor size (mm in operative piece)	Pathological Tumor size (mm)	x	NA
+generic	tumor_char_surg	ptuicc_5cl		0:pT0 or pTis;1:pT1;2:pT2;3:pT3;4:pT4	Pathological T stage [maximum size (mm) in operative piece]. TNM.	Pathological T stage (TNM)	x	NA
+derived	tumor_char_surg	ptuicc_4cl		1:pT0-pT1;2:pT2;3:pT3;4:pT4	Pathological T stage [maximum size (mm) in operative piece]. 4 classes	Pathological T stage (TNM)	x	NA
+derived	tumor_char_surg	ptuicc_3cl		"1:pT0-T1;2:pT2;3:pT3-pT4"	Pathological T stage [maximum size (mm) in operative piece]. 3 classes	Pathological T stage (TNM)	x	NA
+generic	tumor_char_surg	lvi		"0:No;1:Yes"	Lymphovascular invasion 	Lymphovascular invasion 	x	NA		Not available
+generic	tumor_char_surg	multifocal_histo		"0:No;1:Yes"	Tumor focality in operative piece	Histological tumor focality	x	NA
+generic	tumor_char_surg	multifocality_clin_histo		"0:No;1:Yes"	Clinical or/and histological tumor focality	Clinical/histological tumor focality	x	NA
+generic	tumor_char_neo	breast_res_insitu		"0:No;1:Yes"	presence of in situ residual disease	In situ residual tumor	NA	x
+generic	tumor_char_neo	breast_res_infiltr		"0:No;1:Yes"	presence of invasive residual disease	Invasive residual tumor	x	x
+derived	tumor_char_neo	pCR		"0:No;1:Yes"	"binary criteria for response to treatment : yes/no
+pCR : absence of invasive disease in breast AND in nodes
+If one data NA, code as no pCR"	pathological complete response	x
+generic	tumor_char_neo	nbggpos_postneo		integer	Number nodes involved (post-neoadj treatment)	Number nodes involved (post-neoadj treatment)	x	x
+derived	tumor_char_neo	ypnuicc_4cl		"0:0; 1:[1-3]; 2:[4-9];3:10 and more"	Histological N stage postNAC (4 classes)	ypN	x
+derived	tumor_char_neo	ypnuicc_3cl		0:0; 1:[1-3]; 2:4 and more	Histological N stage postNAC (3 classes)	ypN	x
+derived	tumor_char_neo	ypnuicc_2cl		1:Node negative; 2:Node positive	Histological N stage postNAC (2 classes)	ypN	x
+generic	tumor_char_neo	lvi_postneo		"0:No;1:Yes"	Post-NAC lymphovascular invasion 	Post-NAC LVI	NA
+generic	tumor_char_neo	RCB_index			Residual Cancer Burden index (continuous)	RCB index (continuous)	NA
+derived	tumor_char_neo	RCB_class			Residual Cancer Burden class	RCB class	NA
+generic	tumor_char_neo	str_til_perc_postneo			% stromal lymphocytes postNAC	Stromal TIL levels (%) postNAC	NA
+generic	tumor_char_neo	it_til_perc_postneo			% intra-tumoral lymphocytes postNAC	IT TIL levels (%) postNAC	NA
+derived	delays_pathways	delay_diag_to_surg			Days between diagnosis of BC and surgery	Delay diagnosis to surgery	x
+derived	delays_pathways	delay_diag_to_neo_ct			Days between diagnosis to first cycle of neoadjuvant treatment	Delay diagnosis to NAC	x
+derived	delays_pathways	delay_diag_to_rando_inclusion			Delay between BC diagnosis to randomisation (if clinical trial) or to inclusion in the study (if cohort)	Delay diagnosis to randomisation	later
+derived	delays_pathways	delay_end_neo_ct_to_surg			Days between the end of neoadjuvant treatment to surgery	Delay end NAC to surgery	x
+derived	delays_pathways	delay_surg_to_adj_ct			Days between  surgery to adjuvant chemotherapy 	Delay surgery to chemo	x
+derived	delays_pathways	delay_end_neo_ct_to_surg					later
+derived	delays_pathways	delay_ct_to_rt			Days between the end of adjuvant treatment to radiotherapy	Delay adjuvant chemo to radio	later
+derived	delays_pathways	delay_surg_to_rt			Days between surgery to radiotherapy	Delay surgery to radio	x
+generic	events_and_censor	dat_censor	date		last update of the database	Last update database	x
+generic	events_and_censor	ev_prog_neo		"0:No;1:Yes"	progression under NAC (1:yes, 0:no)	progression under NAC	later
+generic	events_and_censor	dat_prog_neo	date		Date of progression under NAC	Date progresion under NAC	later
+generic	events_and_censor	ev_recloc		"0:No;1:Yes"	local relapse (1:yes, 0:no)	local relapse	x
+generic	events_and_censor	dat_recloc	date		data local relapse	data local relapse	x
+generic	events_and_censor	ev_recreg		"0:No;1:Yes"	regional relapse (1:yes, 0:no)	regional relapse	x
+generic	events_and_censor	dat_recreg	date		data regional relapse	data regional relapse	x
+generic	events_and_censor	ev_meta		"0:No;1:Yes"	distant relapse (1:yes, 0:no)	distant relapse	x
+generic	events_and_censor	dat_meta	date		data distant relapse	data distant relapse	x
+generic	events_and_censor	ev_contro		"0:No;1:Yes"	contralateral (1:yes, 0:no)	contralateral BC	x
+generic	events_and_censor	dat_contro	date		data contralateral BC	data contralateral	x
+generic	events_and_censor	ev_deuxk		"0:No;1:Yes"	second invasive ipsilateral BC (1:yes, 0:no)	 ipsilateral BC	x
+generic	events_and_censor	dat_deuxk	date		data second invasive ipsilateral BC	data  ipsilateral BC	x
+generic	events_and_censor	status_vital		"0:0;1:1"	vital status (1: dead, 0: alive)	vital status	x
+generic	events_and_censor	dat_last_news	date		date of last data 	date of last data	x
+derived	events_and_censor	dat_last_news_censor	date		wih censor date (update database)		x
+derived	events_and_censor	year_last_news	integer		year of last data 	last data	x
+derived	evol	status_efs_diag			time BC diagnosis to event free survival	event free survival	x
+derived	evol	status_rfs_diag			time BC diagnosis to recurrence-free survival	recurrence-free survival	x
+derived	evol	status_drfs_diag			time BC diagnosis to distant relapse-free survival	distant relapse-free survival	x
+derived	evol	status_os_diag			time BC diagnosis to death 	overall survival 	x
+derived	evol	delay_efs_diag			diagnosis to endpoint	Delay event free survival	x
+derived	evol	delay_rfs_diag			diagnosis to endpoint		x
+derived	evol	delay_drfs_diag			diagnosis to endpoint		x
+derived	evol	delay_os_diag			diagnosis to endpoint		x
+derived	evol	status_rfs			surgery to endpoint		x
+derived	evol	status_drfs			surgery to endpoint		x
+derived	evol	status_os			surgery to endpoint		x
+derived	evol	delay_rfs			surgery to endpoint		x
+derived	evol	delay_drfs			surgery to endpoint		x
+derived	evol	delay_os			surgery to endpoint		x

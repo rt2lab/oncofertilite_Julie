@@ -1,0 +1,253 @@
+---
+title: "AP Saint Louis"
+author: "Lidia Delrieu"
+date: "02/10/2020"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results = "asis", message = FALSE, warning = FALSE)
+```
+
+```{r librairies, echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+library(ggrepel)
+  library(ggsci)
+  library(dplyr)
+  library(ggplot2)
+  library(tableone)
+  library(reshape2)
+  library(cowplot)
+  library(kableExtra)
+  library(tableone)
+  library(RColorBrewer)
+  library(tinytex)
+  library(tidyverse)
+  library(esquisse)
+  library(lubridate)
+  library(readxl)
+  library(prettyR)
+  library(FactoMineR)
+library(summarytools)
+st_options(plain.ascii = FALSE,          # This is a must in Rmd documents
+                style = "rmarkdown",          # idem
+                dfSummary.varnumbers = FALSE, # This keeps results narrow enough
+                dfSummary.valid.col = FALSE,
+               lang ="fr")  # idem  library(microbenchmark)
+  library(intervals)
+  library(eeptools)
+  library(viridis)
+  library(devtools)
+  library(highcharter)
+  library(widgetframe)
+  library(d3r)
+  library(sunburstR)
+
+#install_github("emwozniak/Table1")
+  library(Table1)
+  library(scales) 
+  library(survival)
+  library(survminer, quietly = TRUE)
+  library(broom, quietly = TRUE)
+  library(GGally, quietly = TRUE)
+```
+
+\#1. Data Management
+
+```{r importation base, echo=FALSE}
+ap<-read.csv2("C:/Users/lidia/GitHub/databases/core/18_ap_saint_louis/data/ap_sept2020.csv")
+```
+
+```{r data management,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+head(ap)
+str(ap)
+names(ap)
+tail(ap)
+
+#supprimer les 2 dernières lignes du tableau et les 2 colonnes vides
+ap <- ap [-220,]
+ap <- ap [-219,]
+ap <- ap [-218,]
+ap <- ap [-217,]
+ap <- ap [-216,]
+ap <- ap [-215,]
+ap <- ap [-214,]
+
+tail(ap)
+
+#Format date 
+ap$ddn <- dmy(ap$ddn)
+ap$date_diag<- dmy(ap$date_diag)
+ap$date_chir<- dmy(ap$date_chir)
+ap$date_inscription<- dmy(ap$date_inscription)
+ap$date_derniere_nouvelles<-dmy(ap$date_derniere_nouvelles)
+str(ap)
+```
+
+```{r age, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, results="hide"}
+#Création de la variable age au diagnostic : 
+summary(ap$ddn)
+ap$age<-age_calc(ap$ddn, enddate = ap$date_diag, units = "years", precise = TRUE)
+summary(ap$age)
+```
+
+\#2. Analyse descriptive des variables \#\#2.1 Tableaux des caractéristiques à l'inclusion de toute la base
+
+```{r name, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, results="hide"}
+#recodage des labels
+ap2<-ap
+
+ap2$chir <- factor(ap2$chir,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(ap2$chir)
+
+ap2$type_chir <- factor(ap2$type_chir,
+levels = c(1,2),
+labels = c("In situ", "Infiltrant"))
+table(ap2$type_chir)
+
+ap2$chir_gg <- factor(ap2$chir_gg,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(ap2$chir_gg)
+
+ap2$type_chimio <- factor(ap2$type_chimio,
+levels = c(1,2),
+labels = c("neoadj", "adj"))
+table(ap2$type_chimio)
+
+ap2$escrime <- factor(ap2$escrime,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(ap2$escrime)
+
+ap2$tennis <- factor(ap2$tennis,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(ap2$tennis)
+
+ap2$yoga <- factor(ap2$yoga,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(ap2$yoga)
+
+ap2$marche_nord <- factor(ap2$marche_nord,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(ap2$marche_nord)
+
+ap2$recidive<- factor(ap2$recidive,
+levels = c(0,1),
+labels = c("Non", "Oui"))
+table(ap2$recidive)
+
+ap2$statut<- factor(ap2$statut,
+levels = c(0,1),
+labels = c("Vivant", "Décédé"))
+table(ap2$statut)
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+dfSummary(ap2)
+view(dfSummary(ap2))
+#descr(ap2, style = "rmarkdown")
+```
+
+1)  Caractéristiques socio-démographiques Il y a 213 patientes dans la base avec un âge moyen au diagnostic de 53.2 ans (SD=11.4) et min=26 et max=81.7 ans (Je pourrais calculer plus l'âge moyen à l'inscription du programme)
+
+2)  Caractéristiques cliniques Le diagnostic de cancer du sein le plus ancien de la base remonte au 14 novembre 2011 et la plus récente au 09 juin 2020 avec une date médiane au diagnostic au 10 juillet 2015.
+
+Traitements -n=191 (89.7%) patientes ont eu de la chimiothérapie dont 43 (22.5%) en néoadj et 148 (77.5%) en adjuvant
+
+Avec les données disponibles la majorité des patientes semblent plutôt s'orienter vers le yoga n=88 (66.2%)
+
+3)  statut vital Au total sur les 213 participantes, 203 (95.3%) sont encore vivantes et 10 (4.7%) sont décédées dont n=7 qui ont reçu un traitement néoadj et n=3 qui ont reçu un traitement adjuvant
+
+\#2.2 Caractéristiques des patientes néo adj
+
+```{r,echo=FALSE, results="hide", message = FALSE, warning = FALSE}
+neo <- ap2 %>%
+      filter(type_chimio=="neoadj")
+summary(neo)
+sd(neo$age)
+```
+
+43 patientes ont reçu de la chimiothérapie néoadjuvante et la moyenne d'âge des femmes est de 47.21 ans (SD=9.88) et min=28.57 et max=70.19 ans
+
+\#\#2.3 Caractéristiques des patientes adjuvantes
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+adj<- ap2 %>%
+      filter(type_chimio=="adj")
+dfSummary(adj)
+view(dfSummary(adj))
+```
+
+148 patientes ont reçu de la chimiothérapie adjuvante et la moyenne d'âge des femmes est de 53.5 ans (SD=11.1) et min=26 et max=80.9 ans au diagnostic
+
+\#3.Survie \#\#3.1 Courbe de Kaplan pour toute la cohorte
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+table(ap$statut)
+ap$survie<-as.numeric(difftime(ap$date_derniere_nouvelles, ap$date_diag, unit="weeks"))/52.25
+
+summary(ap$survie)
+table(ap$statut)
+sd(ap$survie)
+
+kaplan <- survfit(Surv(survie, statut) ~ 1, data = ap)
+kaplan
+
+ggsurvplot(kaplan,conf.int = TRUE, risk.table = TRUE, pval = TRUE, data = ap)
+
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+kaplan2 <- survfit(Surv(survie, statut) ~ type_chimio, data = ap)
+kaplan2
+
+ggsurvplot(kaplan2, conf.int = TRUE, risk.table = TRUE, pval = TRUE, data = ap,
+           legend="bottom",
+           legend.title="Chimiothérapie",
+           legend.labs=c("Néoadjuvant","Adjuvant"))
+
+```
+
+\#\#3.2 Courbe de Kaplan néoadj
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+neo<-ap %>%
+      filter(type_chimio==1)
+
+neo$survie<-as.numeric(difftime(neo$date_derniere_nouvelles, neo$date_diag, unit="weeks"))/52.25
+
+kaplan3 <- survfit(Surv(survie, statut) ~1, data = neo)
+kaplan3
+
+ggsurvplot(kaplan3, conf.int = TRUE, risk.table = TRUE, pval = TRUE, data = neo)
+```
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+summary(kaplan3, times = c(0, 1, 2, 3, 4, 5))
+```
+
+A 3 ans il y a 35 femmes dont 2 qui sont décédées
+
+\#\#3.3 Courbe de Kaplan adj
+
+```{r,echo=FALSE, message = FALSE, warning = FALSE}
+adj<-ap %>%
+      filter(type_chimio==2)
+
+adj$survie<-as.numeric(difftime(adj$date_derniere_nouvelles, adj$date_diag, unit="weeks"))/52.25
+kaplan4 <- survfit(Surv(survie, statut) ~ 1, data =adj)
+kaplan4
+
+ggsurvplot(kaplan4, conf.int = TRUE, risk.table = TRUE, pval = TRUE, data = adj)
+
+```

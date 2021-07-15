@@ -1,0 +1,535 @@
+---
+title: "Interactions"
+author: "Enora LAAS"
+date: "10/11/2020"
+header-includes:
+- \usepackage{pdflscape}
+- \usepackage{booktabs}
+editor_options:
+  chunk_output_type: console
+output:
+  html_document:
+    fig_caption: yes
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: no
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+---
+
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(fig.path='Figures/', dev = 'png',
+ warning=FALSE, message=FALSE,  echo = TRUE, cache=T, eval = F)
+#, cache=TRUE, autodep = TRUE
+```
+
+```{r}
+library(rms)
+library(ggeffects)
+library(ggforce)
+library(patchwork)
+library(glue)
+library(knitr)
+library(magrittr)
+library(interplot)
+library(gtsummary)
+library(gt)
+
+source("mes_fonctions2.R")
+
+```
+
+
+# Charger la base dans d
+
+ATTENTION NE DOIT PAS ETRE UN TIBBLE
+
+```{r}
+## d <- load(xxx.Rdata)
+```
+
+# Appel des fonctions
+
+A chaque fois, il existe un mode sans echec pour la fonction (la version "poss") qui peut être remplacer dans les appels à la fonctions quand ça marche pas. Renvoie NULL pour la variable qui plante
+
+```{r, echo=TRUE}
+source('~/RT2Lab/databases/core/00_common/src/R_functions_enora/interaction.R', local = TRUE)
+# Provide : 
+#   POUR LE GLM
+#   - test_interaction_glm et poss_inter_glm  : univarié avec variable quanti
+#   - test_interaction_glm_mutli et poss_inter_glm_multi : multivariée avec variable quanti
+#   - forest_plot_glm et poss_inter_glm_fp : forest plot pour 2 variables quali
+#   - forest_plot_glm_multi et poss_inter_glm_fp_multi 
+#   - table_plot_glm  : tableau des OR
+
+#   POUR LE COX
+#   - test_interaction_cox et poss_inter_cox 
+#   - test_interaction_cox_mutli et poss_inter_cox_multi
+#   - forest_plot_cox et poss_inter_cox_fp
+#   - forest_plot_cox_multi et poss_inter_cox_fp_multi
+#   -table_plot_cox  : tableau des HR
+# 
+```
+
+Pour info : les modèles pondérés marchent avec ces formules, mais il faut juste rajouter la pondération dans le  :
+
+f<-as.formula(paste("Surv(",delay,",",status, ")", "~",y,":",var,"+", y, "+", multi))
+mod <- coxph(f, weight = wt,robust = F,data = data)
+
+
+
+
+# Définition des variables à étudier
+
+
+```{r}
+# Pick all the pertinent variables
+###################################  TO DO  ################################### 
+var <-c("side",  "menop", "fam_history", 
+  "brca_mut", "weight", "size", 
+  "smoking_3cl", "smoking",   
+  "tclin", "tuicc_5cl", "nuicc_4cl", "grade_3cl", "dcis_component", 
+  "ki67_perc", "mitotic_index", "str_til_perc", 
+  "it_til_perc", "lvi_biop", "comorbidity", "comor_hypertension_heart_disease", "comor_depression_anxiety", 
+  "comor_dyslipidemia", "comor_diabete", "comor_ulcere_gastritis", 
+  "comor_thyroid_disorders", "comor_others_grouped", 
+  "age", "age_cl_10_1", "age_cl_10_2", "age_cl_3_cl", "age_cl_5_cl", 
+   "bmi", "bmi_2cl", "bmi_3cl", "bmi_4cl", "bmi_5cl", 
+  "tuicc_4cl", "tuicc_3cl", "nuicc_2cl",  "subtype", "subtype4",  "histo_3cl", 
+  "histo_2cl", "grade_2cl", "ki67_cl", "inv_dcis_4cl", "str_til_perc_30", 
+  "str_til_perc_by_10", "it_til_perc_by_5", "str_til_denkert", 
+  "mitotic_index_class")
+
+# Sort quantitative ones
+var_quanti <- d %>% dplyr::select(all_of(var)) %>% select_if(., is.numeric) %>% names()
+
+# Sort qualitative ones
+var_quali <- as_tibble(d) %>% select(all_of(var)) %>% select_if(., is.factor) %>% names()
+
+
+# DOnner les jolis noms de variables à partir de var
+################################### TO DO   ################################### 
+pretty_var_quali <-  c("Side", "Menopausal status", "Family History", "BRCA mutation", "Smoking", 
+"Smoking", "TUICC", "NUICC", "Grade", "DCIS component", 
+"LVI on biopsy", "Comorbidity", "Cardiovascular disease", 
+"Depression_anxiety", "Dyslipidemia", "Diabete", 
+"Ulcere_gastritis", "Thyroid_disorders", "Other comorbidity", 
+"Age", "Age", "Age", "Age", 
+"BMI", "BMI", "BMI", "BMI", "TUICC", "TUICC", 
+"NUICC", "Modecular subtype", "Molecular subtype", "Histology", "Histology", 
+"Grade", "Ki67", "Invasive or DCIS", "TILS levels", "Tils levels", 
+"it TILS levels", "TILS level", "MI")
+
+pretty_var_quanti <- c("weight", "size", "Clinical tumor size", "ki67(%)", "Mitotic index", "TILS(%)", 
+"itTILs(%)", "1ge", "BMI")
+```
+
+
+# Preparation du jeu de données
+
+Avec les variables, leur "pretty name" et leur qualité (quanti ou quali)
+
+ATTENTION, IL NE FAUT PAS QU4UNE DES VARIABLES AIT UN LEVELS A ZERO --> droplevels
+
+
+
+```{r}
+
+### bien veiller à ne pas avoir de levels vide --> droplevels
+# ex : d$tuicc_5cl <- droplevels(d$tuicc_5cl)
+
+tab_inter_quali <- tibble(var_quali, pretty_var_quali, "quali")
+colnames(tab_inter_quali) <- c("var_y", "pretty_var_y", "category") 
+
+tab_inter_quanti <- tibble(var_quanti, pretty_var_quanti, "quanti")
+colnames(tab_inter_quanti) <- c("var_y", "pretty_var_y", "category")
+
+tab_inter <- rbind(tab_inter_quali,tab_inter_quanti) %>% mutate(category = as.factor(category))
+
+```
+
+
+
+
+
+# Creer la figure d'interaction
+
+
+
+Le principe est de tester les interactions entre une variable choisie (var) et de multiples autres variables du dataframe (y), sur un outcome précisé qui peut être de la survie (cox) ou de la logistique (glm)
+
+
+ +  y = les variables à tester
+ +  pretty_y = leurs noms classes pour la figure
+ +  var = la variable d'interet
+ +  pretty_var = son nom classe pour la figure
+ +  pred = l'outcome (pour le glm)
+ +  status et delay (pour le cox)
+ +  multi = les variables d'ajustement (de type "A+B+C+D")
+ +  data
+ 
+ SI LA VARIABLE D'INTERET EST QUALITATIVE:
+ on choisira plutot un forest plot mais on peu aussi faire des courbes de predictions 
+ 
+ SI LA VARIABLE D'INTERET EST QUANTITATIVE :
+ on choisira des courbes
+ 
+## Option 1 : la variable d'intérêt est quantitative 
+
+La fonction fournit donc des courbes. Ici, la surive et la logistique sont dans le même tibble
+ 
+La courbe du glm fournie la probabilité prédite. Si la variable explicative (y) est quantitative, elle est par defaut coupée en terciles
+
+La courbe du cox fournie le score de risque, càd la somme des prédicteurs linéaires, soit pour faire simple, la probabilité pour la variable choisie, en moyennant toutes les autres (dans un moodèle mutlivarié par ex). 
+ex : Risque de décès associé au délai de prise en charge, chez les menopausée et les non menopausée, pour une patiente standard sur les autres variables du modèle
+C'est une echelle log donc ininterpretable comme d'hab.
+
+
+
+
+
+### Courbes
+
+
+```{r courbe}
+################################### TO DO   ################################### 
+### rempalcer les variables en vert par les variables et les endpoints d'intérêt
+
+inter_plot <-
+  tab_inter %>% mutate(figure_pcr = map2(.x = var_y, .y = pretty_var_y, function(x, y)
+    test_interaction_glm(
+      y = x,
+      var = "delay_diag_to_neo_ct",
+      pretty_y = y,
+      pretty_var = "Delay from diagnosis to NAC",
+      pred = "RCH5.f",
+      data = d
+    ))) %>% mutate(figure_rfs = map2(.x = var_y, .y = pretty_var_y, function(x, y)
+    test_interaction_cox(
+      delay = "delay_rfs",
+      status = "status_rfs",
+      y = x,
+      var = "delay_diag_to_neo_ct",
+      pretty_y = y,
+      pretty_var = "Delay from diagnosis to NAC",
+       pretty_survival= "RFS",
+      data = d
+    )))
+
+#on récupère le petit p pour trier
+inter_plot_def <- inter_plot %>% unnest_wider(figure_pcr,names_sep = "_") %>% unnest_wider(figure_rfs,names_sep = "_") %>% rename(pcr_p=figure_pcr_2 ,  rfs_p=figure_rfs_2)
+
+
+```
+
+
+### Plot de toutes les interactions 
+
+```{r ,fig.height=20, fig.width=20}
+cowplot::plot_grid(plotlist = inter_plot_def$figure_pcr_1)
+cowplot::plot_grid(plotlist = inter_plot_def$figure_rfs_1)
+```
+
+### Plot des interactions significatives
+
+```{r fig.height=16, fig.width=16 }
+inter_plot_def %>% filter(pcr_p<=0.1) %>% cowplot::plot_grid(plotlist = .$figure_pcr_1)
+inter_plot_def %>% filter(rfs_p<=0.1) %>% cowplot::plot_grid(plotlist = .$figure_rfs_1)
+```
+
+
+### Multivariée
+
+#### On selectionne les variables significatives
+
+```{r}
+################################# TO DO  ################################# 
+#remplacer les delais/status
+# trier les variables redondantes
+
+#univariée totale COX
+tab_des_sp <- univariee(var, FUN=survie, formule=Surv (delay_rfs, status_rfs)~1, data=d)
+kable(tab_des_sp)
+
+#on récupère les variables<0.2
+##ATTENTION IL FAUT QUAND MËME PRE TRIER LES VARIABLES QUI SONT LES MEMES DANS LA MULTI VARIEE SINON ON VA AVOIR UNE COLINEARITE DE MALADE!
+var_multi <- as_tibble(tab_des_sp) %>% mutate(p_value = as.numeric(p_value)) %>% filter(p_value<=0.2) 
+var_multi <-dput(var_multi$Variable)
+var_multi <- paste(var_multi, collapse = "+")
+
+var_multi <- "nuicc_4cl+dcis_component+str_til_perc+bmi+subtype+histo_2cl+grade_3cl+mitotic_index_class"
+
+#on le met dans une mutltivariée avec les termes d'interaction
+#on trie manuyellement les variables redondantes
+
+```
+
+
+```{r}
+#univariée totale GLM
+tab_des_sp_pcr <- univariee(var, FUN=logistique, formule=RCH5.f~1, data=d)
+kable(tab_des_sp_pcr)
+
+#on récupère les variables<0.2
+##ATTENTION IL FAUT QUAND MËME PRE TRIER LES VARIABLES QUI SONT LES MEMES DANS LA MULTI VARIEE SINON ON VA AVOIR UNE COLINEARITE DE MALADE!
+var_multi_pcr <- as_tibble(tab_des_sp_pcr) %>% mutate(p_value = as.numeric(p_value)) %>% filter(p_value<=0.2) 
+var_multi_pcr <-dput(var_multi_pcr$Variable)
+var_multi_pcr <- paste(var_multi_pcr, collapse = "+")
+
+var_multi_pcr <- "menop+smoking+tclin+grade_3cl+dcis_component+histo_3cl+str_til_perc_by_10+it_til_perc_by_5"
+
+#on le met dans une mutltivariée avec les termes d'interaction
+#on trie manuyellement les variables redondantes
+```
+
+
+### on fait le plot 
+
+
+```{r}
+## A noter que le cox et le glm sont sur la même figure ici
+################################# TO DO  ################################# 
+# Remplacer les variables vertes
+inter_plot_multi <-
+  tab_inter %>% mutate(figure_pcr = map2(.x = var_y, .y = pretty_var_y, function(x, y)
+    poss_inter_glm(
+      y = x,
+      var = "delay_diag_to_neo_ct",
+      pretty_y = y,
+      pretty_var = "Delay from diagnosis to NAC",
+      pred = "RCH5.f",
+      multi = var_multi_pcr,
+      data = d
+    ))) %>% mutate(figure_rfs = map2(.x = var_y, .y = pretty_var_y, function(x, y)
+    poss_inter_cox (
+      delay = "delay_rfs",
+      status = "status_rfs",
+      y = x,
+      var = "delay_diag_to_neo_ct",
+      pretty_y = y,
+      pretty_var = "Delay from diagnosis to NAC",
+       pretty_survival= "RFS",
+      multi = var_multi,
+      data = d
+    )))
+
+#on récupère le petit p pour trier
+inter_plot_def_multi <- inter_plot_multi %>% unnest_wider(figure_pcr,names_sep = "_") %>% unnest_wider(figure_rfs,names_sep = "_") %>% rename(pcr_p=figure_pcr_2 ,  rfs_p=figure_rfs_2)
+
+
+```
+
+
+### Plot de toutes les interactions multivariée
+
+```{r,fig.height=20, fig.width=20  }
+cowplot::plot_grid(plotlist = inter_plot_def_multi$figure_pcr_1)
+cowplot::plot_grid(plotlist = inter_plot_def_multi$figure_rfs_1)
+```
+
+### Plot des interactions significatives multivariée
+
+```{r fig.height=16, fig.width=16}
+inter_plot_def_multi %>% filter(pcr_p<=0.1) %>% cowplot::plot_grid(plotlist = .$figure_pcr_1)
+inter_plot_def_multi %>% filter(rfs_p<=0.1) %>% cowplot::plot_grid(plotlist = .$figure_rfs_1)
+```
+
+
+## Option 2 : Les 2 variables sont qualitatives  : Forest plot
+
+Note générale, les forest plots n'acceptent que 4O lignes max
+C'est le but du code ci-dessous : diviser les lignes en 40 et faire autant de plots que necessaire
+Par contre, quand il y a moins de 40 lignes, le summarize ne marche pas et il faut  faire le forest plot direct sans passer par le summarize 
+
+forestplot(
+    labeltext = tablo_def$label,
+    tablo_def$number[, 1:3],...)
+
+
+Les tableaux d'OR et d'HR s'obtiennent avec le code plus haut (non remis ici pour ne pas alourdir trop)
+
+ATTENTION REPASSER EN DATA FRAME SI ON ETAIT EN TIBBLE SINON CA MARCHE PAS
+
+### GLM
+
+
+```{r forest plot glm}
+
+################################# TO DO  ################################# 
+# Remplacer les variables vertes
+
+try <- tab_inter %>% filter(category == "quali") %>% mutate(forest =  map2(.x = var_y, .y = pretty_var_y, function(x, y)
+  poss_inter_glm_fp(
+    pred = "RCH5.f",
+    y = x,
+    var = "menop",
+    pretty_y = y,
+    data = d)))
+
+tablo_fp <- do.call(rbind,try$forest)
+
+tablo_fp$label [1,3]<-"OR"
+tablo_fp$label [1,4]<-"IC low"
+tablo_fp$label [1,5]<-"IC high"
+tablo_fp$label [1,6]<-"p-value"
+
+
+##on vire les OR aberrants et comme tout ne rentre pas sur une seule figure (seulement 40 varriables rentrent...), o n découpe en tranches de 40 variables
+tablo_def_or <-
+  tablo_fp %>% filter(is.na(number$OR) |
+                        number$OR < 10 &
+                        number$OR > 0 &
+                        number$upper < 40 &
+                        number$lower > 0) %>% 
+  group_by(label[, 1]) %>% 
+  rowid_to_column(.) %>% 
+  mutate(num_fig = ceiling(rowid/40))
+
+tablo_def_or %>% group_by(num_fig) %>% dplyr::summarize(plot = list(
+  forestplot(
+    labeltext = label,
+    number[, 1:3],
+    graph.pos = 6,
+     clip = c(0.2, 2),
+    xlog = TRUE,
+    col = fpColors(box = "black", lines = "black", zero = "gray"),
+    txt_gp = fpTxtGp(
+      label = gpar(cex = 1),
+      ticks = gpar(cex = 1.1),
+      xlab = gpar(cex = 1, coord = -100),
+      title = gpar(cex = 1.2)
+    ),
+    line.margin = unit(1, "mm"),
+    boxsize = 0.35,#taille du point
+    graphwidth = unit(80, "mm"),#largeur du forestplot
+    lwd.ci = 1.5,#taille du trait
+    ci.vertices = TRUE,
+    ci.vertices.height = 0.1,
+    lineheight = "auto",
+    cex = 0.9
+  )
+))
+
+```
+
+
+```{r tableau glm}
+ 
+
+tablo_or <- as.data.frame(tablo_def_or$label)
+tablo_or [is.na(tablo_or )] <- ""
+tablo_or$V6 <- as.numeric(tablo_or$V6)
+
+
+
+#on récupère le petit p pour le colorer
+tablo_or_def <- gt(tablo_or) %>% tab_style(
+        style = cell_fill(color = 'grey'),
+        locations = cells_body(
+        columns = vars(V6), 
+        rows = 0 < V6 & V6 < 0.05
+    ))
+
+tablo_hr_def
+#on récupère le petit p pour le colorer
+tablo_def <- gt(tablo_fp) %>% tab_style(
+        style = cell_fill(color = 'grey'),
+        locations = cells_body(
+        columns = vars(P_value), 
+        rows = 0 < P_value & P_value < 0.05
+    ))
+
+tablo_def
+
+```
+### COX
+
+```{r forest plot cox}
+################################# TO DO  ################################# 
+# Remplacer les variables vertes
+
+try <- tab_inter %>% filter(category == "quali") %>% mutate(forest =  map2(.x = var_y, .y = pretty_var_y, function(x, y)
+  poss_inter_cox_fp(
+  delay = "delay_rfs",
+  status = "status_rfs",
+  y = x,
+  var = "side",
+  pretty_y = y,
+  data = d)))
+
+
+tablo_fp <- do.call(rbind,try$forest)
+
+tablo_fp$label [1,3]<-"HR"
+tablo_fp$label [1,4]<-"IC low"
+tablo_fp$label [1,5]<-"IC high"
+tablo_fp$label [1,6]<-"p-value"
+
+
+
+tablo_def_hr <-
+  tablo_fp %>% filter(is.na(number$HR) |
+                        number$HR < 10 &
+                        number$HR > 0 &
+                        number$upper < 40 &
+                        number$lower > 0) %>% 
+  group_by(label[, 1]) %>% 
+  rowid_to_column(.) %>% 
+  mutate(num_fig = ceiling(rowid/40))
+
+tablo_def_hr %>% group_by(num_fig) %>% dplyr::summarize(plot = list(
+  forestplot(
+    labeltext = label,
+    number[, 1:3],
+    graph.pos = 6,
+    clip = c(0.2, 2),
+    xlog = TRUE,
+    col = fpColors(box = "black", lines = "black", zero = "gray"),
+    txt_gp = fpTxtGp(
+      label = gpar(cex = 1),
+      ticks = gpar(cex = 1.1),
+      xlab = gpar(cex = 1, coord = -100),
+      title = gpar(cex = 1.2)
+    ),
+    line.margin = unit(1, "mm"),
+    boxsize = 0.35,
+    graphwidth = unit(80, "mm"),
+    lwd.ci = 1.5,
+    ci.vertices = TRUE,
+    ci.vertices.height = 0.1,
+    lineheight = "auto",
+    cex = 0.9
+  )
+))
+```
+
+
+
+
+```{r tableau cox}
+tablo_hr <- as.data.frame(tablo_def$label)
+tablo_hr [is.na(tablo_hr )] <- ""
+tablo_hr$V6 <- as.numeric(tablo_hr$V6)
+
+
+
+#on récupère le petit p pour le colorer
+tablo_hr_def <- gt(tablo_hr) %>% tab_style(
+        style = cell_fill(color = 'grey'),
+        locations = cells_body(
+        columns = vars(V6), 
+        rows = 0 < V6 & V6 < 0.05
+    ))
+
+tablo_hr_def
+```
+
+# Tricks
+
+- la position du forest piot par rapport au texte se change dans graph.pos  = 6
+- si la variable d'interét n'a que 2 classes, alors la premiere colonne du forest plot ne sert à rien. On peut alors modifier les paramètres pour la supprimer : labeltext = label[,2:6] et graph.pos = 5]

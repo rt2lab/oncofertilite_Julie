@@ -1,0 +1,51 @@
+---
+title: "add_variables_other_sources_neorep"
+author: "ASHP"
+date: "17/12/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(dplyr)
+library(tidyverse)
+
+```
+
+```{r neorep_variables_embols }
+# neo_embols : see scripts : embols_analyses.r embols_analyses_v10 embols_corrected.RData
+load("/Users/ahamypet/RT2Lab/embols/data/processed/neo_embols.RData")
+neo_embols <- neo_embols[,colnames(neo_embols)[!duplicated(colnames(neo_embols))]]
+
+neorep_variables_embols <-  neo_embols %>% mutate(lvi_biop     = as.integer(embols_biopsie_bin),
+                            lvi_postneo  = as.integer(embols_sein_bin))  %>% 
+                             rename(numdos_curie = numdos7) %>%
+                             select(numdos_curie, lvi_biop, lvi_postneo) 
+```
+
+```{r TILs RCB and related items }
+# Preprocess in TILs_merge_three_database_v8.Rmd
+load("/Users/ahamypet/RT2Lab/TILs/TILs_all_subtypes/data/processed/neorep_TILs.RData")
+head(neorep_TILs)
+
+neorep_variables_tils_rcb <-  neorep_TILs %>% 
+                            mutate(lvi_biop     = as.integer(embols_biopsie_bin),
+                            lvi_postneo  = as.integer(embols_sein_bin))  %>% 
+                            rename(numdos_curie = numdos7) %>%
+                            select(numdos_curie, lvi_biop, lvi_postneo) 
+
+items_TILs_short <- c("Index_mitotique","perc_cellules_tumorales", "cis_infiltrant",
+                      "perc_stromal_lymphocytes", "perc_TIL",
+                       "Index_mitotique2",  "perc_cellules_tumorales2"  ,   "cis_infiltrant2" ,
+                       "perc_stromal_lymphocyte2"          ,"perc_TIL2"       ,   
+                       "RCH4.f","RCB_class","RCB")
+
+neorep_TILs_part <- neorep_TILs[,c("numdos7",items_TILs_short)]
+
+neorep <- left_join(neorep,neorep_TILs_part)
+head(neorep)
+
+```
+
+

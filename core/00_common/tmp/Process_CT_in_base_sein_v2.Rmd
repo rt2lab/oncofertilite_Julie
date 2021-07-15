@@ -1,0 +1,756 @@
+---
+title: "Process_CT_in_base_sein"
+author: "ASHP"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    fig_caption: yes
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: no
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+editor_options:
+  chunk_output_type: console
+chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(  echo = FALSE,
+  fig.width = 8,
+  message = FALSE,
+  warning = FALSE,
+  cache = TRUE,
+  include = FALSE,
+  prompt = TRUE,
+  tidy = TRUE)
+#show all the rows
+options(max.print = 9999)
+```
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(readxl)
+```
+
+```{r}
+# To understand ct in base sein prior starting 
+#  If 3 EC 3 TXT ;  are in the same f1 fiche in 2 sequences (q1 and q2)
+# 1 date start DATDCT.f1; 1 date end DATFCT.f1
+# DATDCT.f1                "2007-06-25"              
+# TYPCTCL.f1               NA                        
+# DATFCT.f1                "2007-10-29"              
+# TYPCT.q1.f1              "EC (Epirubicine+endoxan)"
+# NBCYCT.q1.f1             "3"                       
+# TYPCT.q2.f1              "TAXOTERE"                
+# NBCYCT.q2.f1             "3"                       
+
+d1 %>% filter(ct==1) %>% group_by(TYPCT.q1.f1) %>% count() %>% arrange(desc(n))
+ #   TYPCT.q1.f1                       n
+ #   <chr>                         <int>
+ # 1 FEC (Epirubicine+Endoxan+5FU)  3668
+ # 2 TAXOTERE                       2025
+ # 3 AC (Adriamycine+endoxan)        973
+ # 4 TC (Taxotere+Endoxan)           226
+
+d1 %>% filter(ct==1) %>% group_by(TYPCT.q2.f1) %>% count() %>% arrange(desc(n))
+ #   TYPCT.q2.f1                       n
+ #   <chr>                         <int>
+ # 1 TAXOTERE                       3387
+ # 2 NA                             1693
+ # 3 FEC (Epirubicine+Endoxan+5FU)  1626
+ # 4 EC (Epirubicine+endoxan)        353
+ # 5 TAXOL                           180
+
+d1 %>% filter(ct==1) %>% group_by(TYPCT.q3.f1) %>% count() %>% arrange(desc(n))
+ #   TYPCT.q3.f1                       n
+ #   <chr>                         <int>
+ # 1 NA                             7189
+ # 2 TAXOL                            55
+ # 3 FEC (Epirubicine+Endoxan+5FU)    36
+
+d1 %>% filter(ct==1) %>% group_by(TYPCT.q1.f2) %>% count() %>% arrange(desc(n))
+ #   TYPCT.q1.f2                       n
+ #   <chr>                         <int>
+ # 1 NA                             7048
+ # 2 FUN                             220
+ # 3 TAXOTERE                         37
+# => Really looks line adj post neoadj
+d1 %>% filter(ct==1) %>% group_by(TYPCT.q2.f2) %>% count() %>% arrange(desc(n))
+#   TYPCT.q2.f2                       n
+#   <chr>                         <int>
+# 1 NA                             7323
+# 2 FUN                               4
+# 3 5 FU                              3
+# => Nobody there...
+```
+
+```{r}
+# By convention, we decide to call : 
+# q : a sequence 
+# ex : q1 3EC q2 3 TXT => 2 sequences
+# f : a line
+# ex : 3FEC 100 3TXT neo => surg => FUN : 2 lines
+```
+
+
+```{r}
+# Process chemotherapy type
+magic_file_chemotherapy <- d1 %>% filter(ct==1) %>% 
+  select(starts_with("TYPCT"),neo_ct) %>% gather(key,value,-neo_ct) %>% 
+                           filter(!is.na(value)) %>% group_by(neo_ct,key,value) %>% count() %>% as.data.frame()
+
+# 1:anthra-taxans;2:anthra;3:taxanes, 4:others
+magic_file_chemotherapy %>% select(value) %>% as.matrix () %>% as.character() %>% unique()
+magic_file_chemotherapy[which(magic_file_chemotherapy$value == "TAXOTERE XÉLODA"),"value"] <- "TAXOTERE XELODA"
+magic_file_chemotherapy[which(magic_file_chemotherapy$value == "XÉLODA REMAGUS"),"value"] <- "XELODA REMAGUS"
+magic_file_chemotherapy %>% select(value) %>% unique() %>% write_csv2(.,"doc/file_mapping_chemotherapy_base_sein.xls")
+mapping_ct <- read_excel("doc/file_mapping_chemotherapy_base_sein_annot.xls") %>% as.data.frame()
+magic_file_chemotherapy$chemo_code <- mapping_ct[match(magic_file_chemotherapy$value,mapping_ct$value),"code"]
+
+magic_file_chemotherapy <- magic_file_chemotherapy %>% 
+                            mutate(chemo_clear = case_when(chemo_code== 1 ~"anthra-taxanes",
+                                                           chemo_code== 2 ~"anthra",
+                                                           chemo_code== 3 ~"taxanes",
+                                                           chemo_code== 4 ~"Others")) %>%
+                            mutate(chemotherapy_number = case_when(str_detect(key,"f1")  ~"chemot_1",
+                                                                   str_detect(key,"f2")  ~"chemot_2",
+                                                                   str_detect(key,"f3")  ~"chemot_3") )
+summary_ct_base_sein <- magic_file_chemotherapy %>% group_by(neo_ct,key,chemo_clear) %>% summarise(sum(n))
+write_csv2(summary_ct_base_sein,"doc/summary_ct_base_sein.csv")
+```
+
+```{r Variables for preprocessing}
+very_all_variables_chimio <- colnames(d1)[str_detect(colnames(d1), 
+                             paste0 (c("DATDCT","TYPCT","NBCYCT","TYPCTCL","DATFCT") ,collapse = "|"))]
+all_variable_chemo          <- c("DATDCT.","TYPCT.","NBCYCT.","TYPCTCL.","DATFCT.")
+all_variable_chemo_collapse <- paste0(all_variable_chemo, collapse = "|")
+variables_chimio            <- colnames(d1)[str_detect( colnames(d1), paste0 (c("TYPCT","TYPCTCL"),collapse = "|"))]
+variables_dat_chimio        <- colnames(d1)[str_detect( colnames(d1), paste0 (c("DATDCT","DATFCT") ,collapse = "|"))]
+all_variable_date_collapse  <- paste0(c("DATDCT.","DATFCT."), collapse = "|")
+all_q_collapse              <- paste0(c("q1.","q2.","q3.","q4.","q5."), collapse = "|")
+```
+
+```{r intermediate dataframe dates (df_dates_ct) and for nb_chemo (df_nb_cy_ct) }
+df_dates_ct  <-  d1 %>% filter(ct==1,breast_surgery==1) %>%
+                 select(numdos_curie,side,one_of(variables_dat_chimio)) %>% 
+                 gather(date_chimio, date, -numdos_curie,-side) %>% filter(!is.na(date)) %>% 
+                 arrange(numdos_curie) %>% 
+                 mutate(start_or_end    = case_when(  str_detect(date_chimio, "DC") ~"start",
+                                                      str_detect(date_chimio, "FC") ~"end"),
+                        number_chemo_f    = str_replace(date_chimio, all_variable_date_collapse, ""),
+                        numdos_curie_side = paste0(numdos_curie,"_",side))  %>%
+                select(numdos_curie_side,number_chemo_f,start_or_end,date_chimio,date) ; head(df_dates_ct) # 15112
+
+df_dates_ct_start <- df_dates_ct %>% filter(start_or_end=="start"); head(df_dates_ct_start) # 7576
+df_dates_ct_end   <- df_dates_ct %>% filter(start_or_end=="end"); head(df_dates_ct_end) # 7536
+table(df_dates_ct$date_chimio)
+# DATDCT.f1 DATDCT.f2 DATFCT.f1 DATFCT.f2 
+#      7289       287      7257       279 
+
+variables_nbcy_chimio      <- colnames(d1)[str_detect( colnames(d1), "NBCYCT")]
+all_variable_nbcy_collapse <- paste0(c("DATDCT.","DATFCT."), collapse = "|")
+
+df_nb_cy_ct  <-  d1 %>% filter(ct==1,breast_surgery==1) %>%
+                 select(numdos_curie,side,one_of(variables_nbcy_chimio)) %>% #head()
+                 gather(nbcy_chimio, nb_cycle_each_q, -numdos_curie,-side) %>% #head()
+                 filter(!is.na(nb_cycle_each_q)) %>%
+                 mutate(nb_cycle_each_q= as.integer(nb_cycle_each_q)) %>% 
+                 arrange(numdos_curie)%>% 
+                 mutate(number_chemo_q_f  = str_replace(nbcy_chimio, "NBCYCT.", ""),
+                        numdos_curie_side = paste0(numdos_curie,"_",side)) %>%
+                select(-numdos_curie,-side) ; head(df_nb_cy_ct) # 13153
+```
+
+Here, we have the raw date in base sein. 
+We filter one case to see how chemotherapy data are handled
+```{r select a use case, include=TRUE}
+d1 %>% filter(numdos_curie == "0683614") %>% select(dat_first_surg, one_of(very_all_variables_chimio))
+#   dat_first_surg  DATDCT.f1 TYPCTCL.f1  DATFCT.f1              TYPCT.q1.f1 NBCYCT.q1.f1 TYPCT.q2.f1 NBCYCT.q2.f1 TYPCT.q3.f1 NBCYCT.q3.f1
+# 1     2006-12-19 2006-06-30       <NA> 2006-11-24 EC (Epirubicine+endoxan)            4    TAXOTERE            4        <NA>         <NA>
+#   TYPCT.q4.f1 NBCYCT.q4.f1 TYPCT.q5.f1 NBCYCT.q5.f1  DATDCT.f2 TYPCTCL.f2  DATFCT.f2 TYPCT.q1.f2 NBCYCT.q1.f2  TYPCT.q2.f2 NBCYCT.q2.f2
+# 1        <NA>         <NA>        <NA>         <NA> 2007-02-02       <NA> 2007-05-11         FUN            1 CAPECITABINE            4
+#   TYPCT.q3.f2 NBCYCT.q3.f2 TYPCT.q4.f2 NBCYCT.q4.f2 TYPCT.q5.f2 NBCYCT.q5.f2 DATDCT.f3 TYPCTCL.f3 DATFCT.f3 TYPCT.q1.f3 NBCYCT.q1.f3 TYPCT.q2.f3
+# 1   NAVELBINE            4        <NA>         <NA>        <NA>         <NA>      <NA>       <NA>      <NA>        <NA>         <NA>        <NA>
+#   NBCYCT.q2.f3 TYPCT.q3.f3 NBCYCT.q3.f3 TYPCT.q4.f3 NBCYCT.q4.f3 TYPCT.q5.f3 NBCYCT.q5.f3
+# 1         <NA>        <NA>         <NA>        <NA>         <NA>        <NA>         <NA>
+```
+
+# Build df_all_chemo 
+This is the dataframe with all the data on initial chemotherapy
+We select only the variables relative to patients who had CT, who had surgery, 
+and only variables relative to doses, dates, schedules etc... (No other variable from the data base).
+We also build : 
+- the class of chemotherapy, chemo_class : anthra/ anthra-taxanes/ Others/ taxanes
+- the xxx of a chemotherapy (@ASHP move to setting?? ), sequence_ct_each_f: adjuvant / neo and adjuvant/ neoadjuvant/ NA
+- the sequential type (whether it is composed of one or several sequences), chimio_sequentielle_or_not: "sequential","non sequential"
+- dates of start and end; + length of chemo
+
+```{r Create df_all_chemo the long df with all chemo curie }
+df_all_chemo <- d1 %>% 
+                 filter(ct==1,breast_surgery==1) %>%
+                 select(numdos_curie,side,neo_ct,dat_first_ct,dat_first_surg, one_of(variables_chimio)) %>% 
+                 mutate(numdos_curie_side = paste0(numdos_curie,"_",side) ) %>% select(-side) %>% 
+                 gather(quelle_chimio, typ_chimio_clair, 
+                       -numdos_curie_side,-numdos_curie, -neo_ct,-dat_first_ct, -dat_first_surg) %>% # head()
+                 filter(!is.na(typ_chimio_clair))  %>%  
+                 mutate(chemo_class = 
+                        magic_file_chemotherapy$chemo_clear[match(typ_chimio_clair, magic_file_chemotherapy$value)] ,
+                        number_sequence = case_when(str_detect(quelle_chimio,"q1") ~"q1",
+                                                     str_detect(quelle_chimio, "q2") ~"q2",
+                                                     str_detect(quelle_chimio, "q3") ~"q3",
+                                                     str_detect(quelle_chimio, "q4") ~"q4",
+                                                     str_detect(quelle_chimio, "q5") ~"q5"),
+                        f_or_q_tmp       = str_replace(quelle_chimio, all_variable_chemo_collapse, ""),
+                        number_chemo_q_f = str_replace(f_or_q_tmp, "L.", ""),
+                        number_chemo_f   = str_replace(number_chemo_q_f, all_q_collapse, "")) %>% 
+                arrange(numdos_curie_side,number_chemo_f,number_sequence) %>%   # head()
+                left_join(.,df_dates_ct_start %>% select(-start_or_end) ,
+                          by = c("numdos_curie_side","number_chemo_f")) %>% 
+                rename(date_start = date) %>% 
+                left_join(.,df_dates_ct_end %>% select(-start_or_end,-date_chimio), 
+                          by = c("numdos_curie_side","number_chemo_f")) %>% 
+                rename(date_end = date) %>% 
+                select(-f_or_q_tmp) %>% 
+                mutate(ct_start_before_surg = ifelse(date_start<dat_first_surg,"yes","no"),
+                       ct_end_before_surg   = ifelse(date_end < dat_first_surg,"yes","no"),
+                       all_before_surg      = ifelse(ct_start_before_surg =="yes" & ct_end_before_surg =="yes","yes","no"),
+                       all_after_surg       = ifelse(ct_start_before_surg =="no" & ct_end_before_surg =="no","yes","no"),
+                       both_before_and_after_surg  = ifelse(ct_start_before_surg =="yes" & 
+                                                              ct_end_before_surg =="no","yes","no"),
+                       length_chemo = as.integer(date_end-date_start)) %>%
+                left_join(.,df_nb_cy_ct , by = c("numdos_curie_side","number_chemo_q_f"))  %>% unique()
+
+# Add sequence_ct_each_f
+df_all_chemo$sequence_ct_each_f    <- NA
+df_all_chemo[which(df_all_chemo$all_before_surg == "yes" & 
+                   df_all_chemo$all_after_surg  == "no"&
+                   df_all_chemo$both_before_and_after_surg  == "no" ) ,"sequence_ct_each_f"] <- "neoadjuvant"
+df_all_chemo[which(df_all_chemo$all_before_surg == "no" & 
+                   df_all_chemo$all_after_surg  == "yes"&
+                   df_all_chemo$both_before_and_after_surg  == "no" ) ,"sequence_ct_each_f"] <- "adjuvant"
+df_all_chemo[which(df_all_chemo$all_before_surg == "no" & 
+                   df_all_chemo$all_after_surg  == "no"&
+                   df_all_chemo$both_before_and_after_surg  == "yes" ) ,"sequence_ct_each_f"] <- "neo and adjuvant"
+df_all_chemo %>% filter(is.na(sequence_ct_each_f))  # 67 NA because all date_end chemo missing !!
+# All those with ct_start_before_surg == no => are ADJUVANT chemotherapy  
+df_all_chemo[which(df_all_chemo$ct_start_before_surg == "no"  ) ,"sequence_ct_each_f"]        <- "adjuvant"
+
+```
+
+```{r maybe chunk to remove}
+df_all_chemo %>% group_by(sequence_ct_each_f) %>% count()
+#   sequence_ct_each_f     n
+#   <chr>                  <int>
+# 1 adjuvant                9885
+# 2 neo and adjuvant          32
+# 3 neoadjuvant             3507
+# 4 NA                        10
+df_all_chemo %>% filter(is.na(sequence_ct_each_f))  # Only 10 NA remaining !!
+df_all_chemo %>% filter(sequence_ct_each_f == "neo and adjuvant")  
+# Seems that many "neo and adjuvant" are in fact errors dates
+# All length chemotherapy very very long...
+nip_neo_and_adj_each_f <- df_all_chemo[df_all_chemo$sequence_ct_each_f == "neo and adjuvant","numdos_curie_side"]
+
+# df_all_chemo %>% filter(numdos_curie_side %in% nip_neo_and_adj_each_f) %>%
+#                   select(one_of(short_summary_df_all_chemo))
+# df_all_chemo %>% group_by(chemo_class) %>% count()
+
+```
+
+```{r CORRECTIONS done  }
+# BEWARE !!! errors in forms  some f2 are strictly identical to f1 !!! 
+df_all_chemo_part  <-  df_all_chemo %>% filter(numdos_curie_side %in% c("1100969_2","8106319_1")) ; head(df_all_chemo_part)
+# cf patient 1100969
+#   numdos_curie dat_first_ct dat_first_surg numdos_curie_side quelle_chimio              typ_chimio_clair chemo_class
+# 1      1100969   2011-05-11     2011-02-07         1100969_2   TYPCT.q1.f1                      TAXOTERE     taxanes
+# 2      1100969   2011-05-11     2011-02-07         1100969_2   TYPCT.q2.f1 FEC (Epirubicine+Endoxan+5FU)      anthra
+# 3      1100969   2011-05-11     2011-02-07         1100969_2   TYPCT.q1.f2                      TAXOTERE     taxanes
+# 4      1100969   2011-05-11     2011-02-07         1100969_2   TYPCT.q2.f2 FEC (Epirubicine+Endoxan+5FU)      anthra
+# 5      8106319   2012-06-18     2012-03-30         8106319_1   TYPCT.q1.f1         TC (Taxotere+Endoxan)     taxanes
+
+# We correct them.... Very weard, only 3 lines corrected !! 
+nrow(df_all_chemo) # 13434
+df_all_chemo %>% filter(numdos_curie_side %in% c("1100969_2")) # 4 lines
+df_all_chemo_new    <- df_all_chemo %>% distinct(numdos_curie, neo_ct,dat_first_ct,dat_first_surg,
+                               numdos_curie_side,typ_chimio_clair,chemo_class,
+                               date_start,date_end,.keep_all = TRUE)  # We remove if they just differ by f1 or f2...
+head(df_all_chemo_new) # 13431
+nrow(df_all_chemo_new) # 13431
+df_all_chemo_new %>% filter(numdos_curie_side %in% c("1100969_2")) # 4 lines
+
+df_all_chemo      <-  df_all_chemo_new
+```
+
+```{r Add nb of sequences (q) and number of lines (f) by chemotherapy }
+df_all_chemo_nb_f             <-  df_all_chemo %>%  select(numdos_curie_side,number_chemo_f) %>% unique() %>% 
+                                        group_by(numdos_curie_side,number_chemo_f) %>% 
+                                        summarise(count=n()) %>% summarise(nb_f = sum(count))
+df_all_chemo_nb_q_by_sequence <-  df_all_chemo %>%  select(numdos_curie_side,number_chemo_f,number_sequence) %>% 
+                                                    unique() %>% 
+                                                    group_by(numdos_curie_side,number_chemo_f,number_sequence) %>% 
+                                                    summarise(count=n()) %>%  summarise(nb_q = sum(count))
+df_all_chemo                  <- df_all_chemo %>% left_join(., df_all_chemo_nb_f) %>%
+                                 rename(nb_f_for_patient_side = nb_f) %>% # nrow() # 13431
+                                 left_join(., df_all_chemo_nb_q_by_sequence) %>% 
+                                 mutate(chimio_sequentielle_or_not = ifelse( nb_q >1, "sequential","non sequential") )
+
+short_summary_df_all_chemo <-  df_all_chemo %>% 
+                                select(numdos_curie_side,dat_first_surg,quelle_chimio,typ_chimio_clair,number_chemo_q_f,
+                                     date_start,date_end,length_chemo,
+                                     nbcy_chimio,nb_cycle_each_q,sequence_ct_each_f,chimio_sequentielle_or_not) %>% colnames()
+preprocessing_sequence  <- c("ct_start_before_surg","ct_end_before_surg","all_before_surg","all_after_surg","both_before_and_after_surg")
+
+```
+
+```{r ERRORS : many errors in number of chemotherapy (BEWARE !! not corrected)}
+# BEWARE, many errors with number of chemotherapies
+# DO not trust any of the variables in chemotherapy cycles ++++
+# @ Linda 6 décembre
+
+# Sometimes NBCYCT.q1.f1 represents the sum of q1+ q2 => each seems to be duplicated => sum will be wrong
+d1 %>% filter(numdos_curie=="0002700") %>% select(one_of(very_all_variables_chimio)) 
+#    DATDCT.f1 TYPCTCL.f1  DATFCT.f1              TYPCT.q1.f1 NBCYCT.q1.f1 TYPCT.q2.f1 NBCYCT.q2.f1 
+# 1 2009-05-18       <NA> 2009-10-12 AC (Adriamycine+endoxan)            8    TAXOTERE            8 
+
+# Sometimes NBCYCT.q1.f1 represents only q1 => total is the sum of  NBCYCT.q1.f1 + NBCYCT.q2.f1 => sum is right
+d1 %>% filter(numdos_curie=="0003040") %>% select(one_of(very_all_variables_chimio))
+#    DATDCT.f1 TYPCTCL.f1  DATFCT.f1                   TYPCT.q1.f1 NBCYCT.q1.f1 TYPCT.q2.f1 NBCYCT.q2.f1 
+# 1 2012-06-26       <NA> 2012-10-09 FEC (Epirubicine+Endoxan+5FU)            3    TAXOTERE            3 
+
+d1 %>% filter(numdos_curie=="0003808") %>% select(one_of(very_all_variables_chimio))
+#    DATDCT.f1 TYPCTCL.f1  DATFCT.f1              TYPCT.q1.f1 NBCYCT.q1.f1 TYPCT.q2.f1 NBCYCT.q2.f1  NBCYCT.q4.f1
+# 1 2008-05-30       <NA> 2008-09-12 AC (Adriamycine+endoxan)            6    TAXOTERE            6        <NA
+```
+
+```{r SPLIT patients with TYPCTCL }
+# SPLIT those coded as TYPCTCL because coded almost as free full text
+unique(df_all_chemo$quelle_chimio)
+nip_chimio_TYPCTCL        <- df_all_chemo[str_detect(df_all_chemo$quelle_chimio,"TYPCTCL"), "numdos_curie"]  # 75
+df_with_PB_TYPCTCL_only   <- df_all_chemo %>% filter(numdos_curie %in% nip_chimio_TYPCTCL)  
+nrow(df_with_PB_TYPCTCL_only) # 208
+head(df_with_PB_TYPCTCL_only)
+
+df_with_PB_TYPCTCL_only %>% select(one_of(short_summary_df_all_chemo)) %>% slice(1:100)
+df_with_PB_TYPCTCL_only %>% 
+  filter(sequence_ct_each_f == "neoadjuvant") %>% 
+  select(one_of(short_summary_df_all_chemo)) %>% slice(1:100)
+
+# df_with_PB_TYPCTCL_only %>% 
+#   filter(numdos_curie_side == "0882455_2")
+
+unique(df_with_PB_TYPCTCL_only$typ_chimio_clair)
+# Il va falloir faire un gather ou un spread...
+# @ASHP ; remains this code to preprocess !!! 
+
+df_all_chemo <-  df_all_chemo %>% filter(! numdos_curie %in% nip_chimio_TYPCTCL) ; head(df_all_chemo)
+nrow(df_all_chemo) # 13223
+```
+
+```{r raw summary of lines and sequences of df_all_chemo }
+# Is there any line f3?
+df_all_chemo %>% group_by(number_chemo_f,nb_q) %>% count()
+#   number_chemo_f  nb_q     n
+#   <chr>          <int> <int>
+# 1 f1                 1  1642
+# 2 f1                 2 10868
+# 3 f1                 3   396
+# 4 f1                 4    16
+# 5 f1                 5     5
+# 6 f2                 1   267
+# 7 f2                 2    26
+# 8 f2                 3     3
+
+# Most of the patients have one line of CT (f1) with  2 sequences (q2)
+
+# No f3 on this subset of the database.
+# Beware for other projects +++
+```
+
+```{r example of use case in df_all_chemo , include=TRUE }
+df_all_chemo %>% filter(numdos_curie == "0683614") %>% select(short_summary_df_all_chemo)
+#   numdos_curie_side quelle_chimio         typ_chimio_clair number_chemo_q_f date_start   date_end length_chemo  nbcy_chimio nb_cycle_each_q
+# 1         0683614_2   TYPCT.q1.f1 EC (Epirubicine+endoxan)            q1.f1 2006-06-30 2006-11-24          147 NBCYCT.q1.f1               4
+# 2         0683614_2   TYPCT.q2.f1                 TAXOTERE            q2.f1 2006-06-30 2006-11-24          147 NBCYCT.q2.f1               4
+# 3         0683614_2   TYPCT.q1.f2                      FUN            q1.f2 2007-02-02 2007-05-11           98 NBCYCT.q1.f2               1
+# 4         0683614_2   TYPCT.q2.f2             CAPECITABINE            q2.f2 2007-02-02 2007-05-11           98 NBCYCT.q2.f2               4
+# 5         0683614_2   TYPCT.q3.f2                NAVELBINE            q3.f2 2007-02-02 2007-05-11           98 NBCYCT.q3.f2               4
+#   sequence_ct_each_f chimio_sequentielle_or_not
+# 1        neoadjuvant                 sequential
+# 2        neoadjuvant                 sequential
+# 3           adjuvant                 sequential
+# 4           adjuvant                 sequential
+# 5           adjuvant                 sequential
+```
+
+# Build df_all_chemo_wide
+This is the dataframe with each line of chemotherapy in a single row
+Here, we make a pivot by sequence , meaning that the sequences of a chemotherapy are pivoted from long to wide.
+Before, for had one row per sequence, and there we have 1 to 5 sequence in a wide format.
+All sequences q3 to q5 are concatenated in a single column (chemo_q3_q4_q5).
+Then we build
+- the drugs regimen for a line (f) , recap_regimen_each_f : anthra anthra-taxanes others taxanes
+- whether composed of one or several sequences, pluriseq_ct:1_or_2_seq,pluriseq.
+
+```{r make df_all_chemo_wide }
+df_all_chemo_wide <- df_all_chemo %>% 
+                              select(-nbcy_chimio,-number_chemo_q_f,-quelle_chimio, -date_chimio) %>% 
+                              pivot_wider(names_from=number_sequence,
+                              values_from = c("nb_cycle_each_q","typ_chimio_clair","chemo_class")  , names_sep="_" ) %>% 
+                              mutate(chemo_q3_q4_q5 = paste (nb_cycle_each_q_q3,typ_chimio_clair_q3,"|",
+                                                             nb_cycle_each_q_q4,typ_chimio_clair_q4,"|",
+                                                             nb_cycle_each_q_q5,typ_chimio_clair_q5)) %>%
+                              select(-nb_cycle_each_q_q3,-typ_chimio_clair_q3,-nb_cycle_each_q_q4,-typ_chimio_clair_q4,
+                                     -nb_cycle_each_q_q5,-typ_chimio_clair_q5,
+                                     -chemo_class_q3, -chemo_class_q4, -chemo_class_q5) %>% 
+                              as.data.frame()
+
+df_all_chemo_wide$sum_nbcy_q1_q2   <- rowSums(df_all_chemo_wide[, c("nb_cycle_each_q_q1","nb_cycle_each_q_q2")],na.rm = TRUE )
+df_all_chemo_wide                  <- df_all_chemo_wide %>% 
+  mutate  (nb_cy_q1q2 = paste(nb_cycle_each_q_q1, nb_cycle_each_q_q2, sep = "|"))
+df_all_chemo_wide$nb_cy_q1q2 <- gsub("\\|NA","",df_all_chemo_wide$nb_cy_q1q2)
+
+df_all_chemo_wide$interval_2cycles <- df_all_chemo_wide$length_chemo  / df_all_chemo_wide$sum_nbcy_q1_q2
+df_all_chemo_wide$class_q1q2       <- paste(df_all_chemo_wide$chemo_class_q1,"-",df_all_chemo_wide$chemo_class_q2)
+df_all_chemo_wide$typ_chimio_clair_q1q2 <- paste(df_all_chemo_wide$typ_chimio_clair_q1,"-",df_all_chemo_wide$typ_chimio_clair_q2)
+df_all_chemo_wide$typ_chimio_clair_q1q2 <- gsub("\\ - NA","",df_all_chemo_wide$typ_chimio_clair_q1q2)
+  
+df_all_chemo_wide %>% group_by(nb_cy_q1q2) %>% count() %>% arrange(desc(n))
+df_all_chemo_wide %>% group_by(typ_chimio_clair_q1q2) %>% count() %>% arrange(desc(n))
+
+anthra_taxanes <- c("anthra - taxanes","anthra-taxanes - NA","anthra-taxanes - taxanes","anthra - anthra-taxanes","taxanes - anthra")
+anthra         <- c("NA - anthra","anthra - Others","Others - anthra","anthra - anthra","anthra - NA")
+taxanes        <- c("Others - taxanes","taxanes - taxanes","taxanes - Others","taxanes - NA")
+others         <- c("Others - Others","Others - NA")
+
+df_all_chemo_wide$recap_regimen_each_f <- NA
+df_all_chemo_wide[df_all_chemo_wide$class_q1q2 %in% anthra_taxanes,"recap_regimen_each_f"]  <- "anthra-taxanes"
+df_all_chemo_wide[df_all_chemo_wide$class_q1q2 %in% anthra,"recap_regimen_each_f"]          <- "anthra"
+df_all_chemo_wide[df_all_chemo_wide$class_q1q2 %in% taxanes,"recap_regimen_each_f"]         <- "taxanes"
+df_all_chemo_wide[df_all_chemo_wide$class_q1q2 %in% others,"recap_regimen_each_f"]          <- "others"
+table(df_all_chemo_wide$class_q1q2,df_all_chemo_wide$recap_regimen_each_f,exclude=NULL)
+
+df_all_chemo_wide$chemo_q3_q4_q5 <- ifelse(df_all_chemo_wide$chemo_q3_q4_q5 != "NA NA | NA NA | NA NA",df_all_chemo_wide$chemo_q3_q4_q5,NA)
+df_all_chemo_wide$chemo_q3_q4_q5 <- gsub("| NA NA ","",df_all_chemo_wide$chemo_q3_q4_q5)
+df_all_chemo_wide$chemo_q3_q4_q5 <- gsub("| NA NA","",df_all_chemo_wide$chemo_q3_q4_q5)
+df_all_chemo_wide$chemo_q3_q4_q5 <- gsub("\\||","",df_all_chemo_wide$chemo_q3_q4_q5)
+df_all_chemo_wide$chemo_q3_q4_q5 <- gsub("NA ","",df_all_chemo_wide$chemo_q3_q4_q5)
+df_all_chemo_wide$pluriseq_ct    <- ifelse(is.na(df_all_chemo_wide$chemo_q3_q4_q5), "1_or_2_seq","3 or more sequences")
+df_all_chemo_wide[df_all_chemo_wide$nb_q == 1,"pluriseq_ct"] <- "monosequential"
+df_all_chemo_wide[df_all_chemo_wide$nb_q == 2,"pluriseq_ct"] <- "bi-sequential"
+table(df_all_chemo_wide$pluriseq_ct,df_all_chemo_wide$nb_q,exclude=NULL)
+head(df_all_chemo_wide)
+
+short_summary_df_all_chemo_wide <-  df_all_chemo_wide %>% 
+                       select(numdos_curie_side,
+                       dat_first_surg,date_start,date_end,
+                       number_chemo_f,sequence_ct_each_f,length_chemo,
+                       nb_cy_q1q2,typ_chimio_clair_q1q2,
+                       chemo_class_q1,chemo_class_q2,recap_regimen_each_f,pluriseq_ct,chemo_q3_q4_q5) %>% colnames()
+
+head(df_all_chemo_wide) ; nrow(df_all_chemo_wide)   # 7494
+```
+
+```{r example of use case in df_all_chemo_wide, include=TRUE }
+df_all_chemo_wide %>% filter(numdos_curie == "0683614") %>% select(short_summary_df_all_chemo_wide)
+#   numdos_curie_side dat_first_surg date_start   date_end number_chemo_f sequence_ct_each_f length_chemo nb_cy_q1q2
+# 1         0683614_2     2006-12-19 2006-06-30 2006-11-24             f1        neoadjuvant          147        4|4
+# 2         0683614_2     2006-12-19 2007-02-02 2007-05-11             f2           adjuvant           98        1|4
+#                 typ_chimio_clair_q1q2 chemo_class_q1 chemo_class_q2 recap_regimen_each_f pluriseq_ct chemo_q3_q4_q5
+# 1 EC (Epirubicine+endoxan) - TAXOTERE         anthra        taxanes       anthra-taxanes  1_or_2_seq           <NA>
+# 2                  FUN - CAPECITABINE         Others         Others               others    pluriseq   4 NAVELBINE 
+```
+
+```{r remove chunk }
+df_all_chemo_wide %>% filter(!is.na(chemo_q3_q4_q5)) %>% 
+  # head()
+                    select(numdos_curie_side,number_chemo_f,sequence_ct_each_f,typ_chimio_clair_q1q2,recap_regimen_each_f) %>% head()
+df_all_chemo_wide %>% group_by(chemo_q3_q4_q5) %>% count() %>% arrange(desc(n))
+# BEWARE : ALL THE PATIENTS WITH SEQ chemo_q3_q4_q5 are suspect EHR !!!! 
+# df_all_chemo_wide$sequence_f3 <- ifelse(df_all_chemo_wide$chemo_q3_q4_q5 != "NA NA | NA NA | NA NA",df_all_chemo_wide$chemo_q3_q4_q5,NA)
+# Progression ? else ?
+df_all_chemo_wide %>% filter(!is.na(chemo_q3_q4_q5)) %>% select(one_of(short_summary_df_all_chemo_wide))
+length(unique(df_all_chemo_wide$numdos_curie_side)) # 7213
+
+nip_several_settings <-  df_all_chemo_wide %>% group_by(numdos_curie_side, sequence_ct_each_f) %>% count() %>% 
+                    filter(n>1) %>% ungroup() %>%
+                    select(numdos_curie_side) %>% as.matrix() %>% as.character()
+#   numdos_curie_side sequence_ct_each_f     n
+#   <chr>             <chr>              <int>
+# 1 0688281_1         neoadjuvant            2
+# 2 0688281_2         neoadjuvant            2
+# 3 0882419_2         neoadjuvant            2
+# 4 0887417_2         neoadjuvant            2
+# 5 0986047_1         neoadjuvant            2
+# 6 0986047_2         neoadjuvant            2
+# 7 1005665_2         neoadjuvant            2
+# 8 1100969_2         adjuvant               2
+# 9 1119021_1         neoadjuvant            2
+head(df_all_chemo_wide)
+
+df_all_chemo_wide %>% filter(numdos_curie_side %in% nip_several_settings) %>% select(one_of(short_summary_df_all_chemo_wide))
+df_all_chemo_wide %>% filter(numdos_curie_side %in% nip_several_settings) # 18 
+d1 %>% filter(numdos_curie %in% "0688281") 
+df_all_chemo_wide %>% group_by(recap_regimen_each_f) %>% count()%>% arrange(desc(n))
+head(df_all_chemo_wide)
+nrow(df_all_chemo_wide) # 7494
+
+# Correct number of chemotherapy ? => LATER
+df_all_chemo_wide %>% filter(nb_q > 1, sum_nbcy_q1_q2 > 8) %>% slice(1:10)
+df_all_chemo_wide %>% filter(nb_q > 1, sum_nbcy_q1_q2 > 8) %>% nrow() #3095
+df_all_chemo_wide %>% filter(nb_q > 1,sum_nbcy_q1_q2 < 9) %>% nrow()  #2565
+
+df_all_chemo %>% filter(nb_q==2) %>%   # select(one_of(very_all_variables_chimio)) %>% 
+  slice(1:30)
+```
+
+# Build df_all_chemo_wide_2
+This is the dataframe with a single row for all chemotherapies , given a patient side
+Here, we make a pivot by lines of chemotherapy , meaning that all the lines of chemotherapy are pivoted from long to wide.
+Before, for had one row per line, and now we have the 1 or 2 lines of chemotherapy in a wide format.
+We then create a global summary of: 
+- the final chemotherapy setting, seq_ct_each_pat_side :   seq_ct_each_pat_side: adjuvant/ neoadjuvant/ neoadjuvant and adjuvant
+- the final chemotherapy regimen, regimen_ct_each_pat_side :   anthra/anthra-taxanes/ others/ taxanes
+
+```{r df_all_chemo_wide_2 }
+# Beware, some patients may have 2 lines of neoadjuvant treatment...
+df_all_chemo_wide %>% filter(numdos_curie_side=="0688281_1")
+df_all_chemo_wide_2 %>% filter(numdos_curie_side=="0688281_1")
+
+df_all_chemo_wide_2 <- df_all_chemo_wide %>% #head() 
+                      select(numdos_curie, numdos_curie_side,neo_ct, dat_first_ct,dat_first_surg, number_chemo_f,
+                                     dat_first_surg,date_start,date_end,
+                                     length_chemo,sequence_ct_each_f,
+                                     sum_nbcy_q1_q2,nb_cy_q1q2,typ_chimio_clair_q1q2,
+                                    recap_regimen_each_f,pluriseq_ct) %>%
+                        pivot_wider(names_from=number_chemo_f,
+                        values_from = c("date_start","date_end","recap_regimen_each_f",
+                                        "sequence_ct_each_f",
+                                        "sum_nbcy_q1_q2","nb_cy_q1q2","typ_chimio_clair_q1q2",
+                                        "length_chemo","pluriseq_ct"),
+                        names_sep="_" ) %>%  as.data.frame()  %>% # head()
+mutate(typ_chimio_clair_q1q2_f1f2 = paste(typ_chimio_clair_q1q2_f1, typ_chimio_clair_q1q2_f2, sep="-"),
+      sum_nbcy_q1q2_f1f2 = NA,             
+       nb_cy_q1q2_f1f2 = paste(nb_cy_q1q2_f1, nb_cy_q1q2_f2, sep="|")) %>% 
+          select(numdos_curie,numdos_curie_side, neo_ct, dat_first_ct, dat_first_surg, #number_chemo_f,
+                sequence_ct_each_f_f1,date_start_f1,date_end_f1,recap_regimen_each_f_f1,
+                sum_nbcy_q1_q2_f1,nb_cy_q1q2_f1,typ_chimio_clair_q1q2_f1,length_chemo_f1,pluriseq_ct_f1,
+                sequence_ct_each_f_f2,date_start_f2,date_end_f2,recap_regimen_each_f_f2,
+                sum_nbcy_q1_q2_f2,nb_cy_q1q2_f2,typ_chimio_clair_q1q2_f2,length_chemo_f2,pluriseq_ct_f2,
+                nb_cy_q1q2_f1f2,sum_nbcy_q1q2_f1f2,typ_chimio_clair_q1q2_f1f2) %>% 
+      mutate(seq_ct_each_pat_side_tmp = paste(sequence_ct_each_f_f1,sequence_ct_each_f_f2, sep="|"),
+            regimen_ct_each_pat_side_tmp = paste(recap_regimen_each_f_f1,recap_regimen_each_f_f2, sep="|"),
+            pluriseq_ct_f1f2_tmp =  paste(pluriseq_ct_f1,pluriseq_ct_f2, sep="|"),
+            date_start_f1f2 = date_start_f1,
+            date_end_f1f2   = date_end_f1)
+
+df_all_chemo_wide_2[which(!is.na(df_all_chemo_wide_2$date_end_f2)),"date_end_f1f2"] <- 
+  df_all_chemo_wide_2[which(!is.na(df_all_chemo_wide_2$date_end_f2)),"date_end_f2"]
+
+df_all_chemo_wide_2$sum_nbcy_q1q2_f1f2 <-rowSums(df_all_chemo_wide_2[,c("sum_nbcy_q1_q2_f1","sum_nbcy_q1_q2_f2")],
+                                                 na.rm=TRUE)
+head(df_all_chemo_wide_2)
+
+adjuvant      <- c("adjuvant|NA","adjuvant|adjuvant")
+neo_and_adj   <- c("neo and adjuvant|NA","neo and adjuvant|adjuvant","neoadjuvant|neo and adjuvant","neoadjuvant|adjuvant")
+neoadjuvant   <- c("neoadjuvant|NA","neoadjuvant|neoadjuvant","taxanes - Others","taxanes - NA")
+
+df_all_chemo_wide_2$seq_ct_each_pat_side <- NA
+df_all_chemo_wide_2[df_all_chemo_wide_2$seq_ct_each_pat_side_tmp %in% adjuvant,"seq_ct_each_pat_side"]      <- "adjuvant"
+df_all_chemo_wide_2[df_all_chemo_wide_2$seq_ct_each_pat_side_tmp %in% neo_and_adj,"seq_ct_each_pat_side"]   <- "neoadjuvant and adjuvant"
+df_all_chemo_wide_2[df_all_chemo_wide_2$seq_ct_each_pat_side_tmp %in% neoadjuvant,"seq_ct_each_pat_side"]   <- "neoadjuvant"
+# NA are already NA !
+
+df_all_chemo_wide_2$nb_cy_q1q2_f1f2            <-  gsub("\\|NA","",df_all_chemo_wide_2$nb_cy_q1q2_f1f2)
+df_all_chemo_wide_2$typ_chimio_clair_q1q2_f1f2 <-  gsub("NAVELBINE","titi",df_all_chemo_wide_2$typ_chimio_clair_q1q2_f1f2)
+df_all_chemo_wide_2$typ_chimio_clair_q1q2_f1f2 <-  gsub("-NA","",df_all_chemo_wide_2$typ_chimio_clair_q1q2_f1f2)
+df_all_chemo_wide_2$typ_chimio_clair_q1q2_f1f2 <-  gsub("titi","NAVELBINE",df_all_chemo_wide_2$typ_chimio_clair_q1q2_f1f2)
+df_all_chemo_wide_2$typ_chimio_clair_q1q2_f1f2 %>% unique()
+
+# CT regimen
+anthra_taxanes <- c("anthra-taxanes|anthra","anthra-taxanes|NA","anthra-taxanes|others","anthra-taxanes|taxanes","anthra|taxanes",
+                    "others|anthra-taxanes","taxanes|anthra")
+anthra         <- c("anthra|anthra","anthra|NA","anthra|others")
+taxanes        <- c("taxanes|NA","taxanes|others")
+others         <- c("others|NA")
+
+df_all_chemo_wide_2$regimen_ct_each_pat_side <- NA
+df_all_chemo_wide_2[df_all_chemo_wide_2$regimen_ct_each_pat_side_tmp %in% anthra_taxanes,"regimen_ct_each_pat_side"]  <- "anthra-taxanes"
+df_all_chemo_wide_2[df_all_chemo_wide_2$regimen_ct_each_pat_side_tmp %in% anthra,"regimen_ct_each_pat_side"]          <- "anthra"
+df_all_chemo_wide_2[df_all_chemo_wide_2$regimen_ct_each_pat_side_tmp %in% taxanes,"regimen_ct_each_pat_side"]         <- "taxanes"
+df_all_chemo_wide_2[df_all_chemo_wide_2$regimen_ct_each_pat_side_tmp %in% others,"regimen_ct_each_pat_side"]          <- "others"
+table(df_all_chemo_wide_2$regimen_ct_each_pat_side_tmp,df_all_chemo_wide_2$regimen_ct_each_pat_side,exclude=NULL)
+
+# xxx pluriseq_ct_f1f2_tmp
+df_all_chemo_wide_2 %>% group_by(pluriseq_ct_f1f2_tmp) %>% count() %>% arrange(desc(n))
+
+# "monosequential" = "1", "bi-sequential"="2", "3 or more sequences"="3
+monosequential  <- c("monosequential|NA")
+bi_sequential   <- c("bi-sequential|NA","monosequential|monosequential")
+plurisequential <- c("bi-sequential|monosequential","3 or more sequences|NA","bi-sequential|bi-sequential",
+          "3 or more sequences|monosequential","monosequential|bi-sequential","bi-sequential|3 or more sequences")
+
+df_all_chemo_wide_2 %>% filter(pluriseq_ct_f1f2_tmp=="monosequential|monosequential") %>% head()
+df_all_chemo_wide_2 %>% filter(pluriseq_ct_f1f2_tmp=="bi-sequential|bi-sequential") %>% head()
+df_all_chemo_wide_2 %>% filter(pluriseq_ct_f1f2_tmp=="bi-sequential|3 or more sequences") %>% head()
+
+df_all_chemo_wide_2$pluriseq_ct_each_pat_side <- NA
+df_all_chemo_wide_2[df_all_chemo_wide_2$pluriseq_ct_f1f2_tmp %in% monosequential,"pluriseq_ct_each_pat_side"]  <- "monosequential"
+df_all_chemo_wide_2[df_all_chemo_wide_2$pluriseq_ct_f1f2_tmp %in% bi_sequential,"pluriseq_ct_each_pat_side"]  <- "bi-sequential"
+df_all_chemo_wide_2[df_all_chemo_wide_2$pluriseq_ct_f1f2_tmp %in% plurisequential,"pluriseq_ct_each_pat_side"]  <- "plurisequential"
+table(df_all_chemo_wide_2$pluriseq_ct_f1f2_tmp,df_all_chemo_wide_2$pluriseq_ct_each_pat_side,exclude=NULL)
+
+short_summary_df_all_chemo_wide_2 <-  df_all_chemo_wide_2 %>% 
+      select(numdos_curie_side,dat_first_surg,date_start_f1,date_end_f1,
+    typ_chimio_clair_q1q2_f1,recap_regimen_each_f_f1,nb_cy_q1q2_f1,length_chemo_f1,pluriseq_ct_f1,
+    date_start_f2,date_end_f2,typ_chimio_clair_q1q2_f2,
+    recap_regimen_each_f_f2,nb_cy_q1q2_f2,length_chemo_f2,pluriseq_ct_f2,
+    nb_cy_q1q2_f1f2,sum_nbcy_q1q2_f1f2,date_start_f1f2,date_end_f1f2,
+    seq_ct_each_pat_side,regimen_ct_each_pat_side,pluriseq_ct_each_pat_side) %>% colnames()
+
+head(df_all_chemo_wide_2)
+nrow(df_all_chemo_wide_2) # 7213
+df_all_chemo_wide_2$numdos_curie_side %>% unique() # 7213
+df_all_chemo_wide_2 %>% group_by(seq_ct_each_pat_side) %>% count()
+```
+
+```{r df_all_chemo_wide_2 use case, include = TRUE}
+df_all_chemo_wide_2 %>% filter(numdos_curie ==  "0683614" ) %>% select(one_of(short_summary_df_all_chemo_wide_2))
+#   numdos_curie_side dat_first_surg date_start_f1 date_end_f1            typ_chimio_clair_q1q2_f1 recap_regimen_each_f_f1 nb_cy_q1q2_f1
+# 1         0683614_2     2006-12-19    2006-06-30  2006-11-24 EC (Epirubicine+endoxan) - TAXOTERE          anthra-taxanes           4|4
+#   length_chemo_f1 pluriseq_ct_f1 date_start_f2 date_end_f2 typ_chimio_clair_q1q2_f2 recap_regimen_each_f_f2 nb_cy_q1q2_f2 length_chemo_f2
+# 1             147     1_or_2_seq    2007-02-02  2007-05-11       FUN - CAPECITABINE                  others           1|4              98
+#   pluriseq_ct_f2     seq_ct_each_pat_side regimen_ct_each_pat_side
+# 1       pluriseq neoadjuvant and adjuvant           anthra-taxanes
+```
+
+```{r quality control} 
+df_all_chemo_wide_2 %>% group_by(neo_ct,seq_ct_each_pat_side) %>% count()
+#   neo_ct seq_ct_each_pat_side         n
+#    <dbl> <chr>                    <int>
+# 1      0 adjuvant                  5432
+# 2      1 neoadjuvant               1492
+# 3      1 neoadjuvant and adjuvant   283
+# 4      1 NA                           6
+```
+
+```{r preprocessed info to merge to base_sein }
+df_all_chemo_wide_to_merge <- df_all_chemo_wide_2 
+# %>% 
+#                               rename()
+#                               select(-neo_ct,-dat_first_surg,-dat_first_ct,-seq_ct_each_pat_side_tmp)
+head(df_all_chemo_wide_to_merge)
+head(df_all_chemo_wide_2)
+
+nrow(df_all_chemo_wide_to_merge) # 7222
+unique(df_all_chemo_wide_to_merge$numdos_curie_side) %>% length() # 7213
+
+df_all_chemo_wide_2 %>% filter(sequence_ct_each_f_f1 == "")
+df_all_chemo_wide_2 %>% group_by(sequence_ct_each_f_f1) %>% count()
+# Very few with neo and adj as first sequence....
+df_all_chemo_wide_2 %>% group_by(sequence_ct_each_f_f1) %>% count()
+```
+
+```{r}
+df_all_chemo_wide_2 %>% filter(seq_ct_each_pat_side == "adjuvant") %>% select(numdos_curie) %>% slice(350:355)
+#   numdos_curie
+# 1      0605053
+# 2      0605059
+# 3      0605073
+# 4      0605099
+# 5      0605180
+# 6      0605185
+
+df_all_chemo_wide_2 %>% filter(seq_ct_each_pat_side == "neoadjuvant") %>% select(numdos_curie) %>% slice(350:355)
+#   numdos_curie
+# 1      0802606
+# 2      0802770
+# 3      0803343
+# 4      0803344
+# 5      0803345
+# 6      0803455
+
+df_all_chemo_wide_2 %>% filter(seq_ct_each_pat_side == "neoadjuvant and adjuvant") %>% select(numdos_curie) %>% slice(150:155)
+#   numdos_curie
+# 1      0885183
+# 2      0885217
+# 3      0885225
+# 4      0885675
+# 5      0885745
+# 6      0885832
+```
+
+```{r}
+numdos_test <- "0885745"
+```
+
+```{r}
+d1                  %>% filter(numdos_curie == numdos_test) %>% select(dat_first_surg, one_of(very_all_variables_chimio))
+df_all_chemo        %>% filter(numdos_curie == numdos_test) %>% select(one_of(short_summary_df_all_chemo))
+df_all_chemo_wide   %>% filter(numdos_curie == numdos_test ) %>% select(one_of(short_summary_df_all_chemo_wide))
+df_all_chemo_wide_2 %>% filter(numdos_curie == numdos_test ) %>% select(one_of(short_summary_df_all_chemo_wide_2))
+```
+
+```{r}
+save(df_all_chemo, file= "data/processed/df_all_chemo.RData")
+save(df_all_chemo_wide, file= "data/processed/df_all_chemo_wide.RData")
+save(df_all_chemo_wide_2, file= "data/processed/df_all_chemo_wide_2.RData")
+```
+
+# One day maybe
+we will perform additional quality controls...
+
+```{r}
+# Beware
+# in adjuvant post NAC; have to fix a limit between surgery and date of f2.
+# For instance, 
+# too long there... 
+
+#   numdos_curie_side dat_first_surg quelle_chimio      typ_chimio_clair number_chemo_q_f date_start   date_end length_chemo  nbcy_chimio
+# 1         1102481_2     2011-07-27   TYPCT.q1.f1 TC (Taxotere+Endoxan)            q1.f1 2011-03-10 2011-06-24          106 NBCYCT.q1.f1
+# 2         1102481_2     2011-07-27   TYPCT.q1.f2             NAVELBINE            q1.f2 2012-09-27       <NA>           NA         <NA>
+#   nb_cycle_each_q sequence_ct_each_f chimio_sequentielle_or_not
+# 1               6        neoadjuvant             non sequential
+# 2              NA           adjuvant             non sequential
+
+```
+
+
+<!-- ```{r} -->
+<!-- ggplot(df_all_chemo %>%  -->
+<!--             filter(sequence_ct_each_f %in% c("neoadjuvant","adjuvant")) ) +  -->
+<!--             geom_histogram(aes(x=length_chemo, fill= nb), bins = 600) + -->
+<!--             coord_cartesian(xlim= c(0,250) ) + -->
+<!--             facet_grid(sequence_ct_each_f~., scales = "free") -->
+
+<!-- # BEWARE  !! tire by several outliers -->
+<!-- rev(sort(df_all_chemo$length_chemo)) -->
+<!-- df_all_chemo %>% filter(length_chemo >  300) %>% select(numdos_curie) %>% unique() -->
+<!-- # list NIP sent to LINDA -->
+<!-- df_all_chemo %>% slice(1:15)   -->
+<!-- df_all_chemo %>% group_by(nb) %>% count() %>% arrange(desc(n)) -->
+
+<!-- #   numdos_curie  nbcy_chimio nb number_chemo_q_f -->
+<!-- # 1      0000125 NBCYCT.q1.f1  4            q1.f1 -->
+<!-- # 2      0001244 NBCYCT.q1.f1  4            q1.f1 -->
+
+<!-- # nrow(df_all_chemo) # 13434 -->
+<!-- # df_all_chemo %>% group_by(both_before_and_after_surg) %>% count() -->
+<!-- head(df_all_chemo) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- # BEWARE, ALL theses files are suspect !!!  -->
+<!-- df_all_chemo_wide_2 %>% filter(length_chemo_f1 == length_chemo_f2) -->
+<!-- d1 %>% filter(numdos_curie == "1119021") -->
+<!-- df_all_chemo %>% filter(numdos_curie == "1119021") -->
+<!-- # PB sent to linda => f2 au lieu de q2 (only 1119021) -->
+<!-- ``` -->
+
+

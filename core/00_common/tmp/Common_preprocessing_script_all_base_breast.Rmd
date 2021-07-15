@@ -1,0 +1,304 @@
+---
+title: "Common_preprocessing_script_all_base_breast"
+author: "ASHP"
+date: "26/11/2019"
+output: html_document
+editor_options: 
+chunk_output_type: console
+---
+
+```{r}
+options(max.print = 9999)
+options(dplyr.print_max = Inf)
+library(lubridate)
+library(readr)
+```
+
+```{r}
+# Beware  
+# if one of the variables that we BUILD in this script is ALREADY present in the mapped_database => do not run the variable
+# if one of the variables that we have to use in this script was NA in input base => error message must not stop the rest of the code 
+```
+
+```{r}
+# INPUT : 
+# a database already cleaned and mapped ; in a script
+```
+
+```{r patient_id }
+d1$base_cletri    <- paste0(d1$database, "_",d1$cletri)
+d1$patient_side   <- paste0(d1$base_cletri,"_",d1$side)
+d1$year_birth     <- lubridate::year(d1$dat_birth)
+d1$year_diag      <- lubridate::year(d1$dat_bc_diagnosis)
+d1$period_diag    <-  cut (d1$year_diag,  seq( from = 0, to = 2020, by = 5),  right=FALSE,labels = FALSE) 
+```
+
+```{r patient_char}
+d1$age            <- round(as.numeric(d1$dat_bc_diagnosis - d1$dat_birth)/365.25,1)
+d1$age_cl_10_1    <-  cut (d1$age, c(0,30,40,50,60,70,80,120), right=FALSE,labels = FALSE) 
+d1$age_cl_10_2    <-  cut (d1$age, c(0,40,50,60,70,120), right=FALSE,labels = FALSE) 
+d1$age_cl_3_cl    <-  cut (d1$age, c(0,50,60,120), right=FALSE,labels = FALSE) 
+d1$age_cl_5_cl    <-  cut (d1$age, c(0,40,50,60,75,120), right=FALSE,labels = FALSE) 
+d1$age_young_cl   <-  cut (d1$age, c(0,30,35,40,120), right=FALSE,labels = FALSE) 
+
+d1$nb_preg_3cl    <- ifelse(d1$nb_preg == 0,0, ifelse(d1$nb_preg == 1,1,2))
+d1$prev_pregnancy <- ifelse(d1$nb_preg == 0,0,1)
+d1$nb_child_3cl   <- ifelse(d1$nb_child == 0,0,ifelse(d1$nb_child == 1,1,2))
+d1$prev_child     <- ifelse(d1$nb_child == 0,0,1)
+
+# Ref BMI WHO 30/11/2019 
+# http://www.euro.who.int/en/health-topics/disease-prevention/nutrition/a-healthy-lifestyle/body-mass-index-bmi
+d1$bmi     <- round(d1$weight/(d1$size^2),1)
+d1$bmi_2cl <- cut (d1$bmi, c(0,24.9999,100), right = FALSE, labels = FALSE)
+d1$bmi_3cl <- cut (d1$bmi, c(0,18.5,24.9999,100), right = FALSE, labels = FALSE)
+d1$bmi_3cl <- relevel(as.factor(d1$bmi_3cl), ref = 2)     # Put normal weight as reference
+d1$bmi_4cl <- cut (d1$bmi, c(0, 18.5,24.9999,29.99999,100), right = FALSE, labels = FALSE)
+d1$bmi_4cl <- relevel(as.factor(d1$bmi_4cl), ref = 2)     # Put normal weight as reference
+d1$bmi_5cl <- cut (d1$bmi, c(0, 18.5,24.9999,29.99999,35,100), right = FALSE, labels = FALSE) 
+d1$bmi_5cl <- relevel(as.factor(d1$bmi_5cl), ref = 2)     # Put normal weight as reference
+```
+
+
+```{r bc_diagnosis}
+d1$tuicc_4cl <- ifelse(d1$tuicc_5cl==0, 1,d1$tuicc_5cl)
+d1$tuicc_3cl <- ifelse(d1$tuicc_4cl==4, 3,d1$tuicc_4cl)
+
+d1$nuicc_2cl <- ifelse(d1$nuicc_4cl==0, 0,1)
+```
+
+
+```{r bc_biology subtype}
+d1$hr_status      <- NA
+d1$hr_status[d1$er_status==1 | d1$pr_status==1] <- 1
+d1$hr_status[d1$er_status==0 & d1$pr_status==0] <- 0
+
+d1$luminal                                      <- NA
+d1$luminal[d1$hr_status==1 & d1$her2_status==0] <- 1
+d1$luminal[d1$hr_status==0 | d1$her2_status==1] <- 0
+
+d1$tnbc                                      <- NA
+d1$tnbc[d1$hr_status==0 & d1$her2_status==0] <- 1
+d1$tnbc[d1$hr_status==1 | d1$her2_status==1] <- 0
+
+d1$subtype                        <- NA
+d1$subtype[d1$luminal==1]         <- 1
+d1$subtype[d1$tnbc==1]            <- 2
+d1$subtype[d1$her2_status==1]     <- 3
+
+d1$subtype4    <- d1$subtype
+d1$subtype4[which(d1$her2_status==1 & d1$hr_status==1)] <- 3
+d1$subtype4[which(d1$her2_status==1 & d1$hr_status==0)] <- 4
+
+d1$subtype5    <- d1$subtype4
+# Definition of luminal A versus B / reference?
+# @ASHP Attente mail Bea
+
+d1$er_status_1_perc       <- ifelse(d1$er_percentage>1,1,0)
+d1$pr_status_1_perc       <- ifelse(d1$pr_percentage>1,1,0)
+d1$hr_status_1_perc       <- NA
+d1$hr_status_1_perc[d1$er_status_1_perc==1 | d1$pr_status_1_perc==1] <- 1
+d1$hr_status_1_perc[d1$er_status_1_perc==0 & d1$pr_status_1_perc==0] <- 0
+
+d1$luminal_1_perc                                             <- NA
+d1$luminal_1_perc[d1$hr_status_1_perc==1 & d1$her2_status==0] <- 1
+d1$luminal_1_perc[d1$hr_status_1_perc==0 | d1$her2_status==1] <- 0
+
+d1$tnbc_1_perc                                              <- NA
+d1$tnbc_1_perc[d1$hr_status_1_perc==0 & d1$her2_status==0]  <- 1
+d1$tnbc_1_perc[d1$hr_status_1_perc==1 | d1$her2_status==1]  <- 0
+
+d1$subtype_1_perc                        <- NA
+d1$subtype_1_perc[d1$luminal_1_perc==1]  <- 1
+d1$subtype_1_perc[d1$tnbc_1_perc==1]     <- 2
+d1$subtype_1_perc[d1$her2_status==1]     <- 3
+
+d1$subtype4_1_perc                        <- d1$subtype_1_perc
+d1$subtype4_1_perc[which(d1$her2_status==1 & d1$hr_status_1_perc==1)] <- 3
+d1$subtype4_1_perc[which(d1$her2_status==1 & d1$hr_status_1_perc==0)] <- 4
+
+d1$subtype5_1_perc    <- d1$subtype4_1_perc
+# @ASHP a revoir (def luminal A / B)
+```
+
+```{r bc_biology others}
+d1$histo_4cl <- ifelse(d1$histo_5cl != 4, d1$histo_5cl,9)
+d1$histo_3cl <- ifelse(d1$histo_4cl != 3, d1$histo_4cl,9)
+d1$histo_2cl <- ifelse(d1$histo_3cl != 2, d1$histo_3cl,9)
+
+d1$grade_2cl <- ifelse(d1$grade_3cl %in% c(1,2), 1, 2)
+
+# @ASHP Bea revoir la ref;
+d1$ki67_cl <- cut (d1$ki67_perc, c(0,10,20,100), right = FALSE, labels = FALSE)
+
+d1$inv_dcis_4cl     <- NA 
+d1[which(d1$invasive_or_dcis==2),"inv_dcis_4cl"]                              <- 3
+d1[which(d1$invasive_or_dcis==1 & d1$dcis_component==0 ),"inv_dcis_4cl"]      <- 1
+d1[which(d1$invasive_or_dcis==1 & d1$dcis_component==1 ),"inv_dcis_4cl"]      <- 2
+d1[which(d1$invasive_or_dcis==1 & is.na(d1$dcis_component)) ,"inv_dcis_4cl"]  <- 4
+
+# ref TILs
+# 1. https://pubmed.ncbi.nlm.nih.gov/30650045-tumor-infiltrating-lymphocytes-and-prognosis-a-pooled-individual-patient-analysis-of-early-stage-triple-negative-breast-cancers/?from_single_result=loi+JCO+2019
+# Loi, JCO 2019, sTIL, categorical <30% / ≥30%
+
+# d1$str_TIL_perc <- abs(rnorm(nrow(d1), mean=50, sd=30))
+d1$str_TIL_perc_30 <- cut (d1$str_TIL_perc, c(0,30,100), right = FALSE, labels = FALSE)
+
+# 2. DENKERT Lancet 2018:  Denkert et al., “Tumour-Infiltrating Lymphocytes and Prognosis in Different Subtypes of Breast Cancer.”
+# TILs were analyzed both as a continuous parameter and in three predefined groups of low (0%–10% immune cells in stromal tissue within the tumor), intermediate (11%–59%), and high TILs (≥ 60%).
+d1$str_TIL_denkert <- cut (d1$str_TIL_perc, c(0,11,60,100), right = FALSE, labels = FALSE)
+table(d1$str_TIL_perc,d1$str_TIL_denkert)
+```
+
+```{r surgery}
+d1$breast_surgery         <- ifelse(!is.na(d1$dat_first_surg),1,0) 
+
+d1$axillary_surgery_3cl   <- ifelse(d1$axillary_surgery_4cl %in% c(2,3),2,d1$axillary_surgery_4cl) 
+d1$axillary_surgery_2cl   <- ifelse(d1$axillary_surgery_3cl %in% c(1,2),d1$axillary_surgery_3cl,NA) 
+```
+
+
+```{r treatments_binary}
+d1$ht_type_3cl		<- ifelse(d1$ht_type_5cl %in% c(1,2), d1$ht_type_5cl, 3)
+```
+
+```{r neoadj_or_not}
+d1$primary_ttt                                <- 1 
+d1[which(d1$breast_surgery==0),"primary_ttt"] <- 9
+d1[which( d1$neo_ct      == 1 |
+          d1$neo_ht      == 1 |
+          d1$neo_rt      == 1 |
+          d1$neo_antiher2== 1 |
+          d1$neo_tc_other== 1 ),"primary_ttt"] <- 2
+# d1 %>% group_by(primary_ttt,neo_ct,neo_ht, neo_rt,neo_antiher2) %>% count() %>% arrange(desc(n))
+
+d1$primary_ttt_5cl                              <- 4
+d1[which(d1$primary_ttt==1 ),"primary_ttt_5cl"] <- 1
+d1[which(d1$primary_ttt==9 ),"primary_ttt_5cl"] <- 9
+d1[which(d1$primary_ttt==2 & d1$neo_ct==1 & d1$neo_ht==0 & d1$neo_rt==0 & d1$neo_tc_other == 0),"primary_ttt_5cl"]                        <- 2
+d1[which(d1$primary_ttt==2 & d1$neo_ct==0 & d1$neo_ht==1 & d1$neo_rt==0 & d1$neo_antiher2 == 0 & d1$neo_tc_other == 0),"primary_ttt_5cl"] <- 3
+
+d1$primary_ttt_3cl <- ifelse(d1$primary_ttt_5cl %in% c(1,2),d1$primary_ttt_5cl,3)
+```
+
+```{r settings_and_regimen}
+d1$ct_setting_5cl                                               <- NA
+d1[which(d1$ct == 0),"ct_setting_5cl"]                          <- 5
+d1[which(d1$neo_ct == 1),"ct_setting_5cl"]                         <- 1
+d1[which(d1$adj_ct == 1),"ct_setting_5cl"]                      <- 2
+d1[which(d1$neo_ct == 1 & d1$adj_ct == 1),"ct_setting_5cl"]        <- 3
+d1[which(d1$ct == 1 & d1$breast_surgery == 0),"ct_setting_5cl"] <- 4
+
+d1$antiher2_setting_5cl                                                       <- NA
+d1[which(d1$antiher2 == 0),"antiher2_setting_5cl"]                            <- 5
+d1[which(d1$neo_antiher2 == 1),"antiher2_setting_5cl"]                        <- 1
+d1[which(d1$adj_antiher2 == 1),"antiher2_setting_5cl"]                        <- 2
+d1[which(d1$neo_antiher2 == 1 & d1$adj_antiher2 == 1),"antiher2_setting_5cl"] <- 3
+d1[which(d1$antiher2 == 1 & d1$breast_surgery == 0),"antiher2_setting_5cl"]   <- 4
+table(d1$antiher2_setting_5cl,d1$her2_status,exclude=NULL)
+```
+
+```{r tumor_char_surg}
+d1$ptuicc_4cl <- ifelse(d1$ptuicc_5cl==0, 1,d1$ptuicc_5cl)
+d1$ptuicc_3cl <- ifelse(d1$ptuicc_4cl==4, 3,d1$ptuicc_4cl)
+
+d1$pnuicc_4cl <- cut (d1$nbggpos, c(0,1,4,9,60), right=FALSE,labels = FALSE) 
+d1$pnuicc_3cl <- ifelse(d1$pnuicc_4cl <4,  d1$pnuicc_4cl,3)
+d1$pnuicc_2cl <- ifelse(d1$pnuicc_3cl <3,  d1$pnuicc_3cl,2)
+```
+
+```{r tumor_char_neo}
+d1$ypnuicc_4cl <- cut (d1$nbggpos_postneo_ct, c(0,1,4,9,60), right=FALSE,labels = FALSE) 
+d1$ypnuicc_3cl <- ifelse(d1$ypnuicc_4cl <4,  d1$ypnuicc_4cl,3)
+d1$ypnuicc_2cl <- ifelse(d1$ypnuicc_3cl <3,  d1$ypnuicc_3cl,2)
+
+# pCR
+d1$pCR                                                  <- NA
+d1$pCR[d1$breast_res_infiltr == 0 & d1$ypnuicc_2cl==1]  <- 1
+d1$pCR[d1$breast_res_infiltr == 1 | d1$ypnuicc_2cl==2]  <- 0
+```
+
+```{r delays_pathways }
+d1$delay_diag_to_surg       <- d1$dat_first_surg   - d1$dat_bc_diagnosis
+d1$delay_diag_to_neo_ct     <- d1$dat_first_neo_ct - d1$dat_bc_diagnosis
+d1$delay_end_neo_ct_to_surg <- d1$dat_end_neo_ct - d1$dat_first_surg
+d1$delay_surg_to_adj_ct     <- d1$dat_first_adj_ct - d1$dat_first_surg
+d1$delay_surg_to_rt         <- d1$dat_first_rt - d1$dat_first_surg  
+```
+
+```{r events_and_censor }
+d1$year_last_news           <- as.integer(substr(d1$dat_last_news,1,4))
+d1$dat_last_news_censor     <- d1$dat_last_news
+d1[which(d1$dat_last_news > dat_censor ),"dat_last_news_censor"] <- dat_censor
+```
+
+```{r evol }
+# Build composite events 
+# http://ascopubs.org.gate2.inist.fr/doi/10.1200/JCO.2006.10.3523
+
+d1$nb_event   <- rowSums(d1[,c("ev_prog_neo","ev_recloc","ev_recreg","ev_meta","ev_contro","ev_deuxk","status_vital")],na.rm = TRUE)
+events        <- d1  %>% select(starts_with("ev_"),status_vital)  %>% colnames() 
+d1  %>% select(one_of(events))  %>% head()
+
+# EFS :  ev_prog_neo, ev_recloc, ev_recreg, ev_meta, status_vital        
+d1$status_efs              <- NA
+d1$status_efs[d1$ev_prog_neo == 1 | d1$ev_recloc == 1 | d1$ev_recreg == 1 | d1$ev_meta == 1 | d1$status_vital == 1] <- 1
+d1$status_efs[(d1$ev_prog_neo == 0 | is.na(d1$ev_prog_neo))
+              & d1$ev_recloc == 0 & d1$ev_recreg == 0 & d1$ev_meta == 0 & 
+                (d1$status_vital == 0 | is.na(d1$status_vital))  ] <- 0
+table(d1$status_efs,exclude=NULL)
+
+# RFS : ev_recloc, ev_recreg, ev_meta, status_vital        
+d1$status_rfs              <- NA
+d1$status_rfs[ d1$ev_recloc == 1 | d1$ev_recreg == 1 | d1$ev_meta == 1 | d1$status_vital == 1] <- 1
+d1$status_rfs[d1$ev_recloc == 0 & d1$ev_recreg == 0 & d1$ev_meta == 0 & 
+                (d1$status_vital == 0 | is.na(d1$status_vital))  ] <- 0
+d1[which(is.na(d1$status_rfs)),c("ev_recloc","ev_recreg","ev_meta","status_vital")]
+table(d1$status_rfs,exclude=NULL)
+
+# DRFS (distant relapse free survival) : distant, death  (formerly MFS)
+d1$status_drfs              <- NA
+d1$status_drfs[ d1$ev_meta == 1 | d1$status_vital == 1] <- 1
+d1$status_drfs[d1$ev_meta == 0 & 
+                (d1$status_vital == 0 | is.na(d1$status_vital))  ] <- 0
+d1[which(is.na(d1$status_drfs)),c("ev_meta","status_vital")]
+table(d1$status_drfs,exclude=NULL)
+```
+
+```{r evol}
+# Define time to event (TTE)
+## efs
+d1$dat_efs      <- pmin (d1$dat_prog_neo, d1$dat_recloc, d1$dat_recreg ,d1$dat_meta, d1$dat_last_news_censor, na.rm=T)
+# @ASHP BEWARE, TOURNE PAS a cause de dat_prog_neo
+d1$delay_efs_diag     <- as.numeric(d1$dat_efs - d1$dat_bc_diagnosis)
+# d1$delay_efs         <- as.numeric(d1$dat_efs - d1$dat_first_surg)/30.4375
+# This one does not make sense, because if progression before surgery, negative delay =>  In this case, have to use delay_efs_diag
+
+## rfs
+d1$dat_rfs            <- pmin (d1$dat_recloc, d1$dat_recreg ,d1$dat_meta, d1$dat_last_news_censor, na.rm=T)
+d1$delay_rfs_diag    <- as.numeric(d1$dat_rfs - d1$dat_bc_diagnosis)/30.4375
+d1$delay_rfs         <- as.numeric(d1$dat_rfs - d1$dat_first_surg)/30.4375
+
+## drfs 
+d1$dat_drfs <- pmin (d1$dat_meta, d1$dat_last_news_censor, na.rm=T)
+d1$delay_drfs_diag    <- as.numeric(d1$dat_drfs - d1$dat_bc_diagnosis)/30.4375
+d1$delay_drfs         <- as.numeric(d1$dat_drfs - d1$dat_first_surg)/30.4375
+
+## overall survival
+d1$delay_os_diag     <- as.numeric(d1$dat_last_news_censor - d1$dat_bc_diagnosis)/30.4375
+d1$delay_os          <- as.numeric(d1$dat_last_news_censor - d1$dat_first_surg)/30.4375
+
+delays_diag_endpoint  <- d1  %>% select(ends_with("_diag"),-year_diag, -period_diag)  %>% colnames() 
+# [1] "delay_efs_diag"  "delay_rfs_diag"  "delay_drfs_diag" "delay_os_diag"  
+delays_surg_endpoint <- setdiff( d1  %>% select(contains("delay"))  %>% colnames() , delays_diag_endpoint)
+# [1] "delay_efs"  "delay_rfs"  "delay_drfs" "delay_os"  
+
+# => Irrespective of delay_xxx_diag or delay_xxx, use endpoint status_xxx. 
+# Not supposed to change anything, except for progression before surgery; but endpoint delay_efs does not exist.
+```
+
+```{r save my_base_map_clean }
+base_sein_bilat_map_clean <- d1
+save(base_sein_bilat_map_clean, file="data/processed/base_sein_bilat_map_clean.RData")
+write.csv2(base_sein_bilat_map_clean, file="data/processed/base_sein_bilat_map_clean.csv")
+```
+

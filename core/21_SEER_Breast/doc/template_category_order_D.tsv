@@ -1,0 +1,106 @@
+var_names	var_type	levels_increasing_order	group
+Sex	0	Male,Female	Personal
+YearDiagnosis	0	2010,2011,2012,2013,2014,2015,2016	Treatment
+County	1		County
+StateCounty	0	NA	County
+PRCDA16	0	Not.PRCDA,PRCDA	County
+PRCDARegion	0	Alaska,East,Northern.Plains,Pacific.Coast,Southwest	County
+SiteAYARec	0	NA	Site
+ICCCSiteRec	0	NA	Site
+PrimSite	0	C50.0.Nipple,C50.1.Central.portion.of.breast,C50.2.Upper.inner.quadrant.of.breast,C50.3.Lower.inner.quadrant.of.breast,C50.4.Upper.outer.quadrant.of.breast,C50.5.Lower.outer.quadrant.of.breast,C50.6.Axillary.tail.of.breast,C50.8.Overlapping.lesion.of.breast,C50.9.Breast.NOS	Staging
+TumorGrade	0	Well.differentiated;.Grade.I,Moderately.differentiated;.Grade.II,Poorly.differentiated;.Grade.III,Undifferentiated;.anaplastic;.Grade.IV	Staging
+Laterality	0	Leftorigin.of.primary,Rightorigin.of.primary,Only.one.sideside.unspecified,Paired.site.but.no.information.concerning.laterality,Bilateral.single.primary	Site
+DiagConf	0	Positive.histology,Positive.exfoliative.cytology.no.positive.histology,Positive.microscopic.confirm.method.not.specified,Radiography.without.microscopic.confirm	Treatment
+HistologyICDO3	0	NA	Tumor
+HistGrouping	0	NA	Tumor
+ICCCSiteRecExt	0	NA	Site
+SimpleStage	0	Localized,Regional,Distant	Staging
+Stage	0	Localized.only,Regional.NOS,Regional.by.both.direct.extension.and.lymph.node.involvement,Regional.by.direct.extension.only,Regional.lymph.nodes.involved.only,Distant.site(s)_sl_node(s).involved	Staging
+SimpleStage2	0	Unstaged,Localized,Regional,Distant	Staging
+SimpleStage3	0	L,RE,RN,D,RE+RN	Staging
+AJCCStgGrp7th	0	0,IA,IB,IIA,IIB,IIIA,IIIB,IIIC,IIINOS,IV	Staging
+AJCC7thT	0	T0,Tis,T1a,T1b,T1c,T1NOS,T1mic,T2,T3,T4a,T4b,T4c,T4d,T4NOS	Staging
+AJCC7thN	0	N0,N0(i.),N0(i+),N0(mol+),N0(mol.),N1,N1mi,N1a,N1b,N1c,N1NOS,N2a,N2b,N2NOS,N3a,N3b,N3c,N3NOS	Staging
+AJCC7thM	0	M0,M0(i+),M1	Staging
+CmbStgGrp	0	0,3,4,1A,1B,2A,2B,3A,3B,3C	Staging
+CombT	0	pIS,p1MI,pX,p1,p1A,p1B,p1C,p2,p3,p4,p4A,p4B,p4C,p4D,c1MI,cX,c0,c1,c1A,c1B,c1C,c2,c3,c4,c4A,c4B,c4C,c4D	Staging
+CombN	0	pX,p0,p0I.,p0I+,p1MI,p1,p1A,p1B,p1C,p2,p2A,p2B,p3,p3A,p3B,p3C,cX,c0,c1,c2,c2A,c2B,c3,c3A,c3B,c3C,p0M.,p0M+	Staging
+CombM	0	p1,c0,c0I+,c1	Staging
+CombTSrc	0	Clinical,Pathologic	Staging
+CombNSrc	0	Clinical,Pathologic	Staging
+CombMSrc	0	Clinical,Pathologic	Staging
+AJCCStgGrp6th	0	0,I,IIA,IIB,IIIA,IIIB,IIIC,IIINOS,IV	Staging
+BreastAJCC6thStg	0	0,I,IIA,IIB,IIIA,IIIB,IIIC,IIINOS,IV	Staging
+AJCC6thT	0	T0,Tis,T1a,T1b,T1c,T1NOS,T1mic,T2,T3,T4a,T4b,T4c,T4d,T4NOS	Staging
+AJCC6thN	0	N0,N0(i.),N0(i+),N0(mol.),N0(mol+),N1,N1a,N1b,N1c,N1mi,N1NOS,N2a,N2b,N2NOS,N3a,N3b,N3c,N3NOS	Staging
+AJCC6thM	0	M0,M1	Staging
+BCAdjAJCC6thT	0	T0,Tis,T1a,T1b,T1c,T1mic,T2,T3,T4a,T4b,T4c,T4d,Any.T.Mets	Staging
+BCAdjAJCC6thN	0	N0,N1,N2,N3	Staging
+BCAdjAJCC6thM	0	M0,M1	Staging
+CombTNMEd	0	Not.applicable.(cases.that.do.not.have.an.AJCC.staging.scheme),Seventh.Edition.(published.2009)recommended.with.cases.diagnosed.2010.2017,Seventh.Edition.with.UICC.modifications	Staging
+SurgPrimSite	0		Treatment
+SurgOthThanPrimSite	0	None;.diagnosed.at.autopsy,Non.primary.surgical.procedure.performed,Non.primary.surgical.procedure.to.other.regional.sites,Non.primary.surgical.procedure.to.distant.site,Non.primary.surgical.procedure.to.distant.lymph.node(s),Any.combo.of.sur.proc.to.oth.rg.dis.lym.nd.and_sl_or.dis.site	Treatment
+RadSeqSurgery	0	No.radiation.and_sl_or.cancer.directed.surgery,Radiation.prior.to.surgery,Intraoperative.radiation,Radiation.after.surgery,Radiation.before.and.after.surgery,Surgery.both.before.and.after.radiation,Intraoperative.rad.with.other.rad.before_sl_after.surgery,Sequence.unknown.but.both.were.given	Treatment
+ReasonNoCancSurg	0	Not.recommended,Not.performed.patient.died.prior.to.recommended.surgery,Not.recommended.contraindicated.due.to.other.cond;.autopsy.only.(1973.2002),Recommended.but.not.performed.patient.refused,Recommended.but.not.performed.unknown.reason,Recommended.unknown.if.performed,Surgery.performed	Treatment
+Radiation	0	Refused.(1988+),Recommended.unknown.if.administered,Radiation.NOS.method.or.source.not.specified,Radioisotopes.(1988+),Beam.radiation,Combination.of.beam.with.implants.or.isotopes,Radioactive.implants.(includes.brachytherapy).(1988+)	Treatment
+ChemoT	0	No_sl_Unknown,Yes	Treatment
+MonthsDiag2Treat	0	0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,21.0,22.0,23.0,24.0	Treatment
+TumorSize	1		Tumor
+NRegNodesExamd	1		Metastasis
+NRegNodesMet	1		Metastasis
+BoneMet	0	No,Yes	Metastasis
+BrainMet	0	No,Yes	Metastasis
+LiverMet	0	No,Yes	Metastasis
+LungMet	0	No,Yes	Metastasis
+DistLNMet	0	None;.no.lymph.node.metastases,Yes;.distant.lymph.node.metastases	Metastasis
+OtherMet	0	None;.no.other.metastases,Yes;.distant.mets.in.known.site(s).other.than.bone.brain.liver.lung.dist.LN	Metastasis
+BreastSubtype	0	HR+_sl_HER2+.(Luminal.B),HR+_sl_HER2..(Luminal.A),HR._sl_HER2+.(HER2.enriched),HR._sl_HER2..(Triple.Negative)	Tumor
+ER	0	Negative,Borderline,Positive	Tumor
+PR	0	Negative,Borderline,Positive	Tumor
+HER2	0	Negative,Positive	Tumor
+TumorExtension	0	950.0,70.0,100.0,110.0,120.0,130.0,140.0,170.0,180.0,190.0,200.0,300.0,400.0,410.0,512.0,514.0,516.0,518.0,519.0,520.0,575.0,580.0,585.0,600.0,605.0,612.0,615.0,680.0,725.0,730.0,750.0,780.0,790.0	Tumor
+LNInvolvement	0	0.0,50.0,130.0,150.0,155.0,250.0,255.0,257.0,258.0,260.0,510.0,520.0,600.0,610.0,620.0,630.0,710.0,720.0,735.0,740.0,745.0,748.0,750.0,755.0,760.0,763.0,764.0,765.0,768.0,800.0,805.0,810.0,815.0,820.0	Metastasis
+MetsAtDiag	0	0.0,5.0,7.0,10.0,40.0,42.0,44.0,50.0,60.0	Metastasis
+Method2EvalTumSizeExt	0	0.0,1.0,3.0,5.0,6.0	Treatment
+Method2EvalRegNode	0	0.0,1.0,2.0,3.0,5.0,6.0	Treatment
+Method2EvalMet	0	0.0,1.0,2.0,3.0,5.0,6.0	Metastasis
+ERAssay	0	10.0,20.0,30.0	Tumor
+PRAssay	0	996.0,997.0,998.0,10.0,20.0,30.0	Tumor
+nPositiveAxillaryLN	1		Metastasis
+IHCRegionalLN	0	0.0,1.0,2.0,9.0	Tumor
+MOLRegionalLN	0	0.0,1.0,2.0	Tumor
+SizeTumorInvasiveComponent	0	0.0,10.0,20.0,30.0,40.0,50.0,60.0	Tumor
+BRScore	0	998.0,30.0,40.0,50.0,60.0,70.0,80.0,90.0,110.0,120.0,130.0	Tumor
+HER2Summary	0	988,10,20	Tumor
+COD2SiteRecode	0		Survival
+DeathDue2BC	0	Dead.(missing_sl_unknown.COD),N_sl_A.not.first.tumor,Alive.or.dead.of.other.cause,Dead.(attributable.to.this.cancer.dx)	Survival
+DeathDue2Other	0	Alive.or.dead.due.to.cancer,Dead.(missing_sl_unknown.COD),N_sl_A.not.first.tumor,Dead.(attributable.to.causes.other.than.this.cancer.dx)	Survival
+SurvMonths	1		Survival
+SurvMonthsFlag	0	Complete.dates.are.available.and.there.are.0.days.of.survival,Incomplete.dates.are.available.and.there.could.be.zero.days.of.follow.up,Complete.dates.are.available.and.there.are.more.than.0.days.of.survival,Incomplete.dates.are.available.and.there.cannot.be.zero.days.of.follow.up	Survival
+COD2SiteRecode2	0		Survival
+VitalStatus	0	Dead,Alive	Survival
+TumorSequence	0	One.primary.only,1st.of.2.or.more.primaries,2nd.of.2.or.more.primaries,3rd.of.3.or.more.primaries,4th.of.4.or.more.primaries,5th.of.5.or.more.primaries,6th.of.6.or.more.primaries,8th.of.8.or.more.primaries,12th.of.12.or.more.primaries	Tumor
+FirstMalignPrimary	0	No,Yes	Tumor
+PrimByIRules	0	No,Yes	Tumor
+SequenceRecode	0	1,2,3,4,5,6,7,8	Tumor
+NInSituMaligTumor	0	1,2,3,4,5,6,7,8,13	Tumor
+NBenignBorderTumor	0	0,1,2,3	Tumor
+HistologyICDO2	0		Tumor
+Hispanic	0	Non.Spanish.Hispanic.Latino,Spanish.Hispanic.Latino	Personal
+AgeAtDiag	1		Personal
+Ethnicity	0	American.Indian_sl_Alaska.Native,Asian,Black,Other,Pacific.Islanders,White	Personal
+IHSLink	0	Record.sent.for.linkage.IHS.match,Record.sent.for.linkage.no.IHS.match	Personal
+BirthYear	1		Personal
+MonthDiagnosis	0	January,February,March,April,May,June,July,August,September,October,November,December	Treatment
+TypeReportSource	0	Nursing_sl_convalescent.home_sl_hospice,Hospital.inpatient_sl_outpatient.or.clinic,Laboratory.only.(hospital.or.private),Other.hospital.outpatient.unit.or.surgery.center.(2006+),Physicians.office_sl_private.medical.practitioner.(LMD),Radiation.treatment.or.medical.oncology.center.(2006+)	Treatment
+Insurance	0	Uninsured,Any.Medicaid,Insured_sl_No.specifics,Insured	Personal
+MaritalStatus	0	Single.(never.married),Unmarried.or.Domestic.Partner,Married.(including.common.law),Separated,Divorced,Widowed	Personal
+RuralUrbanContinuum	0	Comp.rural.lt.2500.urban.pop.not.adjacent.to.metro.area,Comp.rural.lt.2500.urban.pop.adjacent.to.a.metro.area,Counties.in.metropolitan.areas.of.lt.250.thousand.pop,Counties.in.metropolitan.areas.of.250000.to.1.million.pop,Counties.in.metropolitan.areas.ge.1.million.pop,Urban.pop.of.2500.to.19999.not.adjacent.to.a.metro.area,Urban.pop.of.2500.to.19999.adjacent.to.a.metro.area,Urban.pop.of.ge.20000.not.adjacent.to.a.metropolitan.area,Urban.pop.of.ge.20000.adjacent.to.a.metropolitan.area	County
+HealthServiceAreaNCI	0	NA	County
+HealthServiceArea	0	NA	County
+CHSDA12	0	Not.CHSDA,CHSDA	County
+CHSDA06	0	Not.CHSDA,CHSDA	County
+CostLivingIndex	1		County
+MedianFamIncome	1		County
+MedianHouseIncome	1		County
+HadSurgery	0	No,Yes	Treatment
